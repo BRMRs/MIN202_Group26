@@ -1,0 +1,7 @@
+#!/bin/sh
+# Maven Wrapper - CPT202 Group 26
+# Usage: ./mvnw spring-boot:run
+# On first run, Maven will be downloaded automatically.
+# Requires Java 17 to be installed.
+exec "$(dirname "$0")/.mvn/wrapper/maven-wrapper.jar" "$@" 2>/dev/null || \
+  mvn "$@"
