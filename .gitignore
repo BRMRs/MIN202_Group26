@@ -1,0 +1,5 @@
+# Ignore common/generated files
+docs/
+.sisyphus/
+node_modules/
+target/
