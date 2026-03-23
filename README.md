@@ -43,3 +43,8 @@ All dependencies use the **latest stable patch release** of the specified major/
 | Character Set            | utf8mb4          |
 | Collation                | utf8mb4_unicode_ci |
 | Storage Engine           | InnoDB           |
+
+
+## Onboarding & Module Map
+- This repository contains a scaffolded multi-module backend and frontend.
+- Module map indicates generated placeholder modules for demonstration.
