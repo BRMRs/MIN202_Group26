@@ -1,5 +1,40 @@
-# Ignore common/generated files
-docs/
+# IDE
+.vscode/
+.idea/
+*.iml
+.vscode/
 .sisyphus/
-node_modules/
-target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Backend build
+backend/target/
+backend/*.jar
+backend/*.class
+
+# Frontend build
+frontend/dist/
+frontend/build/
+frontend/.cache/
+frontend/node_modules/
+frontend/*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temp files
+*.tmp
+*.swp
+*~
+
+# Project specific
+.sisyphus/
+docs/
