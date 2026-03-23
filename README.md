@@ -2,7 +2,7 @@
 
 ## Project Description
 
-This is the **CPT202 Software Engineering Group Project — Option A, Group 26**.
+This is the **Group 26**.
 
 We are building a **Community Heritage Resource Sharing and Curation Platform** — a web-based system for submitting, reviewing, publishing, and archiving curated heritage resource entries. The platform focuses on community heritage and local culture topics (places, traditions, stories, objects, and educational materials).
 
