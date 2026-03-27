@@ -38,6 +38,12 @@ public class Resource {
     @Column(length = 200)
     private String place;
 
+    @Column(name = "requested_category_name", length = 100)
+    private String requestedCategoryName;
+
+    @Column(name = "category_request_reason", columnDefinition = "TEXT")
+    private String categoryRequestReason;
+
     @Column(name = "copyright_declaration", columnDefinition = "TEXT")
     private String copyrightDeclaration;
 
