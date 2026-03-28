@@ -9,7 +9,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "resources")
+// PBI 3.2 — Task: Optimize status update performance
+// Indexes on high-frequency filter columns keep dashboard queries under 1s.
+@Table(name = "resources", indexes = {
+    @Index(name = "idx_resources_status",         columnList = "status"),
+    @Index(name = "idx_resources_contributor_id", columnList = "contributor_id"),
+    @Index(name = "idx_resources_category_id",    columnList = "category_id")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,10 +1,12 @@
 package com.group26.heritage.common.repository;
 
 import com.group26.heritage.entity.ReviewFeedback;
+import com.group26.heritage.entity.enums.ReviewDecision;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ReviewFeedback Repository — used by Module C.
@@ -12,6 +14,9 @@ import java.util.List;
  */
 @Repository
 public interface ReviewFeedbackRepository extends JpaRepository<ReviewFeedback, Long> {
-    // TODO: List<ReviewFeedback> findByResourceId(Long resourceId);
-    // TODO: Optional<ReviewFeedback> findTopByResourceIdOrderByReviewedAtDesc(Long resourceId);
+    List<ReviewFeedback> findByResourceIdOrderByReviewedAtDesc(Long resourceId);
+    Optional<ReviewFeedback> findTopByResourceIdOrderByReviewedAtDesc(Long resourceId);
+
+    // PBI 3.4 — Audit Trail: count how many times a resource has been rejected
+    long countByResourceIdAndDecision(Long resourceId, ReviewDecision decision);
 }
