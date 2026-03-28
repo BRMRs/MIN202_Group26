@@ -1,13 +1,79 @@
-import axiosInstance from '../../common/api/axiosInstance';
+const TAG_API_BASE = "http://localhost:8080/api/admin/tags";
 
-/**
- * Tag API — Module E
- * Summary E-PBI 2: Tag Management
- */
+async function parseJsonSafely(response) {
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
 
-void axiosInstance;
+async function throwRequestError(response, fallbackMessage) {
+  const errorData = await parseJsonSafely(response);
+  throw new Error(errorData?.message || fallbackMessage);
+}
 
-// TODO: export const getTags = (search) => axiosInstance.get('/admin/tags', { params: { search } });
-// TODO: export const renameTag = (id, name) => axiosInstance.put(`/admin/tags/${id}`, { name });
-// TODO: export const deleteTag = (id) => axiosInstance.delete(`/admin/tags/${id}`);
-// TODO: export const mergeTags = (sourceTagIds, targetTagId) => axiosInstance.post('/admin/tags/merge', { sourceTagIds, targetTagId });
+export async function getTags() {
+  const response = await fetch(TAG_API_BASE);
+
+  if (!response.ok) {
+    await throwRequestError(response, "Failed to load tags");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function createTag(data) {
+  const response = await fetch(TAG_API_BASE, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    await throwRequestError(response, "Failed to create tag");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function updateTag(id, data) {
+  const response = await fetch(`${TAG_API_BASE}/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    await throwRequestError(response, "Failed to update tag");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function deleteTag(id) {
+  const response = await fetch(`${TAG_API_BASE}/${id}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    await throwRequestError(response, "Failed to delete tag");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export default {
+  getTags,
+  createTag,
+  updateTag,
+  deleteTag,
+};

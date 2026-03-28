@@ -1,1 +1,1 @@
-// Module E specific components — add here as you build them
+export { default as AdminSidebar } from "./AdminSidebar";

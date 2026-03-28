@@ -1,4 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
+import CategoryManagementPage from './module_e/pages/CategoryManagementPage';
+import TagManagementPage from './module_e/pages/TagManagementPage';
 
 /**
  * App Router — Heritage Platform
@@ -41,7 +43,9 @@ function App() {
 
       {/* ===== Module E: System Administration ===== */}
       {/* TODO: <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} /> */}
+      <Route path="/admin/categories" element={<CategoryManagementPage />} />
       {/* TODO: <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} /> */}
+      <Route path="/admin/tags" element={<TagManagementPage />} />
       {/* TODO: <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} /> */}
       {/* TODO: <Route path="/admin/reports" element={<ProtectedRoute roles={['ADMIN']}><ReportPage /></ProtectedRoute>} /> */}
 

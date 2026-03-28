@@ -21,11 +21,22 @@ public class Tag {
     @Column(nullable = false, unique = true, length = 50)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
+
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        if (this.isDeleted == null) {
+            this.isDeleted = false;
+        }
+    }
 
     // TODO: @ManyToMany(mappedBy = "tags") private Set<Resource> resources;
 }
