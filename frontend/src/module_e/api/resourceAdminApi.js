@@ -19,6 +19,15 @@ export async function listAdminResources() {
   return result.data;
 }
 
+export async function getAdminResourceDetail(id) {
+  const response = await fetch(`${RESOURCE_ADMIN_API_BASE}/${id}`);
+  if (!response.ok) {
+    await throwRequestError(response, "Failed to load resource detail");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
 export async function unpublishAdminResource(id) {
   const response = await fetch(`${RESOURCE_ADMIN_API_BASE}/${id}/unpublish`, {
     method: "PATCH",
@@ -33,12 +42,13 @@ export async function unpublishAdminResource(id) {
   return result.data;
 }
 
-export async function archiveAdminResource(id) {
+export async function archiveAdminResource(id, reason) {
   const response = await fetch(`${RESOURCE_ADMIN_API_BASE}/${id}/archive`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
+    body: JSON.stringify({ reason }),
   });
   if (!response.ok) {
     await throwRequestError(response, "Failed to archive resource");
@@ -62,9 +72,26 @@ export async function republishAdminResource(id, categoryId) {
   return result.data;
 }
 
+export async function updateAdminResourceCategory(id, categoryId) {
+  const response = await fetch(`${RESOURCE_ADMIN_API_BASE}/${id}/category`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ categoryId }),
+  });
+  if (!response.ok) {
+    await throwRequestError(response, "Failed to update resource category");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
 export default {
   listAdminResources,
+  getAdminResourceDetail,
   unpublishAdminResource,
   archiveAdminResource,
   republishAdminResource,
+  updateAdminResourceCategory,
 };

@@ -6,17 +6,14 @@ const INITIAL_MOCK_TAGS = [
   {
     id: 2001,
     name: "Architecture",
-    description: "System design and frontend structure guidance.",
   },
   {
     id: 2002,
     name: "Accessibility",
-    description: "Inclusive UX, semantic HTML, and keyboard-first interactions.",
   },
   {
     id: 2003,
     name: "Performance",
-    description: "Rendering, bundle size, and responsive interface optimization.",
   },
 ];
 
@@ -52,7 +49,6 @@ function TagManagementPage() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     name: "",
-    description: "",
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -89,8 +85,7 @@ function TagManagementPage() {
 
     return tags.filter((tag) => {
       const name = String(tag?.name ?? "").toLowerCase();
-      const description = String(tag?.description ?? "").toLowerCase();
-      return name.includes(query) || description.includes(query);
+      return name.includes(query);
     });
   }, [tags, search]);
 
@@ -99,7 +94,7 @@ function TagManagementPage() {
     setFormErrors({});
     setModalMode("create");
     setEditingId(null);
-    setForm({ name: "", description: "" });
+    setForm({ name: "" });
     setIsModalOpen(true);
   }
 
@@ -110,7 +105,6 @@ function TagManagementPage() {
     setEditingId(tag?.id ?? null);
     setForm({
       name: String(tag?.name ?? ""),
-      description: String(tag?.description ?? ""),
     });
     setIsModalOpen(true);
   }
@@ -149,7 +143,6 @@ function TagManagementPage() {
     const newTag = {
       id: nextId,
       name: nextForm.name,
-      description: nextForm.description,
     };
 
     setTags((previous) => [newTag, ...previous]);
@@ -162,7 +155,6 @@ function TagManagementPage() {
           ? {
               ...tag,
               name: nextForm.name,
-              description: nextForm.description,
             }
           : tag
       )
@@ -179,7 +171,6 @@ function TagManagementPage() {
 
     const nextForm = {
       name: String(form?.name ?? "").trim(),
-      description: String(form?.description ?? "").trim(),
     };
 
     const errors = validateForm(nextForm);
@@ -280,11 +271,11 @@ function TagManagementPage() {
                   id="tag-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name or description"
+                  placeholder="Search by name"
                   style={styles.searchInput}
                   disabled={loading}
                 />
-                <div style={styles.searchHint}>Searches name and description</div>
+                <div style={styles.searchHint}>Searches name</div>
               </div>
 
               <div style={styles.metaPills}>
@@ -317,14 +308,13 @@ function TagManagementPage() {
                   <tr>
                     <th style={{ ...styles.th, width: 110 }}>Tag ID</th>
                     <th style={styles.th}>Name</th>
-                    <th style={styles.th}>Description</th>
                     <th style={{ ...styles.th, width: 200 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {!loading && filteredTags.length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={styles.emptyCell}>
+                      <td colSpan={3} style={styles.emptyCell}>
                         No tags found.
                       </td>
                     </tr>
@@ -336,11 +326,6 @@ function TagManagementPage() {
                           <div style={styles.nameCell}>
                             <span style={styles.nameText}>{tag.name}</span>
                           </div>
-                        </td>
-                        <td style={styles.td}>
-                          <span title={tag.description || ""} style={styles.descText}>
-                            {tag.description || <span style={styles.muted}>No description</span>}
-                          </span>
                         </td>
                         <td style={styles.td}>
                           <div style={styles.actions}>
@@ -400,22 +385,6 @@ function TagManagementPage() {
                 />
                 {formErrors.name ? <div style={styles.fieldError}>{formErrors.name}</div> : null}
                 <div style={styles.helpText}>Name must stay unique across all active tags.</div>
-              </div>
-
-              <div style={styles.formRow}>
-                <label style={styles.label} htmlFor="tag-description">
-                  Description
-                </label>
-                <textarea
-                  id="tag-description"
-                  value={form.description}
-                  onChange={(event) => setForm((previous) => ({ ...previous, description: event.target.value }))}
-                  style={styles.textarea}
-                  placeholder="Optional short description"
-                  rows={4}
-                  disabled={loading}
-                />
-                <div style={styles.helpText}>Description helps admins understand where this tag should be applied.</div>
               </div>
 
               <div style={styles.modalFooter}>

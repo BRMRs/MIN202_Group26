@@ -7,15 +7,27 @@ public interface AdminResourceRow {
 
     String getTitle();
 
+    String getDescription();
+
+    Long getContributorId();
+
     Long getCategoryId();
 
     String getCategoryName();
 
     String getCategoryStatus();
 
-    String getContributorName();
-
     String getStatus();
+
+    String getArchiveReason();
+
+    String getPlace();
+
+    String getExternalLink();
+
+    String getCopyrightDeclaration();
+
+    LocalDateTime getCreatedAt();
 
     LocalDateTime getUpdatedAt();
 

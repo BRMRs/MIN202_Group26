@@ -8,6 +8,8 @@ import com.group26.heritage.entity.Category;
 import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.enums.CategoryStatus;
 import com.group26.heritage.entity.enums.ResourceStatus;
+import com.group26.heritage.module_e.dto.AdminResourceMediaResponse;
+import com.group26.heritage.module_e.dto.AdminResourceMediaRow;
 import com.group26.heritage.module_e.dto.AdminResourceResponse;
 import com.group26.heritage.module_e.dto.AdminResourceRow;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ResourceAdminService {
@@ -32,8 +35,21 @@ public class ResourceAdminService {
     public List<AdminResourceResponse> listResources() {
         return resourceRepository.findAdminResourceRows()
             .stream()
-            .map(this::toResponse)
+            .map(row -> toResponse(row, Collections.emptyList()))
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminResourceResponse getResourceDetail(Long resourceId) {
+        AdminResourceRow row = resourceRepository.findAdminResourceRowById(resourceId);
+        if (row == null || !Objects.equals(row.getId(), resourceId)) {
+            throw new ResourceNotFoundException("Resource not found: " + resourceId);
+        }
+        List<AdminResourceMediaResponse> media = resourceRepository.findAdminMediaRowsByResourceId(resourceId)
+            .stream()
+            .map(this::toMediaResponse)
+            .toList();
+        return toResponse(row, media);
     }
 
     @Transactional
@@ -49,12 +65,17 @@ public class ResourceAdminService {
     }
 
     @Transactional
-    public AdminResourceResponse archive(Long resourceId) {
+    public AdminResourceResponse archive(Long resourceId, String reason) {
         Resource resource = findResourceOrThrow(resourceId);
         if (resource.getStatus() != ResourceStatus.APPROVED && resource.getStatus() != ResourceStatus.UNPUBLISHED) {
             throw new BusinessException("Only APPROVED or UNPUBLISHED resources can be archived");
         }
+        String normalizedReason = reason == null ? "" : reason.trim();
+        if (normalizedReason.isEmpty()) {
+            throw new BusinessException("Archive reason is required");
+        }
         resource.setStatus(ResourceStatus.ARCHIVED);
+        resource.setArchiveReason(normalizedReason);
         resource.setUpdatedAt(LocalDateTime.now());
         resourceRepository.save(resource);
         return getResource(resourceId);
@@ -80,13 +101,28 @@ public class ResourceAdminService {
         return getResource(resourceId);
     }
 
+    @Transactional
+    public AdminResourceResponse updateCategory(Long resourceId, Long categoryId) {
+        Resource resource = findResourceOrThrow(resourceId);
+        Category category = categoryRepository.findById(categoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryId));
+
+        if (category.getStatus() != CategoryStatus.ACTIVE) {
+            throw new BusinessException("Resource category must be ACTIVE");
+        }
+
+        resource.setCategoryId(categoryId);
+        resource.setUpdatedAt(LocalDateTime.now());
+        resourceRepository.save(resource);
+        return getResource(resourceId);
+    }
+
     private AdminResourceResponse getResource(Long resourceId) {
-        return resourceRepository.findAdminResourceRows()
-            .stream()
-            .filter(item -> resourceId.equals(item.getId()))
-            .findFirst()
-            .map(this::toResponse)
-            .orElseThrow(() -> new ResourceNotFoundException("Resource not found: " + resourceId));
+        AdminResourceRow row = resourceRepository.findAdminResourceRowById(resourceId);
+        if (row == null || !Objects.equals(row.getId(), resourceId)) {
+            throw new ResourceNotFoundException("Resource not found: " + resourceId);
+        }
+        return toResponse(row, Collections.emptyList());
     }
 
     private Resource findResourceOrThrow(Long resourceId) {
@@ -94,17 +130,37 @@ public class ResourceAdminService {
             .orElseThrow(() -> new ResourceNotFoundException("Resource not found: " + resourceId));
     }
 
-    private AdminResourceResponse toResponse(AdminResourceRow row) {
+    private AdminResourceResponse toResponse(AdminResourceRow row, List<AdminResourceMediaResponse> media) {
         return new AdminResourceResponse(
             row.getId(),
             row.getTitle(),
-            row.getContributorName(),
+            row.getDescription(),
+            row.getContributorId(),
             row.getCategoryId(),
             row.getCategoryName(),
             row.getCategoryStatus(),
             ResourceStatus.valueOf(row.getStatus()),
+            row.getArchiveReason(),
+            row.getPlace(),
+            row.getExternalLink(),
+            row.getCopyrightDeclaration(),
+            row.getCreatedAt(),
             row.getUpdatedAt(),
-            parseTags(row.getTags())
+            parseTags(row.getTags()),
+            media
+        );
+    }
+
+    private AdminResourceMediaResponse toMediaResponse(AdminResourceMediaRow row) {
+        return new AdminResourceMediaResponse(
+            row.getId(),
+            row.getMediaType(),
+            row.getFileUrl(),
+            row.getFileName(),
+            row.getFileSize(),
+            row.getMimeType(),
+            row.getSortOrder(),
+            row.getUploadedAt()
         );
     }
 
