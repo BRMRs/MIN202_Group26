@@ -1,0 +1,20 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Backend
+backend/target/
+backend/*.log
+
+# Old src/target (legacy)
+target/
+src/
+
+# macOS
+.DS_Store
+
+# uploads (runtime files)
+backend/uploads/*
+!backend/uploads/.gitkeep
+uploads/
