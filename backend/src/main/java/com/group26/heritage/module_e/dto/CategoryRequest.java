@@ -6,17 +6,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * 分类新增/编辑请求参数。
+ * Category create and update request payload.
  */
 public record CategoryRequest(
-    @NotBlank(message = "分类名称不能为空")
-    @Size(max = 100, message = "分类名称长度不能超过100个字符")
+    @NotBlank(message = "Category name must not be empty")
+    @Size(max = 100, message = "Category name must not exceed 100 characters")
     String name,
 
-    @Size(max = 1000, message = "分类描述长度不能超过1000个字符")
+    @Size(max = 1000, message = "Category description must not exceed 1000 characters")
     String description,
 
-    @NotNull(message = "分类状态不能为空")
+    @NotNull(message = "Category status must not be null")
     CategoryStatus status
 ) {
 }

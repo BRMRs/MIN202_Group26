@@ -6,7 +6,7 @@ import com.group26.heritage.entity.enums.CategoryStatus;
 import java.time.LocalDateTime;
 
 /**
- * 分类接口响应参数。
+ * Category response payload.
  */
 public record CategoryResponse(
     Long id,

@@ -21,15 +21,30 @@ function CategoryManagementPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [editingId, setEditingId] = useState(null);
+  const [pendingCategory, setPendingCategory] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [form, setForm] = useState({
     name: "",
     description: "",
     status: "ACTIVE",
   });
   const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    if (!successMessage) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSuccessMessage("");
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   async function refreshCategories() {
     setErrorMessage("");
@@ -89,6 +104,21 @@ function CategoryManagementPage() {
     setEditingId(null);
   }
 
+  function closeConfirmModal() {
+    setShowConfirm(false);
+    setPendingCategory(null);
+  }
+
+  function showOperationSucceeded(message) {
+    setErrorMessage("");
+    setSuccessMessage(message);
+  }
+
+  function showOperationFailed(error, fallbackMessage) {
+    setSuccessMessage("");
+    setErrorMessage(error?.message || fallbackMessage);
+  }
+
   function validateForm(nextForm) {
     const errors = {};
     const trimmedName = String(nextForm?.name ?? "").trim();
@@ -143,43 +173,65 @@ function CategoryManagementPage() {
         });
         closeModal();
         await refreshCategories();
+        showOperationSucceeded("Category created successfully.");
       } else {
         await updateCategory(editingId, {
           name: nextForm.name,
           description: nextForm.description,
           status: nextForm.status,
         });
-        setIsModalOpen(false);
+        closeModal();
         await refreshCategories();
-        setFormErrors({});
-        setEditingId(null);
+        showOperationSucceeded("Category updated successfully.");
       }
     } catch (error) {
-      setErrorMessage(error?.message || "Failed to save category.");
+      showOperationFailed(error, "Failed to save category.");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleToggleStatus(category) {
+  function handleToggleStatus(category) {
     const currentStatus = category?.status === "INACTIVE" ? "INACTIVE" : "ACTIVE";
     const nextStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-    const confirmText =
-      nextStatus === "INACTIVE"
-        ? `Deactivate "${category?.name}"?\n\nThis will prevent it from being used for new submissions.`
-        : `Reactivate "${category?.name}"?\n\nThis will allow it to be used for new submissions again.`;
 
-    if (!window.confirm(confirmText)) {
+    if (nextStatus === "INACTIVE") {
+      setPendingCategory(category);
+      setShowConfirm(true);
       return;
     }
 
     setErrorMessage("");
     setLoading(true);
+
+    updateCategoryStatus(category.id, nextStatus)
+      .then(async () => {
+        await refreshCategories();
+        showOperationSucceeded("Category reactivated successfully.");
+      })
+      .catch((error) => {
+        showOperationFailed(error, "Failed to update status.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
+
+  async function handleConfirmDeactivate() {
+    if (!pendingCategory?.id) {
+      return;
+    }
+
+    setErrorMessage("");
+    setLoading(true);
+
     try {
-      await updateCategoryStatus(category.id, nextStatus);
+      await updateCategoryStatus(pendingCategory.id, "INACTIVE");
       await refreshCategories();
+      closeConfirmModal();
+      showOperationSucceeded("Category deactivated successfully.");
     } catch (error) {
-      setErrorMessage(error?.message || "Failed to update status.");
+      showOperationFailed(error, "Failed to deactivate category.");
     } finally {
       setLoading(false);
     }
@@ -190,6 +242,12 @@ function CategoryManagementPage() {
       <AdminSidebar />
       <main className="flex-1 p-8 overflow-y-auto" style={styles.main}>
         <div style={styles.page}>
+          {successMessage ? (
+            <div role="status" style={{ ...styles.toast, ...styles.toastSuccess }}>
+              {successMessage}
+            </div>
+          ) : null}
+
           <div style={styles.hero}>
             <div style={styles.heroTopRow}>
               <div>
@@ -383,7 +441,9 @@ function CategoryManagementPage() {
                   <option value="INACTIVE">INACTIVE</option>
                 </select>
                 {formErrors.status ? <div style={styles.fieldError}>{formErrors.status}</div> : null}
-                <div style={styles.helpText}>Inactive categories remain visible in admin but cannot be used for new submissions.</div>
+                <div style={styles.helpText}>
+                  Inactive categories remain visible in admin but cannot be used for new submissions.
+                </div>
               </div>
 
               <div style={styles.modalFooter}>
@@ -395,6 +455,30 @@ function CategoryManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {showConfirm ? (
+        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Deactivate category">
+          <div style={styles.confirmModal}>
+            <div style={styles.confirmTitle}>Deactivate Category</div>
+            <p style={styles.confirmText}>
+              Are you sure you want to deactivate this category? This will hide it from the resource selection.
+            </p>
+            <div style={styles.modalFooter}>
+              <button type="button" onClick={closeConfirmModal} style={styles.secondaryButton} disabled={loading}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeactivate}
+                style={{ ...styles.ghostButton, ...styles.ghostDanger }}
+                disabled={loading}
+              >
+                Deactivate
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -416,6 +500,26 @@ const styles = {
     color: "#eaf0ff",
     fontFamily:
       'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif',
+    position: "relative",
+  },
+  toast: {
+    position: "sticky",
+    top: 8,
+    zIndex: 60,
+    maxWidth: 420,
+    margin: "0 auto 12px",
+    padding: "12px 14px",
+    borderRadius: 14,
+    boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
+    backdropFilter: "blur(8px)",
+    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+  toastSuccess: {
+    border: "1px solid rgba(108, 217, 169, 0.35)",
+    background: "rgba(29, 78, 58, 0.88)",
+    color: "#ecfff6",
   },
   hero: {
     maxWidth: 1080,
@@ -650,6 +754,26 @@ const styles = {
     background: "linear-gradient(180deg, rgba(20, 24, 35, 0.98), rgba(12, 14, 18, 0.98))",
     boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
     overflow: "hidden",
+  },
+  confirmModal: {
+    width: "min(520px, 100%)",
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "linear-gradient(180deg, rgba(20, 24, 35, 0.98), rgba(12, 14, 18, 0.98))",
+    boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
+    padding: "20px 20px 18px",
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: 900,
+    letterSpacing: "-0.01em",
+    color: "#ffffff",
+  },
+  confirmText: {
+    margin: "12px 0 0",
+    color: "rgba(234,240,255,0.78)",
+    fontSize: 14,
+    lineHeight: 1.6,
   },
   modalHeader: {
     display: "flex",

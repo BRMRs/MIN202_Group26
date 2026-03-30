@@ -3,18 +3,9 @@ import { AdminSidebar } from "@/module_e/components";
 import { createTag, deleteTag, getTags, restoreTag, updateTag } from "@/module_e/api/tagApi";
 
 const INITIAL_MOCK_TAGS = [
-  {
-    id: 2001,
-    name: "Architecture",
-  },
-  {
-    id: 2002,
-    name: "Accessibility",
-  },
-  {
-    id: 2003,
-    name: "Performance",
-  },
+  { id: 2001, name: "Architecture" },
+  { id: 2002, name: "Accessibility" },
+  { id: 2003, name: "Performance" },
 ];
 
 function normalizeTagName(name) {
@@ -43,14 +34,26 @@ function TagManagementPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isUsingMockData, setIsUsingMockData] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({
-    name: "",
-  });
+  const [form, setForm] = useState({ name: "" });
   const [formErrors, setFormErrors] = useState({});
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  useEffect(() => {
+    if (!successMessage) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSuccessMessage("");
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   async function refreshTags() {
     setErrorMessage("");
@@ -103,9 +106,7 @@ function TagManagementPage() {
     setFormErrors({});
     setModalMode("edit");
     setEditingId(tag?.id ?? null);
-    setForm({
-      name: String(tag?.name ?? ""),
-    });
+    setForm({ name: String(tag?.name ?? "") });
     setIsModalOpen(true);
   }
 
@@ -113,6 +114,20 @@ function TagManagementPage() {
     setIsModalOpen(false);
     setFormErrors({});
     setEditingId(null);
+  }
+
+  function closeConfirmDialog() {
+    setConfirmDialog(null);
+  }
+
+  function showOperationFailed(error, fallbackMessage = "Operation failed.") {
+    setSuccessMessage("");
+    setErrorMessage(error?.message || fallbackMessage);
+  }
+
+  function showOperationSucceeded(message) {
+    setErrorMessage("");
+    setSuccessMessage(message);
   }
 
   function validateForm(nextForm) {
@@ -140,11 +155,7 @@ function TagManagementPage() {
 
   function createMockTag(nextForm) {
     const nextId = Math.max(0, ...tags.map((tag) => Number(tag.id) || 0)) + 1;
-    const newTag = {
-      id: nextId,
-      name: nextForm.name,
-    };
-
+    const newTag = { id: nextId, name: nextForm.name };
     setTags((previous) => [newTag, ...previous]);
   }
 
@@ -184,59 +195,77 @@ function TagManagementPage() {
       if (modalMode === "create") {
         if (isUsingMockData) {
           createMockTag(nextForm);
+          showOperationSucceeded("Tag created successfully.");
         } else {
           const createResult = await createTag(nextForm);
 
           if (createResult?.status === "DELETED_EXISTS" && createResult?.tagId) {
-            const shouldRestore = window.confirm("检测到已有同名标签被删除，是否需要恢复？");
-
-            if (shouldRestore) {
-              await restoreTag(createResult.tagId);
-              await refreshTags();
-              closeModal();
-            }
-
+            setConfirmDialog({
+              title: "Tag Already Exists",
+              content: "A deleted tag with the same name was found. Would you like to restore it?",
+              okText: "Restore",
+              cancelText: "Cancel",
+              onConfirm: async () => {
+                await restoreTag(createResult.tagId);
+                await refreshTags();
+                closeModal();
+                showOperationSucceeded("Tag restored successfully.");
+              },
+            });
             return;
           }
 
           await refreshTags();
+          showOperationSucceeded("Tag created successfully.");
         }
       } else if (isUsingMockData) {
         updateMockTag(nextForm);
+        showOperationSucceeded("Tag updated successfully.");
       } else {
         await updateTag(editingId, nextForm);
         await refreshTags();
+        showOperationSucceeded("Tag updated successfully.");
       }
 
       closeModal();
     } catch (error) {
-      setErrorMessage(error?.message || "Failed to save tag.");
+      showOperationFailed(error);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleDelete(tag) {
-    const confirmed = window.confirm(
-      `Soft delete "${tag?.name}"?\n\nThis keeps the tag for history but removes it from active use.`
-    );
+  function handleDelete(tag) {
+    setConfirmDialog({
+      title: "Delete Tag",
+      content: `Soft delete "${tag?.name}"? This keeps the tag for history but removes it from active use.`,
+      okText: "Delete",
+      cancelText: "Cancel",
+      okVariant: "danger",
+      onConfirm: async () => {
+        if (isUsingMockData) {
+          deleteMockTag(tag.id);
+        } else {
+          await deleteTag(tag.id);
+          await refreshTags();
+        }
 
-    if (!confirmed) {
+        showOperationSucceeded("Tag deleted successfully.");
+      },
+    });
+  }
+
+  async function handleConfirmDialogOk() {
+    if (!confirmDialog?.onConfirm) {
       return;
     }
 
-    setErrorMessage("");
     setLoading(true);
-
     try {
-      if (isUsingMockData) {
-        deleteMockTag(tag.id);
-      } else {
-        await deleteTag(tag.id);
-        await refreshTags();
-      }
+      await confirmDialog.onConfirm();
+      closeConfirmDialog();
     } catch (error) {
-      setErrorMessage(error?.message || "Failed to delete tag.");
+      showOperationFailed(error);
     } finally {
       setLoading(false);
     }
@@ -247,6 +276,12 @@ function TagManagementPage() {
       <AdminSidebar />
       <main className="flex-1 p-8 overflow-y-auto" style={styles.main}>
         <div style={styles.page}>
+          {successMessage ? (
+            <div role="status" style={{ ...styles.toast, ...styles.toastSuccess }}>
+              {successMessage}
+            </div>
+          ) : null}
+
           <div style={styles.hero}>
             <div style={styles.heroTopRow}>
               <div>
@@ -275,7 +310,7 @@ function TagManagementPage() {
                   style={styles.searchInput}
                   disabled={loading}
                 />
-                <div style={styles.searchHint}>Searches name</div>
+                <div style={styles.searchHint}>Searches tag name</div>
               </div>
 
               <div style={styles.metaPills}>
@@ -399,6 +434,37 @@ function TagManagementPage() {
           </div>
         </div>
       ) : null}
+
+      {confirmDialog ? (
+        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label={confirmDialog.title}>
+          <div style={styles.confirmModal}>
+            <div style={styles.confirmTitle}>{confirmDialog.title}</div>
+            <p style={styles.confirmText}>{confirmDialog.content}</p>
+            <div style={styles.modalFooter}>
+              <button
+                type="button"
+                onClick={closeConfirmDialog}
+                style={styles.secondaryButton}
+                disabled={loading}
+              >
+                {confirmDialog.cancelText}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDialogOk}
+                style={
+                  confirmDialog.okVariant === "danger"
+                    ? { ...styles.ghostButton, ...styles.ghostDanger }
+                    : styles.primaryButton
+                }
+                disabled={loading}
+              >
+                {confirmDialog.okText}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -417,6 +483,26 @@ const styles = {
     color: "#eaf0ff",
     fontFamily:
       'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif',
+    position: "relative",
+  },
+  toast: {
+    position: "sticky",
+    top: 8,
+    zIndex: 60,
+    maxWidth: 420,
+    margin: "0 auto 12px",
+    padding: "12px 14px",
+    borderRadius: 14,
+    boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
+    backdropFilter: "blur(8px)",
+    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+  toastSuccess: {
+    border: "1px solid rgba(108, 217, 169, 0.35)",
+    background: "rgba(29, 78, 58, 0.88)",
+    color: "#ecfff6",
   },
   hero: {
     maxWidth: 1080,
@@ -568,15 +654,6 @@ const styles = {
   },
   nameCell: { display: "flex", alignItems: "center", gap: 10 },
   nameText: { fontWeight: 700, color: "#ffffff" },
-  descText: {
-    display: "inline-block",
-    maxWidth: 520,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    color: "rgba(234,240,255,0.78)",
-  },
-  muted: { color: "rgba(234,240,255,0.45)" },
   actions: { display: "flex", gap: 10, flexWrap: "wrap" },
   primaryButton: {
     padding: "10px 12px",
@@ -627,6 +704,26 @@ const styles = {
     background: "linear-gradient(180deg, rgba(20, 24, 35, 0.98), rgba(12, 14, 18, 0.98))",
     boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
     overflow: "hidden",
+  },
+  confirmModal: {
+    width: "min(520px, 100%)",
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "linear-gradient(180deg, rgba(20, 24, 35, 0.98), rgba(12, 14, 18, 0.98))",
+    boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
+    padding: "20px 20px 18px",
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: 900,
+    letterSpacing: "-0.01em",
+    color: "#ffffff",
+  },
+  confirmText: {
+    margin: "12px 0 0",
+    color: "rgba(234,240,255,0.78)",
+    fontSize: 14,
+    lineHeight: 1.6,
   },
   modalHeader: {
     display: "flex",
@@ -680,16 +777,6 @@ const styles = {
   inputError: {
     borderColor: "rgba(255, 107, 107, 0.45)",
     boxShadow: "0 0 0 4px rgba(255, 107, 107, 0.10)",
-  },
-  textarea: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "rgba(0,0,0,0.22)",
-    color: "#eaf0ff",
-    outline: "none",
-    resize: "vertical",
   },
   helpText: {
     marginTop: 6,
