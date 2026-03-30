@@ -1,5 +1,7 @@
 package com.group26.heritage.entity;
 
+import com.group26.heritage.entity.enums.ResourceStatus;
+import com.group26.heritage.entity.enums.ReviewDecision;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,8 +26,13 @@ public class ReviewFeedback {
     @Column(name = "reviewer_id", nullable = false)
     private Long reviewerId;
 
-    @Column(nullable = false, length = 20)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReviewDecision decision;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "previous_status", nullable = false)
+    private ResourceStatus previousStatus;
 
     @Column(name = "feedback_text", columnDefinition = "TEXT")
     private String feedbackText;

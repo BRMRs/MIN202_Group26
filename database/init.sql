@@ -1,202 +1,298 @@
--- =========================================================================
--- Cultural Heritage Platform - Database Initialization Script
--- Strictly aligned with the "Database Design Document"
--- Contains 11 core tables, foreign key cascades, and initial mock data
--- =========================================================================
+-- ============================================================
+-- Heritage Platform — Database Initialization Script
+-- MySQL 8.0+ | Character Set: utf8mb4 | Engine: InnoDB
+-- Run via MySQL CLI: mysql -u root -p heritage_db < init.sql
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS heritage_db
+    DEFAULT CHARACTER SET utf8mb4
+    DEFAULT COLLATE utf8mb4_unicode_ci;
 
 USE heritage_db;
 
+SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Drop legacy/template tables if they exist
-DROP TABLE IF EXISTS heritage_assignments, heritage_audit, heritage_logs, 
-heritage_permissions, heritage_projects, heritage_roles, heritage_settings, 
-heritage_tasks, heritage_users;
+-- ============================================================
+-- Drop legacy stub tables
+-- ============================================================
+DROP TABLE IF EXISTS heritage_audit;
+DROP TABLE IF EXISTS heritage_settings;
+DROP TABLE IF EXISTS heritage_permissions;
+DROP TABLE IF EXISTS heritage_assignments;
+DROP TABLE IF EXISTS heritage_logs;
+DROP TABLE IF EXISTS heritage_tasks;
+DROP TABLE IF EXISTS heritage_projects;
+DROP TABLE IF EXISTS heritage_roles;
+DROP TABLE IF EXISTS heritage_users;
 
--- Drop existing tables in reverse order of foreign key dependencies
-DROP TABLE IF EXISTS reports, review_feedback, likes, comments, resource_tags, tags, 
-resource_media, contributor_applications, resources, categories, users;
+-- Drop any trigger from previous schema versions
+DROP TRIGGER IF EXISTS trg_before_delete_category;
+
+-- ============================================================
+-- Drop new tables in reverse dependency order (safe re-run)
+-- ============================================================
+DROP TABLE IF EXISTS reports;
+DROP TABLE IF EXISTS contributor_applications;
+DROP TABLE IF EXISTS review_feedback;
+DROP TABLE IF EXISTS resource_tags;
+DROP TABLE IF EXISTS likes;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS resource_media;
+DROP TABLE IF EXISTS resources;
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS users;
+
+-- ============================================================
+-- 1. users
+-- Stores all user accounts.
+-- ============================================================
+CREATE TABLE users (
+    id                 BIGINT       NOT NULL AUTO_INCREMENT,
+    username           VARCHAR(50)  NOT NULL,
+    email              VARCHAR(100) NOT NULL,
+    password           VARCHAR(255) NOT NULL,
+    role               ENUM('ADMIN','CONTRIBUTOR','VIEWER') NOT NULL DEFAULT 'VIEWER',
+    avatar_url         VARCHAR(500) NULL,
+    bio                VARCHAR(50)  NULL,
+    email_verified     BOOLEAN      NOT NULL DEFAULT FALSE,
+    verification_token VARCHAR(255) NULL,
+    created_at         DATETIME     NULL,
+    updated_at         DATETIME     NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_users_username (username),
+    UNIQUE KEY uq_users_email    (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 2. categories
+-- Flat (non-hierarchical) resource categories.
+-- Deletion policy: LOGICAL DELETE ONLY — never physically deleted.
+--   Set status = 'INACTIVE' to deactivate a category.
+--   INACTIVE categories: cannot be used for new/edited resources,
+--   and all their APPROVED resources become UNPUBLISHED.
+-- ============================================================
+CREATE TABLE categories (
+    id          BIGINT       NOT NULL AUTO_INCREMENT,
+    name        VARCHAR(100) NOT NULL,
+    description TEXT         NULL,
+    status      ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at  DATETIME     NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_categories_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 3. resources
+-- Core table: cultural heritage resources.
+--
+-- category_id = NULL means the contributor is requesting a new
+-- category; in that case requested_category_name and
+-- category_request_reason are required.
+-- The admin must assign or create a category before approving.
+--
+-- Deletion rules:
+--   contributor_id → RESTRICT (cannot delete a user who has resources)
+--   category_id    → RESTRICT (categories are never physically deleted)
+-- ============================================================
+CREATE TABLE resources (
+    id                       BIGINT       NOT NULL AUTO_INCREMENT,
+    title                    VARCHAR(200) NOT NULL,
+    description              TEXT         NULL,
+    category_id              BIGINT       NULL DEFAULT NULL
+                             COMMENT 'NULL = contributor is requesting a new category',
+    contributor_id           BIGINT       NOT NULL,
+    status                   ENUM('DRAFT','PENDING_REVIEW','APPROVED','REJECTED',
+                                  'UNPUBLISHED','ARCHIVED')
+                             NOT NULL DEFAULT 'DRAFT',
+    place                    VARCHAR(200) NULL,
+    requested_category_name  VARCHAR(100) NULL
+                             COMMENT 'Required when category_id IS NULL',
+    category_request_reason  TEXT         NULL
+                             COMMENT 'Required when category_id IS NULL',
+    copyright_declaration    TEXT         NULL,
+    external_link            VARCHAR(500) NULL,
+    archive_reason           TEXT         NULL
+                             COMMENT 'Populated only when status = ARCHIVED',
+    created_at               DATETIME     NULL,
+    updated_at               DATETIME     NULL,
+    comment_count            INT          NOT NULL DEFAULT 0,
+    like_count               INT          NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_resources_category
+        FOREIGN KEY (category_id)    REFERENCES categories (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_resources_contributor
+        FOREIGN KEY (contributor_id) REFERENCES users (id)      ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 4. resource_media
+-- Stores images, videos, audio, and documents attached to a resource.
+-- Special rule: each resource must have exactly one COVER media entry.
+-- ============================================================
+CREATE TABLE resource_media (
+    id          BIGINT       NOT NULL AUTO_INCREMENT,
+    resource_id BIGINT       NOT NULL,
+    media_type  ENUM('COVER','DETAIL','VIDEO','AUDIO','DOCUMENT') NOT NULL,
+    file_url    VARCHAR(500) NOT NULL,
+    file_name   VARCHAR(255) NULL,
+    file_size   BIGINT       NULL COMMENT 'File size in bytes',
+    mime_type   VARCHAR(100) NULL,
+    sort_order  INT          NOT NULL DEFAULT 0,
+    uploaded_at DATETIME     NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_resource_media_resource
+        FOREIGN KEY (resource_id) REFERENCES resources (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 5. tags
+-- Deletion policy: SOFT DELETE — set is_deleted = TRUE.
+--   Soft-deleted tags: not shown in UI, cannot be applied to resources.
+--   The resource_tags rows for the deleted tag are removed,
+--   but the tag row itself is kept for historical queries.
+-- ============================================================
+CREATE TABLE tags (
+    id         BIGINT      NOT NULL AUTO_INCREMENT,
+    name       VARCHAR(50) NOT NULL,
+    created_at DATETIME    NULL,
+    is_deleted BOOLEAN     NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_tags_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 6. resource_tags  (resources ↔ tags, many-to-many)
+-- ============================================================
+CREATE TABLE resource_tags (
+    resource_id BIGINT NOT NULL,
+    tag_id      BIGINT NOT NULL,
+    PRIMARY KEY (resource_id, tag_id),
+    CONSTRAINT fk_resource_tags_resource
+        FOREIGN KEY (resource_id) REFERENCES resources (id) ON DELETE CASCADE,
+    CONSTRAINT fk_resource_tags_tag
+        FOREIGN KEY (tag_id)      REFERENCES tags (id)      ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 7. comments
+-- Deletion rules: user deleted → CASCADE; resource deleted → CASCADE
+-- ============================================================
+CREATE TABLE comments (
+    id          BIGINT       NOT NULL AUTO_INCREMENT,
+    resource_id BIGINT       NOT NULL,
+    user_id     BIGINT       NOT NULL,
+    content     VARCHAR(500) NOT NULL,
+    created_at  DATETIME     NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_comments_resource
+        FOREIGN KEY (resource_id) REFERENCES resources (id) ON DELETE CASCADE,
+    CONSTRAINT fk_comments_user
+        FOREIGN KEY (user_id)     REFERENCES users (id)     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 8. likes
+-- Unique constraint on (user_id, resource_id) prevents duplicate likes.
+-- Deletion rules: user deleted → CASCADE; resource deleted → CASCADE
+-- ============================================================
+CREATE TABLE likes (
+    id          BIGINT   NOT NULL AUTO_INCREMENT,
+    user_id     BIGINT   NOT NULL,
+    resource_id BIGINT   NOT NULL,
+    created_at  DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_likes_user_resource (user_id, resource_id),
+    CONSTRAINT fk_likes_user
+        FOREIGN KEY (user_id)     REFERENCES users (id)     ON DELETE CASCADE,
+    CONSTRAINT fk_likes_resource
+        FOREIGN KEY (resource_id) REFERENCES resources (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 9. review_feedback
+-- Audit log for every resource review action.
+-- Deletion rules:
+--   resource deleted  → CASCADE  (audit entries follow the resource)
+--   reviewer deleted  → RESTRICT (audit logs must be preserved)
+-- ============================================================
+CREATE TABLE review_feedback (
+    id              BIGINT   NOT NULL AUTO_INCREMENT,
+    resource_id     BIGINT   NOT NULL,
+    reviewer_id     BIGINT   NOT NULL,
+    decision        ENUM('APPROVED','REJECTED','ARCHIVED') NOT NULL,
+    previous_status ENUM('DRAFT','PENDING_REVIEW','APPROVED','REJECTED',
+                         'UNPUBLISHED','ARCHIVED') NOT NULL,
+    feedback_text   TEXT     NULL,
+    reviewed_at     DATETIME NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_review_feedback_resource
+        FOREIGN KEY (resource_id) REFERENCES resources (id) ON DELETE CASCADE,
+    CONSTRAINT fk_review_feedback_reviewer
+        FOREIGN KEY (reviewer_id) REFERENCES users (id)     ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 10. contributor_applications
+-- Tracks VIEWER → CONTRIBUTOR upgrade requests.
+-- user_id is NOT unique: rejected applicants may reapply.
+-- Deletion rules:
+--   applicant (user_id) deleted → CASCADE
+--   admin (admin_id)    deleted → SET NULL
+-- ============================================================
+CREATE TABLE contributor_applications (
+    id          BIGINT   NOT NULL AUTO_INCREMENT,
+    user_id     BIGINT   NOT NULL,
+    status      ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    applied_at  DATETIME NULL,
+    reviewed_at DATETIME NULL,
+    admin_id    BIGINT   NULL COMMENT 'Admin who processed this application',
+    PRIMARY KEY (id),
+    CONSTRAINT fk_applications_user
+        FOREIGN KEY (user_id)  REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_applications_admin
+        FOREIGN KEY (admin_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 11. reports
+-- Pre-generated statistical reports for administrators.
+-- Deletion rule: creator (created_by) deleted → RESTRICT
+-- ============================================================
+CREATE TABLE reports (
+    id                 BIGINT      NOT NULL AUTO_INCREMENT,
+    report_type        VARCHAR(50) NOT NULL COMMENT 'e.g. RESOURCE_STATS, CATEGORY_DISTRIBUTION',
+    from_date          DATE        NOT NULL,
+    to_date            DATE        NOT NULL,
+    total_count        INT         NULL,
+    approved_count     INT         NULL,
+    category_breakdown JSON        NULL,
+    trend_data         JSON        NULL,
+    extra_data         JSON        NULL,
+    created_at         DATETIME    NULL,
+    created_by         BIGINT      NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_reports_creator
+        FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- =============================================
--- 1. Users Table (users)
--- =============================================
-CREATE TABLE users (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE COMMENT 'Username',
-    email VARCHAR(100) NOT NULL UNIQUE COMMENT 'Email address',
-    password VARCHAR(255) NOT NULL COMMENT 'BCrypt hashed password',
-    role ENUM('ADMIN', 'CONTRIBUTOR', 'VIEWER') NOT NULL DEFAULT 'VIEWER' COMMENT 'User role',
-    avatar_url VARCHAR(500) DEFAULT NULL COMMENT 'Avatar URL',
-    bio VARCHAR(50) DEFAULT NULL COMMENT 'User biography',
-    email_verified BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Email verification status',
-    verification_token VARCHAR(255) DEFAULT NULL COMMENT 'Email verification token',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ============================================================
+-- Initial Data
+-- ============================================================
 
--- =============================================
--- 2. Categories Table (categories)
--- =============================================
-CREATE TABLE categories (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL COMMENT 'Category name',
-    description TEXT COMMENT 'Category description',
-    parent_id BIGINT DEFAULT NULL COMMENT 'Parent category ID for hierarchy',
-    sort_order INT NOT NULL DEFAULT 0 COMMENT 'Sorting order',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
-    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 3. Resources Table (resources)
--- =============================================
-CREATE TABLE resources (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(200) NOT NULL COMMENT 'Resource title',
-    description TEXT COMMENT 'Detailed description',
-    category_id BIGINT NOT NULL DEFAULT 1 COMMENT 'Associated category ID',
-    contributor_id BIGINT NOT NULL COMMENT 'ID of the contributor who uploaded it',
-    status ENUM('DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'ARCHIVED') NOT NULL DEFAULT 'DRAFT' COMMENT 'Current status of the resource',
-    place VARCHAR(200) DEFAULT NULL COMMENT 'Geographical location or place',
-    copyright_declaration TEXT DEFAULT NULL COMMENT 'Copyright declaration text',
-    external_link VARCHAR(500) DEFAULT NULL COMMENT 'Related external link',
-    archive_reason TEXT DEFAULT NULL COMMENT 'Reason for being archived',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
-    FOREIGN KEY (contributor_id) REFERENCES users(id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 4. Resource Media Table (resource_media)
--- =============================================
-CREATE TABLE resource_media (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    resource_id BIGINT NOT NULL COMMENT 'Associated resource ID',
-    media_type ENUM('COVER', 'DETAIL', 'VIDEO', 'AUDIO', 'DOCUMENT') NOT NULL COMMENT 'Type of the media file',
-    file_url VARCHAR(500) NOT NULL COMMENT 'File access URL',
-    file_name VARCHAR(255) DEFAULT NULL COMMENT 'Original file name',
-    file_size BIGINT DEFAULT NULL COMMENT 'File size in bytes',
-    mime_type VARCHAR(100) DEFAULT NULL COMMENT 'MIME type of the file',
-    sort_order INT NOT NULL DEFAULT 0 COMMENT 'Display sorting order',
-    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Upload timestamp',
-    FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 5. Tags Table (tags)
--- =============================================
-CREATE TABLE tags (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE COMMENT 'Tag name',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 6. Resource Tags Junction Table (resource_tags)
--- =============================================
-CREATE TABLE resource_tags (
-    resource_id BIGINT NOT NULL COMMENT 'Associated resource ID',
-    tag_id BIGINT NOT NULL COMMENT 'Associated tag ID',
-    PRIMARY KEY (resource_id, tag_id),
-    FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 7. Comments Table (comments)
--- =============================================
-CREATE TABLE comments (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    resource_id BIGINT NOT NULL COMMENT 'Associated resource ID',
-    user_id BIGINT NOT NULL COMMENT 'ID of the user who commented',
-    content VARCHAR(500) NOT NULL COMMENT 'Content of the comment',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
-    FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 8. Likes Table (likes)
--- =============================================
-CREATE TABLE likes (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL COMMENT 'ID of the user who liked',
-    resource_id BIGINT NOT NULL COMMENT 'Associated resource ID',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
-    UNIQUE KEY uk_user_resource (user_id, resource_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 9. Review Feedback Table (review_feedback)
--- =============================================
-CREATE TABLE review_feedback (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    resource_id BIGINT NOT NULL COMMENT 'Resource being reviewed',
-    reviewer_id BIGINT NOT NULL COMMENT 'Admin ID who reviewed',
-    decision ENUM('APPROVED', 'REJECTED', 'ARCHIVED') NOT NULL COMMENT 'Final review decision',
-    previous_status ENUM('DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'ARCHIVED') NOT NULL COMMENT 'Status before this review',
-    feedback_text TEXT DEFAULT NULL COMMENT 'Comments or reasons provided by the admin',
-    reviewed_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp of the review',
-    FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE,
-    FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 10. Contributor Applications Table (contributor_applications)
--- =============================================
-CREATE TABLE contributor_applications (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL COMMENT 'ID of the applicant (Viewer)',
-    status ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT 'Application status',
-    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Application submission timestamp',
-    reviewed_at DATETIME DEFAULT NULL COMMENT 'Review timestamp',
-    admin_id BIGINT DEFAULT NULL COMMENT 'Admin ID who processed the application',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 11. Reports Table (reports)
--- =============================================
-CREATE TABLE reports (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    report_type VARCHAR(50) NOT NULL COMMENT 'Type of the report',
-    from_date DATE NOT NULL COMMENT 'Statistics start date',
-    to_date DATE NOT NULL COMMENT 'Statistics end date',
-    total_count INT DEFAULT 0 COMMENT 'Total resource count',
-    approved_count INT DEFAULT 0 COMMENT 'Approved resource count',
-    category_breakdown JSON DEFAULT NULL COMMENT 'Detailed stats by category in JSON',
-    trend_data JSON DEFAULT NULL COMMENT 'Trend data in JSON',
-    extra_data JSON DEFAULT NULL COMMENT 'Additional extension data in JSON',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Report generation timestamp',
-    created_by BIGINT NOT NULL COMMENT 'Admin ID who generated the report',
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- 12. Insert Initial Data (Default Account & Classifications)
--- =============================================
-
--- Insert default categories
-INSERT INTO categories (id, name, description, parent_id, sort_order) VALUES 
-(1, 'Uncategorized', 'Resources without a specific category', NULL, 0),
-(2, 'Architecture', 'Traditional architecture and historical sites', NULL, 1),
-(3, 'Clothing', 'Traditional clothing and textiles', NULL, 2),
-(4, 'Crafts', 'Traditional crafts and artworks', NULL, 3);
-
--- Insert default tags
-INSERT INTO tags (id, name) VALUES 
-(1, 'Ming Dynasty'),
-(2, 'Wooden'),
-(3, 'Red'),
-(4, 'Su Embroidery');
-
--- Insert default admin account
--- Username: admin | Password: admin123 (BCrypt hashed) | Role: ADMIN
+-- Default admin account
+-- Username : admin
+-- Password : admin123  ← BCrypt hash; change on first login!
 INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
-VALUES ('admin', 'admin@heritage.org', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN', TRUE, NOW(), NOW());
+VALUES (
+    'admin',
+    'admin@heritage.org',
+    '$2a$10$N.zmdr9zjPTBSMqlLGsKyuNEBDLGSGFEKMFt8J6.5OB.bHm1GE8Ri',
+    'ADMIN',
+    TRUE,
+    NOW(),
+    NOW()
+);

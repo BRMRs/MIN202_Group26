@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "tags")
 @Data
@@ -18,6 +20,12 @@ public class Tag {
 
     @Column(nullable = false, unique = true, length = 50)
     private String name;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     // TODO: @ManyToMany(mappedBy = "tags") private Set<Resource> resources;
 }

@@ -1,5 +1,6 @@
 package com.group26.heritage.entity;
 
+import com.group26.heritage.entity.enums.CategoryStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,6 +24,10 @@ public class Category {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CategoryStatus status = CategoryStatus.ACTIVE;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
