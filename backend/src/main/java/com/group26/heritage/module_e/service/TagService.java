@@ -1,9 +1,11 @@
 package com.group26.heritage.module_e.service;
 
 import com.group26.heritage.common.exception.BusinessException;
+import com.group26.heritage.common.exception.ConflictException;
 import com.group26.heritage.common.exception.ResourceNotFoundException;
 import com.group26.heritage.common.repository.TagRepository;
 import com.group26.heritage.entity.Tag;
+import com.group26.heritage.module_e.dto.TagCreateResponse;
 import com.group26.heritage.module_e.dto.TagRequest;
 import com.group26.heritage.module_e.dto.TagResponse;
 import org.springframework.stereotype.Service;
@@ -39,16 +41,24 @@ public class TagService {
 
     // PBI 5.2 / Task 2: Create tag CRUD and soft delete APIs
     @Transactional
-    public TagResponse createTag(TagRequest request) {
+    public TagCreateResponse createTag(TagRequest request) {
         String normalizedName = normalizeName(request.name());
-        validateUniqueName(normalizedName, null);
+        Tag existingTag = tagRepository.findByNameIgnoreCase(normalizedName).orElse(null);
+
+        if (existingTag != null) {
+            if (Boolean.TRUE.equals(existingTag.getIsDeleted())) {
+                return new TagCreateResponse("DELETED_EXISTS", existingTag.getId(), null);
+            }
+            throw new ConflictException("Tag name already exists");
+        }
 
         Tag tag = new Tag();
         tag.setName(normalizedName);
         tag.setDescription(normalizeDescription(request.description()));
         tag.setIsDeleted(false);
 
-        return toResponse(tagRepository.save(tag));
+        Tag savedTag = tagRepository.save(tag);
+        return new TagCreateResponse("CREATED", savedTag.getId(), toResponse(savedTag));
     }
 
     // PBI 5.2 / Task 2: Create tag CRUD and soft delete APIs
@@ -72,6 +82,25 @@ public class TagService {
         return toResponse(tagRepository.save(tag));
     }
 
+    // PBI 5.2 / Task 2: Create tag CRUD and soft delete APIs
+    @Transactional
+    public TagResponse restoreTag(Long id) {
+        Tag tag = tagRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Tag not found: " + id));
+
+        if (!Boolean.TRUE.equals(tag.getIsDeleted())) {
+            return toResponse(tag);
+        }
+
+        boolean existsActiveDuplicate = tagRepository.existsByNameIgnoreCaseAndIdNotAndIsDeletedFalse(tag.getName(), id);
+        if (existsActiveDuplicate) {
+            throw new ConflictException("An active tag with the same name already exists");
+        }
+
+        tag.setIsDeleted(false);
+        return toResponse(tagRepository.save(tag));
+    }
+
     private Tag findActiveTagOrThrow(Long id) {
         return tagRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new ResourceNotFoundException("Tag not found: " + id));
@@ -79,10 +108,10 @@ public class TagService {
 
     private void validateUniqueName(String normalizedName, Long tagId) {
         boolean exists = tagId == null
-            ? tagRepository.existsByNameIgnoreCase(normalizedName)
-            : tagRepository.existsByNameIgnoreCaseAndIdNot(normalizedName, tagId);
+            ? tagRepository.existsByNameIgnoreCaseAndIsDeletedFalse(normalizedName)
+            : tagRepository.existsByNameIgnoreCaseAndIdNotAndIsDeletedFalse(normalizedName, tagId);
         if (exists) {
-            throw new BusinessException("Tag name already exists");
+            throw new ConflictException("Tag name already exists");
         }
     }
 

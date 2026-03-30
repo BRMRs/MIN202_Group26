@@ -37,6 +37,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Result.failure(exception.getMessage()));
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Result<Void>> handleConflictException(ConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Result.failure(exception.getMessage()));
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Result<Void>> handleResourceNotFound(ResourceNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.failure(exception.getMessage()));

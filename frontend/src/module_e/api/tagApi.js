@@ -38,6 +38,22 @@ export async function createTag(data) {
   return result.data;
 }
 
+export async function restoreTag(id) {
+  const response = await fetch(`${TAG_API_BASE}/${id}/restore`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    await throwRequestError(response, "Failed to restore tag");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
 export async function updateTag(id, data) {
   const response = await fetch(`${TAG_API_BASE}/${id}`, {
     method: "PUT",
@@ -76,4 +92,5 @@ export default {
   createTag,
   updateTag,
   deleteTag,
+  restoreTag,
 };

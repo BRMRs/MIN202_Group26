@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AdminSidebar } from "@/module_e/components";
-import { createTag, deleteTag, getTags, updateTag } from "@/module_e/api/tagApi";
+import { createTag, deleteTag, getTags, restoreTag, updateTag } from "@/module_e/api/tagApi";
 
 const INITIAL_MOCK_TAGS = [
   {
@@ -194,7 +194,20 @@ function TagManagementPage() {
         if (isUsingMockData) {
           createMockTag(nextForm);
         } else {
-          await createTag(nextForm);
+          const createResult = await createTag(nextForm);
+
+          if (createResult?.status === "DELETED_EXISTS" && createResult?.tagId) {
+            const shouldRestore = window.confirm("检测到已有同名标签被删除，是否需要恢复？");
+
+            if (shouldRestore) {
+              await restoreTag(createResult.tagId);
+              await refreshTags();
+              closeModal();
+            }
+
+            return;
+          }
+
           await refreshTags();
         }
       } else if (isUsingMockData) {
