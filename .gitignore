@@ -1,20 +1,20 @@
-# Frontend
+# Frontend dependencies and build
 frontend/node_modules/
 frontend/dist/
 frontend/.env
 
-# Backend
+# Backend build output
 backend/target/
 backend/*.log
 
-# Old src/target (legacy)
+# Old legacy top-level directories (from previous structure)
 target/
-src/
 
 # macOS
 .DS_Store
+**/.DS_Store
 
-# uploads (runtime files)
+# uploads (runtime files, not source code)
 backend/uploads/*
 !backend/uploads/.gitkeep
 uploads/
