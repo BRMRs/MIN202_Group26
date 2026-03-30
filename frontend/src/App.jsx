@@ -77,12 +77,42 @@ export default function App() {
 
   const createDraft = () => { setNewDraft({title:'',category:'',place:'',description:'',tags:'',copyrightDeclaration:'',externalLink:'',filePath:''}); setPickedFiles(p=>({...p,new:null})); setSaveSuccessMsg(''); setView('new') }
 
+  // 创建并保存草稿，返回新草稿的 id
+  const doCreateAndSave = async () => {
+    const c = await req('/api/resources',{method:'POST',headers:H(false)})
+    if (pickedFiles['new']) {
+      const f=new FormData(); f.append('file',pickedFiles['new'])
+      const r=await fetch(`/api/resources/${c.id}/file`,{method:'POST',headers:H(false),body:f})
+      if(r.ok){const u=await r.json();setNewDraft(p=>({...p,filePath:u.filePath||''}))}
+    }
+    await req(`/api/resources/${c.id}/save-draft`,{method:'POST',headers:H(),body:JSON.stringify({...newDraft,id:c.id})})
+    return c.id
+  }
+
   const saveNewDraft = async () => {
     try {
-      const c = await req('/api/resources',{method:'POST',headers:H(false)})
-      if (pickedFiles['new']) { const f=new FormData(); f.append('file',pickedFiles['new']); const r=await fetch(`/api/resources/${c.id}/file`,{method:'POST',headers:H(false),body:f}); if(r.ok){const u=await r.json();setNewDraft(p=>({...p,filePath:u.filePath||''}))} }
-      await req(`/api/resources/${c.id}/save-draft`,{method:'POST',headers:H(),body:JSON.stringify({...newDraft,id:c.id})})
-      await reload(); setSaveSuccessMsg('保存成功 ✓'); setTimeout(()=>setSaveSuccessMsg(''),1500); setExpandedDraft(null); setTimeout(()=>setView('drafts'),400)
+      await doCreateAndSave()
+      await reload()
+      setSaveSuccessMsg('保存成功 ✓'); setTimeout(()=>setSaveSuccessMsg(''),1500)
+      setExpandedDraft(null); setTimeout(()=>setView('drafts'),400)
+    } catch(e) { setMessage(e.message) }
+  }
+
+  // 新建页面直接提交审核（先保存草稿，再校验，再提交）
+  const submitNew = async () => {
+    const e=[]
+    if (!newDraft.title?.trim()) e.push('标题 (Title)')
+    if (!newDraft.category?.trim()) e.push('分类 (Category)')
+    if (!newDraft.tags?.trim()) e.push('标签 (Tag)')
+    if (!newDraft.place?.trim()) e.push('地点 (Place)')
+    if (!newDraft.description?.trim()) e.push('描述 (Description)')
+    if (!pickedFiles['new'] && !newDraft.filePath && !newDraft.externalLink?.trim()) e.push('文件上传或外部链接 (File Upload or External Link)')
+    if (!newDraft.copyrightDeclaration?.trim()) e.push('版权声明 (Copyright or Usage Declaration)')
+    if (e.length>0){showErrors(e);return}
+    try {
+      const id = await doCreateAndSave()
+      await req(`/api/resources/${id}/submit`,{method:'POST',headers:H(false)})
+      setMessage('已提交审核'); await reload(); setView('mine')
     } catch(e) { setMessage(e.message) }
   }
 
@@ -175,7 +205,7 @@ export default function App() {
           <div className="field-group" style={{marginTop:10}}><label>版权声明 <span className="required">*</span></label><select value={newDraft.copyrightDeclaration} onChange={e=>setNewDraft(p=>({...p,copyrightDeclaration:e.target.value}))} className="full-width"><option value="">选择版权声明</option>{options.copyrightOptions.map(c=><option key={c}>{c}</option>)}</select></div>
           <div className="field-group" style={{marginTop:10}}><label>外部链接 <span className="required">*</span> <span className="muted">(与文件上传二选一)</span></label><input value={newDraft.externalLink} onChange={e=>setNewDraft(p=>({...p,externalLink:e.target.value}))} placeholder="https://..." className="full-width"/></div>
           <div className="field-group" style={{marginTop:10}}><label>上传文件 <span className="required">*</span> <span className="muted">(与外链二选一)</span></label><div className="row"><input type="file" onChange={e=>setPickedFiles(p=>({...p,new:e.target.files[0]}))} className="flex1"/><button className="secondary" onClick={()=>setMessage('文件已选择，保存草稿时将一并上传')}>上传文件</button></div><div className="muted" style={{fontSize:12}}>允许格式：{options.allowedFileExtensions.join(', ')}</div><div className="muted" style={{fontSize:12}}>已上传：{newDraft.filePath||'未上传'}</div></div>
-          <div className="row" style={{marginTop:14,alignItems:'center'}}><button className="secondary" onClick={saveNewDraft}>保存草稿</button>{saveSuccessMsg&&<span className="save-success">{saveSuccessMsg}</span>}<button className="secondary" onClick={()=>setView('drafts')}>取消</button></div>
+          <div className="row" style={{marginTop:14,alignItems:'center'}}><button className="secondary" onClick={saveNewDraft}>保存草稿</button><button onClick={submitNew}>提交审核</button>{saveSuccessMsg&&<span className="save-success">{saveSuccessMsg}</span>}<button className="secondary" onClick={()=>setView('drafts')}>取消</button></div>
         </div></div>}
 
         {view==='drafts'&&<div><h4>草稿箱</h4>
