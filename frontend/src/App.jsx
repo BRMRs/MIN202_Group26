@@ -1,6 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { HomePage, SearchResultsPage, ResourceDetailPage } from './module_d/pages';
-
 
 /**
  * App Router — Heritage Platform

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getResourceDetail } from '../api/discoverApi';
 import { getComments, addComment, likeResource, unlikeResource } from '../api/commentApi';
+import '../styles/discovery.css';
 
 /**
  * Resource Detail Page — Module D
  * PBI 4.4: View Resource Details
  * PBI 4.5: Basic Commenting and Feedback
  */
+
 function ResourceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -67,11 +69,11 @@ function ResourceDetailPage() {
     try {
       if (isLiked) {
         await unlikeResource(id);
-        setResource({ ...resource, like_count: resource.like_count - 1 });
+        setResource({ ...resource, likeCount: (resource.likeCount || 0) - 1 });
         setIsLiked(false);
       } else {
         await likeResource(id);
-        setResource({ ...resource, like_count: resource.like_count + 1 });
+        setResource({ ...resource, likeCount: (resource.likeCount || 0) + 1 });
         setIsLiked(true);
       }
     } catch (err) {
@@ -87,8 +89,14 @@ function ResourceDetailPage() {
   const currentMedia = mediaFiles[currentImageIndex];
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '20px' }}>&larr; Back</button>
+    <div className="d-page" style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
+      <button 
+        className="d-button d-button-secondary" 
+        onClick={() => navigate(-1)} 
+        style={{ marginBottom: '20px' }}
+      >
+        &larr; Back
+      </button>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
         {/* Left Side: Media Viewer */}
@@ -99,8 +107,8 @@ function ResourceDetailPage() {
           >
             {currentMedia ? (
               <img 
-                src={currentMedia.file_url} 
-                alt={currentMedia.file_name} 
+                src={currentMedia.fileUrl} 
+                alt={currentMedia.fileName} 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
               />
             ) : (
@@ -113,8 +121,8 @@ function ResourceDetailPage() {
             {mediaFiles.map((m, index) => (
               <img 
                 key={m.id} 
-                src={m.file_url} 
-                alt={m.file_name}
+                src={m.fileUrl} 
+                alt={m.fileName}
                 onClick={() => setCurrentImageIndex(index)}
                 style={{ 
                   width: '60px', height: '60px', objectFit: 'cover', cursor: 'pointer',
@@ -130,18 +138,18 @@ function ResourceDetailPage() {
         <div>
           <h1 style={{ marginTop: 0 }}>{resource.title || 'Not provided'}</h1>
           <p style={{ color: '#666' }}>
-            <strong>Category:</strong> {resource.category?.name || 'Not provided'} | 
+            <strong>Category:</strong> {resource.categoryName || 'Not provided'} | 
             <strong> Place:</strong> {resource.place || 'Not provided'}
           </p>
           <p style={{ whiteSpace: 'pre-wrap' }}>{resource.description || 'Not provided'}</p>
           
           <div style={{ backgroundColor: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '20px' }}>
             <p><strong>Contributor:</strong> {resource.contributor?.username || 'Not provided'}</p>
-            <p><strong>Copyright:</strong> {resource.copyright_declaration || 'Not provided'}</p>
-            {resource.external_link ? (
+            <p><strong>Copyright:</strong> {resource.copyrightDeclaration || 'Not provided'}</p>
+            {resource.externalLink ? (
               <p>
                 <strong>Link: </strong> 
-                <a href={resource.external_link} target="_blank" rel="noopener noreferrer">
+                <a href={resource.externalLink} target="_blank" rel="noopener noreferrer">
                   View Source &nearrow;
                 </a>
               </p>
@@ -195,10 +203,10 @@ function ResourceDetailPage() {
                 {isLiked && resource.status !== 'ARCHIVED' ? '❤️' : '🤍'}
               </span>
               <span style={{ color: isLiked && resource.status !== 'ARCHIVED' ? '#ff4d4f' : '#666' }}>
-                {resource.like_count}
+                {resource.likeCount ?? 0}
               </span>
             </div>
-            <span style={{ color: '#666' }}>💬 {resource.comment_count} Comments</span>
+            <span style={{ color: '#666' }}>💬 {resource.commentCount ?? 0} Comments</span>
           </div>
         </div>
       </div>
@@ -222,9 +230,10 @@ function ResourceDetailPage() {
                 {newComment.length}/500
               </span>
               <button 
+                className="d-button"
                 onClick={handleSendComment} 
                 disabled={isSubmitting || newComment.length > 500}
-                style={{ padding: '8px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ padding: '8px 20px' }}
               >
                 {isSubmitting ? 'Sending...' : 'Send'}
               </button>
@@ -249,7 +258,7 @@ function ResourceDetailPage() {
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#ddd', flexShrink: 0 }}></div>
               <div>
                 <div style={{ fontWeight: 'bold', fontSize: '0.9em' }}>
-                  {comment.user.username} <span style={{ fontWeight: 'normal', color: '#999', marginLeft: '10px' }}>{new Date(comment.created_at).toLocaleString()}</span>
+                  {comment.user?.username || 'Anonymous'} <span style={{ fontWeight: 'normal', color: '#999', marginLeft: '10px' }}>{new Date(comment.createdAt).toLocaleString()}</span>
                 </div>
                 <p style={{ marginTop: '5px' }}>{comment.content}</p>
               </div>
@@ -270,7 +279,7 @@ function ResourceDetailPage() {
           onClick={() => setIsImageModalOpen(false)}
         >
           <img 
-            src={currentMedia.file_url} 
+            src={currentMedia.fileUrl} 
             alt="Full Size" 
             style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} 
           />
@@ -302,17 +311,9 @@ function ResourceDetailPage() {
             <h3 style={{ marginTop: 0, color: '#333' }}>Validation Error</h3>
             <p style={{ color: '#666', marginBottom: '25px' }}>Comment cannot be empty. Please enter some text before sending.</p>
             <button 
+              className="d-button"
               onClick={() => setShowEmptyCommentModal(false)}
-              style={{ 
-                padding: '10px 40px', 
-                backgroundColor: '#007bff', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '6px', 
-                cursor: 'pointer',
-                fontSize: '1em',
-                fontWeight: 'bold'
-              }}
+              style={{ padding: '10px 40px' }}
             >
               OK
             </button>
