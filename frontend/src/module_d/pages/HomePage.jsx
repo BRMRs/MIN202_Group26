@@ -33,7 +33,7 @@ function HomePage() {
     try {
       const sortBy = sortMode === 'interaction' ? 'interaction' : 'createdAt';
       const direction = 'DESC';
-      const { data } = await browseResources({ page: targetPage, size: 12, sortBy, direction });
+      const { data } = await browseResources({ page: targetPage, size: 5, sortBy, direction });
       
       let content = data?.content ?? [];
       
