@@ -8,12 +8,19 @@ import java.util.List;
 public record AdminResourceResponse(
     Long id,
     String title,
-    String contributorName,
+    String description,
+    Long contributorId,
     Long categoryId,
     String categoryName,
     String categoryStatus,
     ResourceStatus status,
+    String archiveReason,
+    String place,
+    String externalLink,
+    String copyrightDeclaration,
+    LocalDateTime createdAt,
     LocalDateTime updatedAt,
-    List<String> tags
+    List<String> tags,
+    List<AdminResourceMediaResponse> media
 ) {
 }

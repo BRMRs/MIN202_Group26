@@ -117,3 +117,4 @@ SELECT r.id, t.id
 FROM resources r
 JOIN tags t ON t.name = 'Architecture'
 WHERE r.title = 'Temple Fair Oral History';
+
