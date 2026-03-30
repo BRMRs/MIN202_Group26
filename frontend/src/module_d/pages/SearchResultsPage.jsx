@@ -6,12 +6,14 @@ import {
   listTags,
   searchAndFilterResources,
 } from '../api/discoverApi';
+import { getEffectiveCommentCount, getEffectiveLikeCount, useResourceStats } from '../context/ResourceStatsContext';
 import '../styles/discovery.css';
 
 const VIEWER_DEMO_LOGIN_KEY = 'module_d_viewer_demo_logged_in';
 
 function SearchResultsPage() {
   const navigate = useNavigate();
+  const { commentCountByResourceId, likeCountByResourceId } = useResourceStats();
   const [params, setParams] = useSearchParams();
   const [resources, setResources] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -63,7 +65,23 @@ function SearchResultsPage() {
         sortBy,
         direction: 'DESC',
       });
-      setResources(data?.content ?? []);
+      
+      let content = data?.content ?? [];
+      
+      // 核心修复：前端二次排序，确保 Mock 数据生效
+      if (sortBy === 'interaction') {
+        content.sort((a, b) => {
+          const ca = getEffectiveCommentCount(a, commentCountByResourceId);
+          const cb = getEffectiveCommentCount(b, commentCountByResourceId);
+          const la = getEffectiveLikeCount(a, likeCountByResourceId);
+          const lb = getEffectiveLikeCount(b, likeCountByResourceId);
+          return (lb + cb) - (la + ca);
+        });
+      } else {
+        content.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      setResources(content);
       setPage(data?.page ?? p);
       setTotalPages(data?.totalPages ?? 0);
     } catch (e) {
@@ -92,7 +110,7 @@ function SearchResultsPage() {
     setDraftTagIds(query.tagIds);
     setSortMode(query.sort);
     fetchData(query.page);
-  }, [query.keyword, query.categoryId, query.sort, params]);
+  }, [query.keyword, query.categoryId, query.sort, params, commentCountByResourceId, likeCountByResourceId]);
 
   const applyFilters = () => {
     sync({ keyword: query.keyword, categoryId: draftCategoryId, tagIds: draftTagIds, pageNo: 0, sort: sortMode });
@@ -270,8 +288,8 @@ function SearchResultsPage() {
               <p>{r.description || 'Not provided'}</p>
               <p>Category: {r.categoryName || 'Not provided'}</p>
               <div className="d-meta-row">
-                <span className="d-meta-item" title="Like count">❤ {r.likeCount ?? 0}</span>
-                <span className="d-meta-item" title="Comment count">💬 {r.commentCount ?? 0}</span>
+                <span className="d-meta-item" title="Like count">❤ {getEffectiveLikeCount(r, likeCountByResourceId)}</span>
+                <span className="d-meta-item" title="Comment count">💬 {getEffectiveCommentCount(r, commentCountByResourceId)}</span>
               </div>
             </div>
           </div>

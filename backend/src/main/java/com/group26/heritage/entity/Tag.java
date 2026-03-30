@@ -1,17 +1,11 @@
 package com.group26.heritage.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tags")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Tag {
 
     @Id
@@ -27,5 +21,12 @@ public class Tag {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
-    // TODO: @ManyToMany(mappedBy = "tags") private Set<Resource> resources;
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
 }

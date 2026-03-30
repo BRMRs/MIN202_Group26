@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { browseResources, DISCOVER_LOAD_ERROR_MESSAGE } from '../api/discoverApi';
+import { MOCK_RESOURCES } from '../api/mockData';
+import { getEffectiveCommentCount, getEffectiveLikeCount, useResourceStats } from '../context/ResourceStatsContext';
 import '../styles/discovery.css';
+
+const ARCHIVED_MOCKS = MOCK_RESOURCES.filter(r => r.status === 'ARCHIVED');
 
 /**
  * Home Page — Module D
@@ -12,6 +16,7 @@ const VIEWER_DEMO_LOGIN_KEY = 'module_d_viewer_demo_logged_in';
 
 function HomePage() {
   const navigate = useNavigate();
+  const { commentCountByResourceId, likeCountByResourceId } = useResourceStats();
   const [viewerLoggedIn, setViewerLoggedIn] = useState(
     () => window.sessionStorage.getItem(VIEWER_DEMO_LOGIN_KEY) === 'true',
   );
@@ -29,12 +34,27 @@ function HomePage() {
       const sortBy = sortMode === 'interaction' ? 'interaction' : 'createdAt';
       const direction = 'DESC';
       const { data } = await browseResources({ page: targetPage, size: 12, sortBy, direction });
-      // The API returns ApiResponse<PageResult<ResourceSummaryDto>>
-      // So data.data is the PageResult
-      const pageData = data?.data || {};
-      setResources(pageData.content ?? []);
-      setPage(pageData.page ?? targetPage);
-      setTotalPages(pageData.totalPages ?? 0);
+      
+      let content = data?.content ?? [];
+      
+      // 核心修复：由于后端数据库的数据可能没有这些 Mock 的统计值，
+      // 我们在前端拿到注入了 Mock 数据的 content 后，手动再排一次序，
+      // 这样你在演示时点击排序就能看到即时的位置变化。
+      if (sortBy === 'interaction') {
+        content.sort((a, b) => {
+          const ca = getEffectiveCommentCount(a, commentCountByResourceId);
+          const cb = getEffectiveCommentCount(b, commentCountByResourceId);
+          const la = getEffectiveLikeCount(a, likeCountByResourceId);
+          const lb = getEffectiveLikeCount(b, likeCountByResourceId);
+          return (lb + cb) - (la + ca);
+        });
+      } else {
+        content.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      setResources(content);
+      setPage(data?.page ?? targetPage);
+      setTotalPages(data?.totalPages ?? 0);
     } catch (e) {
       setResources([]);
       setTotalPages(0);
@@ -47,7 +67,7 @@ function HomePage() {
 
   useEffect(() => {
     if (viewerLoggedIn) fetchData(0);
-  }, [viewerLoggedIn, sortMode]);
+  }, [viewerLoggedIn, sortMode, commentCountByResourceId, likeCountByResourceId]);
 
   const handleLoginDemo = () => {
     window.sessionStorage.setItem(VIEWER_DEMO_LOGIN_KEY, 'true');
@@ -100,6 +120,23 @@ function HomePage() {
       </label>
       </div>
 
+      {/* ── Dev-only: test ARCHIVED detail pages ── */}
+      <div style={{
+        background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px',
+        padding: '10px 14px', marginBottom: '14px', fontSize: '0.82em', color: '#856404',
+      }}>
+        <strong>📌 Mock mode</strong> — ARCHIVED 资源已从列表中隐藏（符合 PBI 4.1）。
+        若要测试归档详情页（点赞/评论禁用 + 归档横幅），请直接点击：&nbsp;
+        {ARCHIVED_MOCKS.map((r, i) => (
+          <span key={r.id}>
+            {i > 0 && ' · '}
+            <Link to={`/resources/${r.id}`} style={{ color: '#856404', fontWeight: 'bold' }}>
+              [{r.id}] {r.title.replace(/\s*\[.*?\]/g, '').trim()}
+            </Link>
+          </span>
+        ))}
+      </div>
+
       {loadError && (
         <div className="d-load-error" role="alert">
           <span>{DISCOVER_LOAD_ERROR_MESSAGE}</span>
@@ -130,9 +167,25 @@ function HomePage() {
               </h3>
               <p>{r.description || 'Not provided'}</p>
               <p>Category: {r.categoryName || 'Not provided'}</p>
+              <p style={{ fontSize: '0.75em', color: '#999', margin: '4px 0' }}>
+                📅 {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Not provided'}
+              </p>
               <div className="d-meta-row">
-                <span className="d-meta-item" title="Like count">❤ {r.likeCount ?? 0}</span>
-                <span className="d-meta-item" title="Comment count">💬 {r.commentCount ?? 0}</span>
+                <span
+                  className="d-meta-item"
+                  style={{
+                    background: r.status === 'APPROVED' ? '#d4edda' : r.status === 'ARCHIVED' ? '#fff3cd' : '#f0f0f0',
+                    color: r.status === 'APPROVED' ? '#155724' : r.status === 'ARCHIVED' ? '#856404' : '#555',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.75em',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {r.status ?? 'UNKNOWN'}
+                </span>
+                <span className="d-meta-item" title="Like count">❤ {getEffectiveLikeCount(r, likeCountByResourceId)}</span>
+                <span className="d-meta-item" title="Comment count">💬 {getEffectiveCommentCount(r, commentCountByResourceId)}</span>
               </div>
             </div>
           </div>

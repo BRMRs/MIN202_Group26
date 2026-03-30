@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { ResourceStatsProvider } from './module_d/context/ResourceStatsContext';
 import { HomePage, SearchResultsPage, ResourceDetailPage } from './module_d/pages';
 
 /**
@@ -17,6 +18,7 @@ import { HomePage, SearchResultsPage, ResourceDetailPage } from './module_d/page
  */
 function App() {
   return (
+    <ResourceStatsProvider>
     <Routes>
       {/* ===== Module A: User & Access Management ===== */}
       {/* TODO: import LoginPage from './module_a/pages/LoginPage' */}
@@ -52,6 +54,7 @@ function App() {
       {/* Fallback */}
       <Route path="*" element={<div><h1>Heritage Platform</h1><p>CPT202 Group 26 — Page not found</p><button onClick={() => window.location.href='/'}>Go Home</button></div>} />
     </Routes>
+    </ResourceStatsProvider>
   );
 }
 
