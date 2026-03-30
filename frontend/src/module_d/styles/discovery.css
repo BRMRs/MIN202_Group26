@@ -1,0 +1,274 @@
+.d-page {
+  max-width: 980px;
+  margin: 24px auto 40px;
+  padding: 0 16px;
+  color: #1f2937;
+}
+
+.d-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.d-title {
+  margin: 0;
+  font-size: 32px;
+}
+
+.d-subtitle {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.d-login-card,
+.d-panel,
+.d-card,
+.d-detail-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.d-login-card {
+  max-width: 520px;
+  margin: 120px auto 0;
+  padding: 24px;
+}
+
+.d-login-card h1 {
+  margin-top: 0;
+}
+
+.d-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0 8px;
+}
+
+.d-search-box {
+  flex: 1;
+  min-width: 220px;
+  position: relative;
+}
+
+.d-input,
+.d-select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.d-button {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+}
+
+.d-button:hover {
+  background: #1d4ed8;
+}
+
+.d-button-secondary {
+  background: #eef2ff;
+  color: #1e40af;
+}
+
+.d-button-secondary:hover {
+  background: #e0e7ff;
+}
+
+.d-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.d-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.d-card {
+  padding: 12px;
+}
+
+.d-card-body {
+  display: flex;
+  gap: 14px;
+}
+
+.d-thumb,
+.d-thumb-placeholder {
+  width: 128px;
+  height: 128px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.d-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  background: #f3f4f6;
+  font-size: 12px;
+}
+
+.d-card h3 {
+  margin: 0 0 6px;
+}
+
+.d-card p {
+  margin: 6px 0;
+  color: #374151;
+}
+
+.d-meta-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.d-meta-item {
+  font-size: 13px;
+  color: #4b5563;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.d-link {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.d-link:hover {
+  text-decoration: underline;
+}
+
+.d-panel {
+  margin-top: 10px;
+  padding: 12px;
+}
+
+.d-tags {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.d-footer {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.d-status {
+  margin-top: 10px;
+  color: #6b7280;
+}
+
+.d-empty-hint {
+  margin-top: 12px;
+  margin-bottom: 4px;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.d-load-error {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.d-load-error .d-retry {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.d-load-error .d-retry:hover {
+  color: #1e3a8a;
+}
+
+.d-search-form {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex: 1;
+  min-width: 220px;
+}
+
+.d-search-form .d-search-box {
+  flex: 1;
+  min-width: 0;
+}
+
+.d-error {
+  margin-top: 10px;
+  color: #b91c1c;
+}
+
+.d-detail-card {
+  padding: 18px;
+  margin-top: 20px;
+}
+
+.d-suggest-box {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+  max-height: 220px; /* roughly 5 suggestions visible */
+  overflow-y: auto;
+}
+
+.d-suggest-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 0;
+  background: #fff;
+  cursor: pointer;
+  color: #1f2937;
+}
+
+.d-suggest-item:hover {
+  background: #f3f4f6;
+}

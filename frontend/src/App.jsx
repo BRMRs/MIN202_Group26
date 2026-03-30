@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { HomePage, ResourceDetailPage, SearchResultsPage } from './module_d/pages';
 
 /**
  * App Router — Heritage Platform
@@ -35,9 +36,9 @@ function App() {
       {/* TODO: <Route path="/reviews/:resourceId" element={<ProtectedRoute roles={['ADMIN']}><ResourceReviewPage /></ProtectedRoute>} /> */}
 
       {/* ===== Module D: Discovery & Search ===== */}
-      {/* TODO: <Route path="/" element={<HomePage />} /> */}
-      {/* TODO: <Route path="/search" element={<SearchResultsPage />} /> */}
-      {/* TODO: <Route path="/resources/:id" element={<ResourceDetailPage />} /> */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/search" element={<SearchResultsPage />} />
+      <Route path="/resources/:id" element={<ResourceDetailPage />} />
 
       {/* ===== Module E: System Administration ===== */}
       {/* TODO: <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} /> */}

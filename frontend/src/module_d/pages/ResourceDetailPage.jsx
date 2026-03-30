@@ -1,16 +1,38 @@
 /**
- * Resource Detail Page — Module D
- * Summary D-PBI 4 (View Details), D-PBI 5 (Commenting)
- * TODO: Show resource title, description, metadata, media files
- * TODO: Implement interactive image viewer (enlarge/switch)
- * TODO: Show comment section with like/unlike
- * TODO: Handle empty fields with "Not provided" placeholder
+ * Demo placeholder for detail page integration.
+ * To connect real detail page later:
+ * - GET /api/discover/resources/{id}
+ * - (optional) comments endpoints in /api/comments
  */
+import { useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import '../styles/discovery.css';
+
 function ResourceDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   return (
-    <div>
-      <h1>Resource Detail</h1>
-      {/* TODO: implement resource detail — see Summary D-PBI 4, 5 */}
+    <div className="d-page">
+      <button
+        className="d-button d-button-secondary"
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) {
+            navigate(-1);
+          } else {
+            navigate('/');
+          }
+        }}
+        aria-label="Go back"
+        style={{ marginBottom: 10 }}
+      >
+        ← Back
+      </button>
+      <div className="d-detail-card">
+      <h1 className="d-title">Resource Detail (Demo)</h1>
+      <p>Resource ID: {id}</p>
+      <p>This placeholder confirms navigation from Home/Search works correctly.</p>
+      </div>
     </div>
   );
 }
