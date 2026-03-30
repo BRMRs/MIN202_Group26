@@ -1,4 +1,6 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { HomePage, SearchResultsPage, ResourceDetailPage } from './module_d/pages';
+
 
 /**
  * App Router — Heritage Platform
@@ -35,9 +37,12 @@ function App() {
       {/* TODO: <Route path="/reviews/:resourceId" element={<ProtectedRoute roles={['ADMIN']}><ResourceReviewPage /></ProtectedRoute>} /> */}
 
       {/* ===== Module D: Discovery & Search ===== */}
-      {/* TODO: <Route path="/" element={<HomePage />} /> */}
-      {/* TODO: <Route path="/search" element={<SearchResultsPage />} /> */}
-      {/* TODO: <Route path="/resources/:id" element={<ResourceDetailPage />} /> */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/search" element={<SearchResultsPage />} />
+      <Route path="/resources/:id" element={<ResourceDetailPage />} />
+      
+      {/* 为了方便测试，让 /resource/:id 也指向详情页 */}
+      <Route path="/resource/:id" element={<ResourceDetailPage />} />
 
       {/* ===== Module E: System Administration ===== */}
       {/* TODO: <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} /> */}
@@ -46,7 +51,7 @@ function App() {
       {/* TODO: <Route path="/admin/reports" element={<ProtectedRoute roles={['ADMIN']}><ReportPage /></ProtectedRoute>} /> */}
 
       {/* Fallback */}
-      <Route path="*" element={<div><h1>Heritage Platform</h1><p>CPT202 Group 26 — Page not found</p></div>} />
+      <Route path="*" element={<div><h1>Heritage Platform</h1><p>CPT202 Group 26 — Page not found</p><button onClick={() => window.location.href='/'}>Go Home</button></div>} />
     </Routes>
   );
 }
