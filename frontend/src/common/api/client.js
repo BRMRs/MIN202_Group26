@@ -5,12 +5,10 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 })
 
-// Inject auth headers from sessionStorage
+// Inject auth token from sessionStorage
 api.interceptors.request.use(config => {
-  const userId = sessionStorage.getItem('userId')
-  const userRole = sessionStorage.getItem('userRole')
-  if (userId) config.headers['X-User-Id'] = userId
-  if (userRole) config.headers['X-User-Role'] = userRole
+  const token = sessionStorage.getItem('authToken')
+  if (token) config.headers['X-Auth-Token'] = token
   return config
 })
 

@@ -29,6 +29,7 @@ export default function App() {
   const [newDraft, setNewDraft] = useState({ title:'',category:'',place:'',description:'',tags:'',copyrightDeclaration:'',externalLink:'',filePath:'' })
   const [newTagLimitHit, setNewTagLimitHit] = useState(false)
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('')
+  const [saving, setSaving] = useState(false)
   const vtRef = useRef(null)
 
   const H = (json=true, tok=token) => { const h={'X-Auth-Token':tok}; if(json) h['Content-Type']='application/json'; return h }
@@ -90,12 +91,16 @@ export default function App() {
   }
 
   const saveNewDraft = async () => {
+    setSaving(true)
     try {
       await doCreateAndSave()
       await reload()
       setSaveSuccessMsg('保存成功 ✓'); setTimeout(()=>setSaveSuccessMsg(''),1500)
       setExpandedDraft(null); setTimeout(()=>setView('drafts'),400)
-    } catch(e) { setMessage(e.message) }
+    } catch(e) {
+      alert('保存失败：' + e.message)
+      setMessage(e.message)
+    } finally { setSaving(false) }
   }
 
   // 新建页面直接提交审核（先保存草稿，再校验，再提交）
@@ -205,7 +210,7 @@ export default function App() {
           <div className="field-group" style={{marginTop:10}}><label>版权声明 <span className="required">*</span></label><select value={newDraft.copyrightDeclaration} onChange={e=>setNewDraft(p=>({...p,copyrightDeclaration:e.target.value}))} className="full-width"><option value="">选择版权声明</option>{options.copyrightOptions.map(c=><option key={c}>{c}</option>)}</select></div>
           <div className="field-group" style={{marginTop:10}}><label>外部链接 <span className="required">*</span> <span className="muted">(与文件上传二选一)</span></label><input value={newDraft.externalLink} onChange={e=>setNewDraft(p=>({...p,externalLink:e.target.value}))} placeholder="https://..." className="full-width"/></div>
           <div className="field-group" style={{marginTop:10}}><label>上传文件 <span className="required">*</span> <span className="muted">(与外链二选一)</span></label><div className="row"><input type="file" onChange={e=>setPickedFiles(p=>({...p,new:e.target.files[0]}))} className="flex1"/><button className="secondary" onClick={()=>setMessage('文件已选择，保存草稿时将一并上传')}>上传文件</button></div><div className="muted" style={{fontSize:12}}>允许格式：{options.allowedFileExtensions.join(', ')}</div><div className="muted" style={{fontSize:12}}>已上传：{newDraft.filePath||'未上传'}</div></div>
-          <div className="row" style={{marginTop:14,alignItems:'center'}}><button className="secondary" onClick={saveNewDraft}>保存草稿</button><button onClick={submitNew}>提交审核</button>{saveSuccessMsg&&<span className="save-success">{saveSuccessMsg}</span>}<button className="secondary" onClick={()=>setView('drafts')}>取消</button></div>
+          <div className="row" style={{marginTop:14,alignItems:'center'}}><button className="secondary" onClick={saveNewDraft} disabled={saving}>{saving?'保存中...':'保存草稿'}</button><button onClick={submitNew} disabled={saving}>提交审核</button>{saveSuccessMsg&&<span className="save-success">{saveSuccessMsg}</span>}<button className="secondary" onClick={()=>setView('drafts')} disabled={saving}>取消</button></div>
         </div></div>}
 
         {view==='drafts'&&<div><h4>草稿箱</h4>
