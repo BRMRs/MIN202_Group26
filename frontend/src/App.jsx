@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import CategoryManagementPage from './module_e/pages/CategoryManagementPage';
+import ResourceManagementPage from './module_e/pages/ResourceManagementPage';
 import TagManagementPage from './module_e/pages/TagManagementPage';
 
 /**
@@ -46,6 +47,8 @@ function App() {
       <Route path="/admin/categories" element={<CategoryManagementPage />} />
       {/* TODO: <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} /> */}
       <Route path="/admin/tags" element={<TagManagementPage />} />
+      {/* TODO: <Route path="/admin/resources" element={<ProtectedRoute roles={['ADMIN']}><ResourceManagementPage /></ProtectedRoute>} /> */}
+      <Route path="/admin/resources" element={<ResourceManagementPage />} />
       {/* TODO: <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} /> */}
       {/* TODO: <Route path="/admin/reports" element={<ProtectedRoute roles={['ADMIN']}><ReportPage /></ProtectedRoute>} /> */}
 
