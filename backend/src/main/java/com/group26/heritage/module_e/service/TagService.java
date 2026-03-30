@@ -54,7 +54,6 @@ public class TagService {
 
         Tag tag = new Tag();
         tag.setName(normalizedName);
-        tag.setDescription(normalizeDescription(request.description()));
         tag.setIsDeleted(false);
 
         Tag savedTag = tagRepository.save(tag);
@@ -69,7 +68,6 @@ public class TagService {
         validateUniqueName(normalizedName, id);
 
         tag.setName(normalizedName);
-        tag.setDescription(normalizeDescription(request.description()));
 
         return toResponse(tagRepository.save(tag));
     }
@@ -123,20 +121,10 @@ public class TagService {
         return normalizedName;
     }
 
-    private String normalizeDescription(String rawDescription) {
-        if (rawDescription == null) {
-            return null;
-        }
-
-        String normalizedDescription = rawDescription.trim();
-        return normalizedDescription.isEmpty() ? null : normalizedDescription;
-    }
-
     private TagResponse toResponse(Tag tag) {
         return new TagResponse(
             tag.getId(),
             tag.getName(),
-            tag.getDescription(),
             tag.getIsDeleted(),
             tag.getCreatedAt()
         );

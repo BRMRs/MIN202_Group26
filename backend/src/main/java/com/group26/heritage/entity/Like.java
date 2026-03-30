@@ -13,7 +13,12 @@ import java.time.LocalDateTime;
  * Module D: Like/Unlike feature (Summary D-PBI 5)
  */
 @Entity
-@Table(name = "likes")
+@Table(
+    name = "likes",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uq_likes_user_resource", columnNames = {"user_id", "resource_id"})
+    }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

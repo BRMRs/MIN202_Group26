@@ -154,8 +154,7 @@ public class CategoryService {
             category.getName(),
             category.getDescription(),
             category.getStatus(),
-            category.getCreatedAt(),
-            category.getUpdatedAt()
+            category.getCreatedAt()
         );
     }
 }

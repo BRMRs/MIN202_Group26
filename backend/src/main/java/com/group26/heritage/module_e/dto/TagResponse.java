@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 public record TagResponse(
     Long id,
     String name,
-    String description,
     @JsonProperty("is_deleted") Boolean isDeleted,
     @JsonProperty("created_at") LocalDateTime createdAt
 ) {

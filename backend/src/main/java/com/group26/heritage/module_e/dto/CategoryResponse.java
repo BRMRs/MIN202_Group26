@@ -13,7 +13,6 @@ public record CategoryResponse(
     String name,
     String description,
     CategoryStatus status,
-    @JsonProperty("created_at") LocalDateTime createdAt,
-    @JsonProperty("updated_at") LocalDateTime updatedAt
+    @JsonProperty("created_at") LocalDateTime createdAt
 ) {
 }

@@ -50,9 +50,6 @@ public class Resource {
     @Column(name = "external_link", length = 500)
     private String externalLink;
 
-    @Column(name = "file_url", length = 500)
-    private String fileUrl;
-
     @Column(name = "archive_reason", columnDefinition = "TEXT")
     private String archiveReason;
 

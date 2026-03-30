@@ -25,15 +25,12 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role = UserRole.VIEWER;
-
-    @Column(name = "is_approved", nullable = false)
-    private Boolean isApproved = false;
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
