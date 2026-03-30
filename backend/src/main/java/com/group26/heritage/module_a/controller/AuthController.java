@@ -1,20 +1,39 @@
 package com.group26.heritage.module_a.controller;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.group26.heritage.common.dto.ApiResponse;
+import com.group26.heritage.entity.User;
+import com.group26.heritage.module_a.dto.LoginRequest;
+import com.group26.heritage.module_a.dto.LoginResponse;
+import com.group26.heritage.module_a.dto.RegisterRequest;
+import com.group26.heritage.module_a.service.AuthService;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * Authentication Controller — Module A
- * Summary A-PBI 1.1 (Registration), A-PBI 1.2 (Login), A-PBI 1.3 (Logout)
- *
- * TODO: POST /api/auth/register — register new user (A-PBI 1.1)
- * TODO: POST /api/auth/login — authenticate and return JWT token (A-PBI 1.2)
- * TODO: POST /api/auth/logout — invalidate JWT token (A-PBI 1.3)
- * TODO: GET /api/auth/verify-email?token= — verify email address (A-PBI 1.1)
- */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    // TODO: inject AuthService
-    // TODO: implement endpoints
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ApiResponse<User> register(@Valid @RequestBody RegisterRequest request) {
+        User user = authService.register(request);
+        return ApiResponse.success("Registration successful", user);
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ApiResponse.success(response);
+    }
+
+    @GetMapping("/verify-email")
+    public ApiResponse<Void> verifyEmail(@RequestParam String token) {
+        authService.verifyEmail(token);
+        return ApiResponse.success("Email verified successfully", null);
+    }
 }
