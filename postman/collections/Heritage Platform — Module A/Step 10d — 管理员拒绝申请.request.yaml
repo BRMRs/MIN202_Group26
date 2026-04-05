@@ -1,0 +1,16 @@
+$kind: http-request
+description: 管理员拒绝申请。先运行 Step 7 获取最新的 application_id。被拒绝后用户角色保持 VIEWER 不变。
+url: "{{base_url}}/api/admin/users/applications/{{application_id}}/reject"
+method: PUT
+headers:
+  Authorization: Bearer {{admin_token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Application rejected', () => {
+          const json = pm.response.json();
+          pm.expect(json.message).to.include('rejected');
+      });
+    language: text/javascript
+order: 19000

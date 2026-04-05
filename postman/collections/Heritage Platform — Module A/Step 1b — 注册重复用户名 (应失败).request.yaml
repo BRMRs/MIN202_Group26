@@ -1,0 +1,19 @@
+$kind: http-request
+description: "用已存在的用户名注册，应返回错误: Username already exists"
+url: "{{base_url}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "testuser",
+      "email": "other@example.com",
+      "password": "123456"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('Should fail with 400', () => pm.response.to.have.status(400));
+    language: text/javascript
+order: 2000

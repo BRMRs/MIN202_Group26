@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  使用数据库预置的管理员账号登录。登录成功后自动保存 admin_token。
+
+  管理员账号: admin / admin123
+url: "{{base_url}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "admin",
+      "password": "admin123"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+      pm.test('Role is ADMIN', () => {
+          const json = pm.response.json();
+          pm.expect(json.data.role).to.eql('ADMIN');
+          pm.collectionVariables.set('admin_token', json.data.token);
+          console.log('admin_token saved:', json.data.token.substring(0, 20) + '...');
+      });
+    language: text/javascript
+order: 11000

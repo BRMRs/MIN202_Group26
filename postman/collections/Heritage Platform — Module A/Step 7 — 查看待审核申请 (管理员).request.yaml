@@ -1,0 +1,20 @@
+$kind: http-request
+description: 管理员查看所有 PENDING 状态的贡献者申请列表。
+url: "{{base_url}}/api/admin/users/applications"
+method: GET
+headers:
+  Authorization: Bearer {{admin_token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Returns array', () => {
+          const json = pm.response.json();
+          pm.expect(json.data).to.be.an('array');
+          if (json.data.length > 0) {
+              pm.collectionVariables.set('application_id', json.data[0].id);
+              console.log('application_id updated:', json.data[0].id);
+          }
+      });
+    language: text/javascript
+order: 12000

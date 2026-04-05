@@ -1,15 +1,37 @@
-/**
- * Navbar Component — shared across all pages
- * TODO (Module A): Add navigation links based on user role
- * TODO (Module A): Show Login/Register for unauthenticated users
- * TODO (Module A): Show user menu + logout for authenticated users
- * TODO (Module D): Add search bar
- */
+import { Link, useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+
 function Navbar() {
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <nav>
-      <h1>Heritage Platform</h1>
-      {/* TODO: Add navigation links */}
+    <nav style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1.5rem', borderBottom: '1px solid #ddd' }}>
+      <Link to="/" style={{ fontWeight: 'bold', fontSize: '1.1rem', textDecoration: 'none' }}>
+        Heritage Platform
+      </Link>
+
+      <span style={{ flex: 1 }} />
+
+      {isAuthenticated ? (
+        <>
+          <span>Hi, {user?.username}</span>
+          <Link to="/profile">Profile</Link>
+          {user?.role === 'VIEWER' && <Link to="/apply-contributor">Become Contributor</Link>}
+          {user?.role === 'ADMIN' && <Link to="/admin/users">Admin</Link>}
+          <button onClick={handleLogout}>Logout</button>
+        </>
+      ) : (
+        <>
+          <Link to="/login">Login</Link>
+          <Link to="/register">Register</Link>
+        </>
+      )}
     </nav>
   );
 }

@@ -1,31 +1,55 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import * as authApi from '../../module_a/api/authApi';
+import { getProfile } from '../../module_a/api/userApi';
 
-/**
- * Authentication Context — provides user state to all components
- * Module A: Implement full auth state management (Summary A-PBI 1.2, 1.3)
- *
- * TODO (Module A): Store user object, JWT token, and role in state
- * TODO (Module A): Implement login(credentials) — call /api/auth/login, store token
- * TODO (Module A): Implement logout() — call /api/auth/logout, clear token
- * TODO (Module A): Implement register(data) — call /api/auth/register
- * TODO (Module A): Load user from localStorage on app start (persist session)
- */
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
 
-  void setUser;
-  void setToken;
+  // On app start: if token exists in localStorage, restore the user session
+  useEffect(() => {
+    if (token) {
+      getProfile()
+        .then((res) => setUser(res.data.data))
+        .catch(() => {
+          // Token expired or invalid — clear it
+          localStorage.removeItem('token');
+          setToken(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const login = async (credentials) => {
+    const res = await authApi.login(credentials);
+    const { token: jwt, ...userData } = res.data.data;
+    localStorage.setItem('token', jwt);
+    setToken(jwt);
+    setUser(userData);
+    return userData;
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+  };
+
+  const register = (data) => authApi.register(data);
 
   const value = {
     user,
     token,
     isAuthenticated: !!token,
-    login: () => {},
-    logout: () => {},
-    register: () => {},
+    loading,
+    login,
+    logout,
+    register,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

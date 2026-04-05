@@ -1,0 +1,7 @@
+$kind: http-request
+description: 第二个用户申请成为贡献者。注意先把 Header 中的 token 替换为 testuser2 的 token。
+url: "{{base_url}}/api/users/apply-contributor"
+method: POST
+headers:
+  Authorization: Bearer 把testuser2的token粘贴到这里
+order: 18000

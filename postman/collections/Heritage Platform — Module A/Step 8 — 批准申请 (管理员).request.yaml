@@ -1,0 +1,17 @@
+$kind: http-request
+description: 管理员批准贡献者申请。申请的 application_id 由 Step 5 或 Step 7 自动保存。批准后用户角色从
+  VIEWER 升级为 CONTRIBUTOR。
+url: "{{base_url}}/api/admin/users/applications/{{application_id}}/approve"
+method: PUT
+headers:
+  Authorization: Bearer {{admin_token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Application approved', () => {
+          const json = pm.response.json();
+          pm.expect(json.message).to.include('approved');
+      });
+    language: text/javascript
+order: 14000

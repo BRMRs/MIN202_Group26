@@ -1,0 +1,14 @@
+$kind: http-request
+description: 第二个用户登录，手动复制 token 以备使用。
+url: "{{base_url}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "testuser2",
+      "password": "123456"
+    }
+order: 17000

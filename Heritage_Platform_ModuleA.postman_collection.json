@@ -1,0 +1,588 @@
+{
+  "info": {
+    "name": "Heritage Platform — Module A",
+    "description": "CPT202 Group 26 — Module A: User & Access Management\n\n使用顺序:\n1. 注册普通用户\n2. 普通用户登录 (自动保存token)\n3. 获取个人资料\n4. 更新个人资料\n5. 申请成为贡献者\n6. 管理员登录 (自动保存admin_token)\n7. 查看待审核申请\n8. 批准申请\n9. 验证角色已升级\n10. 拒绝申请测试",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "user_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "application_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Step 1 — 注册普通用户",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "register"]
+        },
+        "description": "注册一个新的普通用户。\n默认角色: VIEWER\n默认 email_verified: false\n\n如果用户名或邮箱已存在会返回错误。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has user data', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data).to.have.property('id');",
+              "    pm.expect(json.data.role).to.eql('VIEWER');",
+              "    pm.expect(json.data.emailVerified).to.eql(false);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 1b — 注册重复用户名 (应失败)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"other@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "register"]
+        },
+        "description": "用已存在的用户名注册，应返回错误: Username already exists"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Should fail with 400', () => pm.response.to.have.status(400));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 2 — 普通用户登录",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "登录后自动将 token 保存到集合变量 user_token，后续请求会自动使用。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has token', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data.token).to.be.a('string');",
+              "    pm.expect(json.data.role).to.eql('VIEWER');",
+              "    pm.collectionVariables.set('user_token', json.data.token);",
+              "    console.log('user_token saved:', json.data.token.substring(0, 20) + '...');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 2b — 错误密码登录 (应失败)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"wrongpassword\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "密码错误，应返回 401 Invalid credentials"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Should fail with 401', () => pm.response.to.have.status(401));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 3 — 获取个人资料",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/me",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "me"]
+        },
+        "description": "获取当前登录用户的个人信息。需要在 Step 2 登录后才能使用。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Username matches', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data.username).to.eql('testuser');",
+              "    pm.expect(json.data.role).to.eql('VIEWER');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 3b — 无Token访问 (应失败)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/users/me",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "me"]
+        },
+        "description": "不带 Token 访问需要认证的接口，应返回 401"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Should fail with 401', () => pm.response.to.have.status(401));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 4 — 更新个人资料",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{user_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"bio\": \"Hello, I love heritage!\",\n  \"avatarUrl\": \"https://example.com/avatar.jpg\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/users/profile",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "profile"]
+        },
+        "description": "更新用户名、bio、头像。bio 最多 50 个字符。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Bio updated', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data.bio).to.eql('Hello, I love heritage!');",
+              "    pm.expect(json.data.avatarUrl).to.eql('https://example.com/avatar.jpg');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 4b — Bio超过50字符 (应失败)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{user_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bio\": \"这是一段超过50个字符的bio，用来测试长度限制是否生效，应该返回错误信息\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/users/profile",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "profile"]
+        },
+        "description": "bio 超过 50 字符，应返回错误: Bio must not exceed 50 characters"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Should fail with 400', () => pm.response.to.have.status(400));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 5 — 申请成为贡献者",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{base_url}}/api/users/apply-contributor",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "apply-contributor"]
+        },
+        "description": "VIEWER 申请升级为 CONTRIBUTOR。Body 为空。成功后会创建一条 PENDING 状态的申请记录。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Application is PENDING', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data.status).to.eql('PENDING');",
+              "    pm.collectionVariables.set('application_id', json.data.id);",
+              "    console.log('application_id saved:', json.data.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 5b — 重复申请 (应失败)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/apply-contributor",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "apply-contributor"]
+        },
+        "description": "已有 PENDING 申请时再次申请，应返回错误: Application already pending"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Should fail with 400', () => pm.response.to.have.status(400));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 6 — 管理员登录",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "使用数据库预置的管理员账号登录。登录成功后自动保存 admin_token。\n\n管理员账号: admin / admin123"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Role is ADMIN', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data.role).to.eql('ADMIN');",
+              "    pm.collectionVariables.set('admin_token', json.data.token);",
+              "    console.log('admin_token saved:', json.data.token.substring(0, 20) + '...');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 7 — 查看待审核申请 (管理员)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/admin/users/applications",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "users", "applications"]
+        },
+        "description": "管理员查看所有 PENDING 状态的贡献者申请列表。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Returns array', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data).to.be.an('array');",
+              "    if (json.data.length > 0) {",
+              "        pm.collectionVariables.set('application_id', json.data[0].id);",
+              "        console.log('application_id updated:', json.data[0].id);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 7b — 普通用户访问管理员接口 (应失败)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/admin/users/applications",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "users", "applications"]
+        },
+        "description": "用普通用户的 token 访问管理员接口，应返回 403 Forbidden"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Should fail with 403', () => pm.response.to.have.status(403));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 8 — 批准申请 (管理员)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/admin/users/applications/{{application_id}}/approve",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "users", "applications", "{{application_id}}", "approve"]
+        },
+        "description": "管理员批准贡献者申请。申请的 application_id 由 Step 5 或 Step 7 自动保存。批准后用户角色从 VIEWER 升级为 CONTRIBUTOR。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Application approved', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.message).to.include('approved');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 9 — 验证角色已升级",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/me",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "me"]
+        },
+        "description": "用普通用户的 token 再次查询个人资料，确认 role 已从 VIEWER 变为 CONTRIBUTOR。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Role is now CONTRIBUTOR', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data.role).to.eql('CONTRIBUTOR');",
+              "    console.log('Role upgraded to:', json.data.role);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 10 — 注册第二个用户 (用于拒绝测试)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser2\",\n  \"email\": \"test2@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "register"]
+        },
+        "description": "注册第二个测试用户，用于测试拒绝申请流程。"
+      }
+    },
+    {
+      "name": "Step 10b — 第二个用户登录",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser2\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "第二个用户登录，手动复制 token 以备使用。"
+      }
+    },
+    {
+      "name": "Step 10c — 第二个用户申请贡献者",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer 把testuser2的token粘贴到这里" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/users/apply-contributor",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users", "apply-contributor"]
+        },
+        "description": "第二个用户申请成为贡献者。注意先把 Header 中的 token 替换为 testuser2 的 token。"
+      }
+    },
+    {
+      "name": "Step 10d — 管理员拒绝申请",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/admin/users/applications/{{application_id}}/reject",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "users", "applications", "{{application_id}}", "reject"]
+        },
+        "description": "管理员拒绝申请。先运行 Step 7 获取最新的 application_id。被拒绝后用户角色保持 VIEWER 不变。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Application rejected', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.message).to.include('rejected');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

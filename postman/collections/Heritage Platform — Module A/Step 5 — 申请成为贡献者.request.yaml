@@ -1,0 +1,21 @@
+$kind: http-request
+description: VIEWER 申请升级为 CONTRIBUTOR。Body 为空。成功后会创建一条 PENDING 状态的申请记录。
+url: "{{base_url}}/api/users/apply-contributor"
+method: POST
+headers:
+  Authorization: Bearer {{user_token}}
+body:
+  type: text
+  content: ""
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Application is PENDING', () => {
+          const json = pm.response.json();
+          pm.expect(json.data.status).to.eql('PENDING');
+          pm.collectionVariables.set('application_id', json.data.id);
+          console.log('application_id saved:', json.data.id);
+      });
+    language: text/javascript
+order: 9000

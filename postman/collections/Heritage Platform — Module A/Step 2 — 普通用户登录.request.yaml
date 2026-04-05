@@ -1,0 +1,27 @@
+$kind: http-request
+description: 登录后自动将 token 保存到集合变量 user_token，后续请求会自动使用。
+url: "{{base_url}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "testuser",
+      "password": "123456"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+      pm.test('Has token', () => {
+          const json = pm.response.json();
+          pm.expect(json.data.token).to.be.a('string');
+          pm.expect(json.data.role).to.eql('VIEWER');
+          pm.collectionVariables.set('user_token', json.data.token);
+          console.log('user_token saved:', json.data.token.substring(0, 20) + '...');
+      });
+    language: text/javascript
+order: 3000

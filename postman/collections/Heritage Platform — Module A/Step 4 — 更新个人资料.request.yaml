@@ -1,0 +1,27 @@
+$kind: http-request
+description: 更新用户名、bio、头像。bio 最多 50 个字符。
+url: "{{base_url}}/api/users/profile"
+method: PUT
+headers:
+  Authorization: Bearer {{user_token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "testuser",
+      "bio": "Hello, I love heritage!",
+      "avatarUrl": "https://example.com/avatar.jpg"
+    }
+scripts:
+  - type: afterResponse
+    code: >-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+
+      pm.test('Bio updated', () => {
+          const json = pm.response.json();
+          pm.expect(json.data.bio).to.eql('Hello, I love heritage!');
+          pm.expect(json.data.avatarUrl).to.eql('https://example.com/avatar.jpg');
+      });
+    language: text/javascript
+order: 7000

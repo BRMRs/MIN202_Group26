@@ -1,0 +1,15 @@
+$kind: http-request
+description: 注册第二个测试用户，用于测试拒绝申请流程。
+url: "{{base_url}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "testuser2",
+      "email": "test2@example.com",
+      "password": "123456"
+    }
+order: 16000
