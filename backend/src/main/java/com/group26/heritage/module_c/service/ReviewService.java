@@ -129,6 +129,10 @@ public class ReviewService {
             throw new IllegalArgumentException("Feedback text is mandatory when rejecting a resource.");
         }
 
+        if (feedbackText.trim().split("\\s+").length > 500) {
+            throw new IllegalArgumentException("Feedback must not exceed 500 words");
+        }
+
         User reviewer = findAdminOrThrow(reviewerId);
         Resource resource = findResourceOrThrow(resourceId);
 
