@@ -38,3 +38,7 @@ frontend/*.log
 # Project specific
 .sisyphus/
 docs/
+
+# Tool-specific local config (not project code)
+.claude/
+.postman/

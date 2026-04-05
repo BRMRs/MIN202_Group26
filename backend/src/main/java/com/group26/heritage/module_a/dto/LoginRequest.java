@@ -2,7 +2,7 @@ package com.group26.heritage.module_a.dto;
 
 import lombok.Data;
 
-/** Login request DTO — Summary A-PBI 1.2 */
+// fields sent by the client on login
 @Data
 public class LoginRequest {
     private String username;

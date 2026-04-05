@@ -2,7 +2,7 @@ package com.group26.heritage.module_a.dto;
 
 import lombok.Data;
 
-/** Registration request DTO — Summary A-PBI 1.1 */
+// fields sent by the client when creating a new account
 @Data
 public class RegisterRequest {
     private String username;

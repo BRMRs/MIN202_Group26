@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
+import { VALIDATION } from '../../common/utils/constants';
+
+// password must be 8+ chars, have at least one uppercase, one digit, one special char
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
 
 function RegisterPage() {
   const { register } = useAuth();
@@ -25,8 +29,10 @@ function RegisterPage() {
       setError('Please enter a valid email address.');
       return;
     }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (!PASSWORD_REGEX.test(form.password)) {
+      setError(
+        `Password must be at least ${VALIDATION.MIN_PASSWORD_LENGTH} characters and include an uppercase letter, a number, and a special character (!@#$%^&*).`
+      );
       return;
     }
 
@@ -74,7 +80,7 @@ function RegisterPage() {
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="At least 6 characters"
+            placeholder="8+ chars, uppercase, number, special char"
             style={{ display: 'block', width: '100%', padding: '0.5rem', marginTop: 4 }}
           />
         </div>

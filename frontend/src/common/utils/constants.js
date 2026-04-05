@@ -1,6 +1,4 @@
-/**
- * Application-wide constants — keep in sync with backend enums and ValidationConstants.java
- */
+// shared constants — keep in sync with backend enums and ValidationConstants.java
 
 /** User roles — matches UserRole.java enum */
 export const USER_ROLES = {
@@ -30,6 +28,7 @@ export const API_BASE_URL = '/api';
 
 /** Validation limits — matches ValidationConstants.java */
 export const VALIDATION = {
+  MIN_PASSWORD_LENGTH: 8,
   MAX_BIO_LENGTH: 50,
   MAX_COMMENT_LENGTH: 500,
   MAX_FEEDBACK_WORDS: 500,
