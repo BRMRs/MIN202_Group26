@@ -61,6 +61,15 @@ public class ReviewController {
                 reviewService.getResourceDetail(resourceId, requesterId)));
     }
 
+    // For Module D - public resource detail (APPROVED only, no auth required)
+    @GetMapping("/public/{resourceId}")
+    public ResponseEntity<ApiResponse<ResourceReviewDetailResponse>> getPublicDetail(
+            @PathVariable Long resourceId) {
+
+        return ResponseEntity.ok(ApiResponse.success(
+                reviewService.getPublicResourceDetail(resourceId)));
+    }
+
     // ---------------------------------------------------------------
     // PBI 3.2 — Approve: PENDING_REVIEW → APPROVED
     // POST /api/reviews/{resourceId}/approve

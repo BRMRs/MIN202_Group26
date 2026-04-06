@@ -108,6 +108,17 @@ public class ReviewService {
         return toDetailResponse(resource);
     }
 
+    // For Module D - public access (only APPROVED resources)
+    public ResourceReviewDetailResponse getPublicResourceDetail(Long resourceId) {
+        Resource resource = findResourceOrThrow(resourceId);
+        
+        if (resource.getStatus() != ResourceStatus.APPROVED) {
+            throw new ResourceNotFoundException("Resource not found.");
+        }
+        
+        return toDetailResponse(resource);
+    }
+
     // ---------------------------------------------------------------
     // PBI 3.1 — Approve a resource
         // PBI 3.2 — Task: "Implement Approve/Reject state transition logic in database"
