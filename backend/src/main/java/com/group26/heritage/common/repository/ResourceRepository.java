@@ -7,14 +7,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Resource Repository — shared across modules B, C, D, E.
- * IMPORTANT: This is the ONLY ResourceRepository in the project.
- */
 @Repository
 public interface ResourceRepository extends JpaRepository<Resource, Long> {
-    // TODO: List<Resource> findByStatus(ResourceStatus status);
-    // TODO: List<Resource> findByContributorId(Long contributorId);
-    // TODO: Page<Resource> findByStatus(ResourceStatus status, Pageable pageable);
-    // TODO: @Query search by title or description containing keyword
+    List<Resource> findByContributorIdOrderByUpdatedAtDesc(Long contributorId);
+    List<Resource> findByContributorIdAndStatusInOrderByUpdatedAtDesc(Long contributorId, List<ResourceStatus> statuses);
+    List<Resource> findByStatusOrderByUpdatedAtDesc(ResourceStatus status);
 }

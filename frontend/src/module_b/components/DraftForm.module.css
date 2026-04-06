@@ -1,0 +1,39 @@
+.form { display: flex; flex-direction: column; gap: 18px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+label { font-weight: 600; font-size: 14px; }
+
+.req { color: var(--danger); }
+.muted { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+.count { font-size: 12px; color: var(--muted); }
+.countWarn { font-size: 12px; color: var(--danger); font-weight: 600; }
+
+.input, .textarea, .fileInput {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  background: #f9fafb;
+  transition: border 0.2s;
+}
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.textarea { min-height: 120px; resize: vertical; }
+
+.fileInput { padding: 6px 12px; background: #fff; cursor: pointer; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
