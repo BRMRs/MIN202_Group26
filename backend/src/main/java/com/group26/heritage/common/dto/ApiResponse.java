@@ -5,8 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Standard API response wrapper used by all modules.
- * TODO: Add static factory methods: success(data), success(message, data), error(message)
+ * Generic response wrapper — every controller returns this.
+ * success=false means something went wrong, check the message field.
  */
 @Data
 @NoArgsConstructor
@@ -15,4 +15,16 @@ public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
+
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(true, "Success", data);
+    }
+
+    public static <T> ApiResponse<T> success(String message, T data) {
+        return new ApiResponse<>(true, message, data);
+    }
+
+    public static <T> ApiResponse<T> error(String message) {
+        return new ApiResponse<>(false, message, null);
+    }
 }

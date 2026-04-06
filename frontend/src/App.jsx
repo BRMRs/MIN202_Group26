@@ -1,53 +1,48 @@
 import { Routes, Route } from 'react-router-dom';
+import Navbar from './common/components/Navbar';
+import Footer from './common/components/Footer';
+import ProtectedRoute from './common/components/ProtectedRoute';
 
-/**
- * App Router — Heritage Platform
- * CPT202 Group 26
- *
- * Route ownership by module:
- * - Module A: /login, /register, /profile, /apply-contributor, /admin/users
- * - Module B: /resources/new, /resources/:id/edit, /my-resources
- * - Module C: /reviews, /reviews/:resourceId
- * - Module D: /, /search, /resources/:id
- * - Module E: /admin/categories, /admin/tags, /admin/dashboard, /admin/reports
- *
- * To add a route: import your page component and add a <Route> below.
- * Use <ProtectedRoute> from common/components for authenticated routes.
- */
+// Module A pages
+import { LoginPage, RegisterPage, ProfilePage, ContributorApplyPage, AdminApprovalPage } from './module_a/pages';
+
 function App() {
   return (
-    <Routes>
-      {/* ===== Module A: User & Access Management ===== */}
-      {/* TODO: import LoginPage from './module_a/pages/LoginPage' */}
-      {/* TODO: <Route path="/login" element={<LoginPage />} /> */}
-      {/* TODO: <Route path="/register" element={<RegisterPage />} /> */}
-      {/* TODO: <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/apply-contributor" element={<ProtectedRoute><ContributorApplyPage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminApprovalPage /></ProtectedRoute>} /> */}
+    <>
+      <Navbar />
+      <Routes>
+        {/* ===== Module A: User & Access Management ===== */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/apply-contributor" element={<ProtectedRoute><ContributorApplyPage /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminApprovalPage /></ProtectedRoute>} />
 
-      {/* ===== Module B: Resource Submission ===== */}
-      {/* TODO: <Route path="/resources/new" element={<ProtectedRoute roles={['CONTRIBUTOR']}><ResourceFormPage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/resources/:id/edit" element={<ProtectedRoute roles={['CONTRIBUTOR']}><ResourceFormPage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/my-resources" element={<ProtectedRoute roles={['CONTRIBUTOR']}><MyResourcesPage /></ProtectedRoute>} /> */}
+        {/* ===== Module B: Resource Submission (TODO) ===== */}
+        {/* <Route path="/resources/new" element={<ProtectedRoute roles={['CONTRIBUTOR']}><ResourceFormPage /></ProtectedRoute>} /> */}
+        {/* <Route path="/resources/:id/edit" element={<ProtectedRoute roles={['CONTRIBUTOR']}><ResourceFormPage /></ProtectedRoute>} /> */}
+        {/* <Route path="/my-resources" element={<ProtectedRoute roles={['CONTRIBUTOR']}><MyResourcesPage /></ProtectedRoute>} /> */}
 
-      {/* ===== Module C: Review & Publication ===== */}
-      {/* TODO: <Route path="/reviews" element={<ProtectedRoute roles={['ADMIN']}><ReviewerDashboardPage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/reviews/:resourceId" element={<ProtectedRoute roles={['ADMIN']}><ResourceReviewPage /></ProtectedRoute>} /> */}
+        {/* ===== Module C: Review & Publication (TODO) ===== */}
+        {/* <Route path="/reviews" element={<ProtectedRoute roles={['ADMIN']}><ReviewerDashboardPage /></ProtectedRoute>} /> */}
+        {/* <Route path="/reviews/:resourceId" element={<ProtectedRoute roles={['ADMIN']}><ResourceReviewPage /></ProtectedRoute>} /> */}
 
-      {/* ===== Module D: Discovery & Search ===== */}
-      {/* TODO: <Route path="/" element={<HomePage />} /> */}
-      {/* TODO: <Route path="/search" element={<SearchResultsPage />} /> */}
-      {/* TODO: <Route path="/resources/:id" element={<ResourceDetailPage />} /> */}
+        {/* ===== Module D: Discovery & Search (TODO) ===== */}
+        {/* <Route path="/" element={<HomePage />} /> */}
+        {/* <Route path="/search" element={<SearchResultsPage />} /> */}
+        {/* <Route path="/resources/:id" element={<ResourceDetailPage />} /> */}
 
-      {/* ===== Module E: System Administration ===== */}
-      {/* TODO: <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} /> */}
-      {/* TODO: <Route path="/admin/reports" element={<ProtectedRoute roles={['ADMIN']}><ReportPage /></ProtectedRoute>} /> */}
+        {/* ===== Module E: System Administration (TODO) ===== */}
+        {/* <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} /> */}
+        {/* <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} /> */}
+        {/* <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} /> */}
+        {/* <Route path="/admin/reports" element={<ProtectedRoute roles={['ADMIN']}><ReportPage /></ProtectedRoute>} /> */}
 
-      {/* Fallback */}
-      <Route path="*" element={<div><h1>Heritage Platform</h1><p>CPT202 Group 26 — Page not found</p></div>} />
-    </Routes>
+        {/* Fallback */}
+        <Route path="*" element={<div style={{ padding: '2rem' }}><h2>Heritage Platform</h2><p>CPT202 Group 26</p></div>} />
+      </Routes>
+      <Footer />
+    </>
   );
 }
 

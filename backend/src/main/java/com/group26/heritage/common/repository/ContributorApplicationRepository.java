@@ -14,6 +14,7 @@ import java.util.Optional;
  */
 @Repository
 public interface ContributorApplicationRepository extends JpaRepository<ContributorApplication, Long> {
-    // TODO: Optional<ContributorApplication> findByUserId(Long userId);
-    // TODO: List<ContributorApplication> findByStatus(ApplicationStatus status);
+    Optional<ContributorApplication> findByUserId(Long userId);
+    List<ContributorApplication> findByStatus(ApplicationStatus status);
+    boolean existsByUserIdAndStatus(Long userId, ApplicationStatus status);
 }

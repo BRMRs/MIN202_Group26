@@ -1,19 +1,39 @@
 package com.group26.heritage.module_a.controller;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.group26.heritage.common.dto.ApiResponse;
+import com.group26.heritage.entity.ContributorApplication;
+import com.group26.heritage.entity.User;
+import com.group26.heritage.module_a.dto.ProfileUpdateRequest;
+import com.group26.heritage.module_a.service.UserService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * User Controller — Module A
- * Summary A-PBI 1.4 (Profile), A-PBI 1.5 (Contributor Application)
- *
- * TODO: GET /api/users/me — get current user profile (A-PBI 1.4)
- * TODO: PUT /api/users/profile — update profile (A-PBI 1.4)
- * TODO: POST /api/users/apply-contributor — apply for contributor role (A-PBI 1.5)
- */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
-    // TODO: inject UserService
-    // TODO: implement endpoints
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<User> getProfile(@AuthenticationPrincipal User user) {
+        User profile = userService.getProfile(user.getId());
+        return ApiResponse.success(profile);
+    }
+
+    @PutMapping("/profile")
+    public ApiResponse<User> updateProfile(@AuthenticationPrincipal User user,
+                                           @RequestBody ProfileUpdateRequest request) {
+        User updated = userService.updateProfile(user.getId(), request);
+        return ApiResponse.success("Profile updated", updated);
+    }
+
+    @PostMapping("/apply-contributor")
+    public ApiResponse<ContributorApplication> applyForContributor(@AuthenticationPrincipal User user) {
+        ContributorApplication app = userService.applyForContributor(user.getId());
+        return ApiResponse.success("Application submitted", app);
+    }
 }
