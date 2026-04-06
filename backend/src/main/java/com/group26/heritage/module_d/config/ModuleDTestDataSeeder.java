@@ -166,7 +166,7 @@ public class ModuleDTestDataSeeder implements ApplicationRunner {
         saved.setDescription(description);
         saved.setCategoryId(categoryId);
         saved.setStatus(ResourceStatus.APPROVED);
-        saved.setFileUrl(fileUrl);
+        saved.setFilePath(fileUrl);
         saved.setCreatedAt(createdAt);
         saved.setUpdatedAt(createdAt);
         saved = resourceRepository.save(saved);
@@ -204,7 +204,7 @@ public class ModuleDTestDataSeeder implements ApplicationRunner {
         resource.setPlace("Suzhou");
         resource.setCopyrightDeclaration("TEST DATA ONLY");
         resource.setExternalLink("https://example.com/test-d");
-        resource.setFileUrl(fileUrl);
+        resource.setFilePath(fileUrl);
         resource.setCreatedAt(createdAt);
         resource.setUpdatedAt(createdAt);
         return resource;

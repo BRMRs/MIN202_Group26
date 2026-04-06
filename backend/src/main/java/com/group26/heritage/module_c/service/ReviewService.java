@@ -320,7 +320,7 @@ public class ReviewService {
                     c -> dto.setCategoryName(c.getName()),
                     () -> dto.setCategoryName("Not provided"));
         } else {
-            dto.setCategoryName(ResourceReviewSummaryDto.orNotProvided(r.getRequestedCategoryName()));
+            dto.setCategoryName(ResourceReviewSummaryDto.orNotProvided(r.getCategory()));
         }
 
         resourceMediaRepository.findByResourceIdAndMediaType(r.getId(), MediaType.COVER)
@@ -350,8 +350,8 @@ public class ReviewService {
         dto.setCopyrightDeclaration(ResourceReviewDetailResponse.orNotProvided(r.getCopyrightDeclaration()));
         dto.setExternalLink(ResourceReviewDetailResponse.orNotProvided(r.getExternalLink()));
         dto.setArchiveReason(ResourceReviewDetailResponse.orNotProvided(r.getArchiveReason()));
-        dto.setRequestedCategoryName(ResourceReviewDetailResponse.orNotProvided(r.getRequestedCategoryName()));
-        dto.setCategoryRequestReason(ResourceReviewDetailResponse.orNotProvided(r.getCategoryRequestReason()));
+        dto.setRequestedCategoryName(ResourceReviewDetailResponse.orNotProvided(r.getCategory()));
+        dto.setCategoryRequestReason(null);
         dto.setCreatedAt(r.getCreatedAt());
         dto.setUpdatedAt(r.getUpdatedAt());
 
@@ -364,7 +364,7 @@ public class ReviewService {
                     c -> dto.setCategoryName(c.getName()),
                     () -> dto.setCategoryName("Not provided"));
         } else {
-            dto.setCategoryName(ResourceReviewDetailResponse.orNotProvided(r.getRequestedCategoryName()));
+            dto.setCategoryName(ResourceReviewDetailResponse.orNotProvided(r.getCategory()));
         }
 
         List<ResourceReviewDetailResponse.MediaFileDto> mediaFiles =
