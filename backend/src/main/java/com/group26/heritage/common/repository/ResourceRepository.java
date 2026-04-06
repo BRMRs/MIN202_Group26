@@ -48,4 +48,7 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
 
     // PBI 3.2 — Task: Restrict rejected items to contributor-only access
     List<Resource> findByContributorIdAndStatus(Long contributorId, ResourceStatus status);
+
+    // For "All" filter in review dashboard
+    Page<Resource> findAll(Pageable pageable);
 }

@@ -65,7 +65,7 @@ public class ReviewService {
         } else if (categoryId != null) {
             resultPage = resourceRepository.findByCategoryId(categoryId, pageable);
         } else {
-            resultPage = resourceRepository.findByStatus(ResourceStatus.PENDING_REVIEW, pageable);
+            resultPage = resourceRepository.findAll(pageable);
         }
 
         List<ResourceReviewSummaryDto> dtos = resultPage.getContent().stream()
