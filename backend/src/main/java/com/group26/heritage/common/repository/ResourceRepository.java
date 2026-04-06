@@ -12,16 +12,16 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Resource Repository — shared across modules B, C, D, E.
- * IMPORTANT: This is the ONLY ResourceRepository in the project.
- */
 @Repository
 public interface ResourceRepository extends JpaRepository<Resource, Long> {
-    // TODO: List<Resource> findByStatus(ResourceStatus status);
-    // TODO: List<Resource> findByContributorId(Long contributorId);
-    // TODO: Page<Resource> findByStatus(ResourceStatus status, Pageable pageable);
-    // TODO: @Query search by title or description containing keyword
+    
+    List<Resource> findByContributorIdOrderByUpdatedAtDesc(Long contributorId);
+    
+    List<Resource> findByContributorIdAndStatusInOrderByUpdatedAtDesc(Long contributorId, List<ResourceStatus> statuses);
+    
+    List<Resource> findByStatusOrderByUpdatedAtDesc(ResourceStatus status);
+    
+    List<Resource> findByCategoryId(Long categoryId);
 
     @Modifying
     @Query("""
@@ -34,8 +34,6 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
     int updateStatusByCategoryIdAndStatus(@Param("categoryId") Long categoryId,
                                           @Param("sourceStatus") ResourceStatus sourceStatus,
                                           @Param("targetStatus") ResourceStatus targetStatus);
-
-    List<Resource> findByCategoryId(Long categoryId);
 
     @Query(value = """
         select r.id as id,
@@ -64,22 +62,22 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
           left join tags t
                  on t.id = rt.tag_id
                 and t.is_deleted = 0
-      group by r.id,
-               r.title,
-               r.description,
-               r.contributor_id,
-               r.category_id,
-               c.name,
-               c.status,
-               r.status,
-               r.archive_reason,
-               r.place,
-               r.external_link,
-               r.copyright_declaration,
-               r.created_at,
-               r.updated_at
-      order by r.id desc
-        """, nativeQuery = true)
+        group by r.id,
+                 r.title,
+                 r.description,
+                 r.contributor_id,
+                 r.category_id,
+                 c.name,
+                 c.status,
+                 r.status,
+                 r.archive_reason,
+                 r.place,
+                 r.external_link,
+                 r.copyright_declaration,
+                 r.created_at,
+                 r.updated_at
+        order by r.id desc
+          """, nativeQuery = true)
     List<AdminResourceRow> findAdminResourceRows();
 
     @Query(value = """
@@ -110,20 +108,20 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
                  on t.id = rt.tag_id
                 and t.is_deleted = 0
          where r.id = :resourceId
-      group by r.id,
-               r.title,
-               r.description,
-               r.contributor_id,
-               r.category_id,
-               c.name,
-               c.status,
-               r.status,
-               r.archive_reason,
-               r.place,
-               r.external_link,
-               r.copyright_declaration,
-               r.created_at,
-               r.updated_at
+        group by r.id,
+                 r.title,
+                 r.description,
+                 r.contributor_id,
+                 r.category_id,
+                 c.name,
+                 c.status,
+                 r.status,
+                 r.archive_reason,
+                 r.place,
+                 r.external_link,
+                 r.copyright_declaration,
+                 r.created_at,
+                 r.updated_at
          limit 1
         """, nativeQuery = true)
     AdminResourceRow findAdminResourceRowById(@Param("resourceId") Long resourceId);

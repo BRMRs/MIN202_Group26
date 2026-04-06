@@ -28,6 +28,9 @@ public class Resource {
     @Column(name = "category_id")
     private Long categoryId;
 
+    @Column(length = 100)
+    private String category;
+
     @Column(name = "contributor_id", nullable = false)
     private Long contributorId;
 
@@ -38,17 +41,20 @@ public class Resource {
     @Column(length = 200)
     private String place;
 
-    @Column(name = "requested_category_name", length = 100)
-    private String requestedCategoryName;
+    @Column(length = 200)
+    private String tags;
 
-    @Column(name = "category_request_reason", columnDefinition = "TEXT")
-    private String categoryRequestReason;
+    @Column(name = "file_path", length = 500)
+    private String filePath;
+
+    @Column(name = "external_link", length = 500)
+    private String externalLink;
 
     @Column(name = "copyright_declaration", columnDefinition = "TEXT")
     private String copyrightDeclaration;
 
-    @Column(name = "external_link", length = 500)
-    private String externalLink;
+    @Column(columnDefinition = "TEXT")
+    private String reviewFeedback;
 
     @Column(name = "archive_reason", columnDefinition = "TEXT")
     private String archiveReason;
@@ -59,9 +65,7 @@ public class Resource {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // TODO: @ManyToOne @JoinColumn(name = "category_id", insertable = false, updatable = false) private Category category;
-    // TODO: @ManyToOne @JoinColumn(name = "contributor_id", insertable = false, updatable = false) private User contributor;
-    // TODO: @ManyToMany @JoinTable(name = "resource_tags", ...) private Set<Tag> tags;
-    // TODO: @OneToMany(mappedBy = "resourceId") private List<Comment> comments;
-    // TODO: Add @PrePersist and @PreUpdate lifecycle hooks
+    public void touch() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
