@@ -26,7 +26,7 @@ import java.util.List;
  * - It is idempotent: if "[TEST-D]" resources already exist, it skips.
  * - Teammates can easily identify and delete these records later.
  */
-@Component
+// @Component  // Disabled - causes FK errors without proper user data
 public class ModuleDTestDataSeeder implements ApplicationRunner {
     private static final String TEST_PREFIX = "[TEST-D]";
     private Boolean hasResourceTagsTableCache;
