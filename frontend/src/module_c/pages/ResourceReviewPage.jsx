@@ -92,6 +92,7 @@ function ResourceReviewPage() {
   // Republish modal state
   const [showRepublishModal, setShowRepublishModal] = useState(false);
   const [republishFeedback, setRepublishFeedback]   = useState('');
+  const [republishConfirmed, setRepublishConfirmed]  = useState(false);
 
   // Approve modal state
   const [showApproveModal, setShowApproveModal] = useState(false);
@@ -732,7 +733,12 @@ function ResourceReviewPage() {
               I have reviewed the previous unpublish reason and confirm this resource can be republished:
             </p>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, cursor: 'pointer' }}>
-              <input type="checkbox" style={{ width: 18, height: 18 }} />
+              <input 
+                type="checkbox" 
+                checked={republishConfirmed}
+                onChange={e => setRepublishConfirmed(e.target.checked)}
+                style={{ width: 18, height: 18 }} 
+              />
               <span style={{ fontSize: 14, color: '#333' }}>I have reviewed and addressed the unpublish reason</span>
             </label>
             <textarea
@@ -744,15 +750,16 @@ function ResourceReviewPage() {
                 fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
-              <button onClick={() => { setShowRepublishModal(false); setRepublishFeedback(''); }}
+              <button onClick={() => { setShowRepublishModal(false); setRepublishFeedback(''); setRepublishConfirmed(false); }}
                 style={{ padding: '8px 20px', borderRadius: 8, border: '1.5px solid #ccc',
                   background: 'white', cursor: 'pointer', fontSize: 14 }}>
                 Cancel
               </button>
-              <button onClick={handleRepublish}
+              <button onClick={handleRepublish} disabled={!republishConfirmed}
                 style={{ padding: '8px 20px', borderRadius: 8, border: 'none',
-                  background: '#198754', color: 'white', fontWeight: 700,
-                  cursor: 'pointer', fontSize: 14 }}>
+                  background: republishConfirmed ? '#198754' : '#ccc', color: 'white', fontWeight: 700,
+                  cursor: republishConfirmed ? 'pointer' : 'not-allowed',
+                  fontSize: 14 }}>
                 Confirm Republish
               </button>
             </div>
