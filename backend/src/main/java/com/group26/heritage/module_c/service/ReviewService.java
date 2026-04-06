@@ -95,6 +95,16 @@ public class ReviewService {
             }
         }
 
+        // PBI 3.5 — ARCHIVED resources: only contributor or admin can view
+        if (resource.getStatus() == ResourceStatus.ARCHIVED && requesterId != null) {
+            User requester = userRepository.findById(requesterId).orElse(null);
+            boolean isAdmin       = requester != null && requester.getRole() == UserRole.ADMIN;
+            boolean isContributor = resource.getContributorId().equals(requesterId);
+            if (!isAdmin && !isContributor) {
+                throw new UnauthorizedException("Resource no longer available.");
+            }
+        }
+
         return toDetailResponse(resource);
     }
 
