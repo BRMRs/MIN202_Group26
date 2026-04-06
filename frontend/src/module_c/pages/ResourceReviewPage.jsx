@@ -85,6 +85,10 @@ function ResourceReviewPage() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveReason, setArchiveReason]       = useState('');
 
+  // Approve modal state
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [approveFeedback, setApproveFeedback]   = useState('');
+
   // Media full-size preview
   const [previewMedia, setPreviewMedia] = useState(null);
 
@@ -116,13 +120,17 @@ function ResourceReviewPage() {
 
   const handleApprove = async () => {
     try {
-      await approveResource(resourceId, '');
+      await approveResource(resourceId, approveFeedback);
       showToast('✅ Resource approved successfully.');
+      setShowApproveModal(false);
+      setApproveFeedback('');
       loadData();
     } catch (e) {
       showToast(e.response?.data?.message || 'Approval failed.', 'error');
     }
   };
+
+  const openApproveModal = () => setShowApproveModal(true);
 
   const handleReject = async () => {
     if (!rejectFeedback.trim()) return;
@@ -289,7 +297,7 @@ function ResourceReviewPage() {
             <span style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>Actions:</span>
             {isPending && (
               <>
-                <button onClick={handleApprove}
+                <button onClick={openApproveModal}
                   style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                     background: '#198754', color: 'white', fontWeight: 700,
                     cursor: 'pointer', fontSize: 14 }}>
@@ -621,6 +629,47 @@ function ResourceReviewPage() {
                   background: '#6c757d', color: 'white', fontWeight: 700,
                   cursor: 'pointer', fontSize: 14 }}>
                 Confirm Archive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Modal */}
+      {showApproveModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 440,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 8px', color: '#198754' }}>✅ Approve Resource</h3>
+            <p style={{ color: '#666', fontSize: 14, margin: '0 0 16px' }}>
+              Adding feedback is <strong>optional</strong> but recommended.
+            </p>
+            <textarea
+              value={approveFeedback}
+              onChange={e => setApproveFeedback(e.target.value)}
+              placeholder="Optional: Add approval comments…"
+              rows={4}
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1.5px solid #ccc',
+                fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }}
+            />
+            {approveFeedback.trim() && (
+              <p style={{ color: approveFeedback.trim().split(/\s+/).length > 500 ? '#dc3545' : '#666', fontSize: 12, margin: '4px 0 0', textAlign: 'right' }}>
+                {approveFeedback.trim().split(/\s+/).length} / 500 words
+              </p>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+              <button onClick={() => { setShowApproveModal(false); setApproveFeedback(''); }}
+                style={{ padding: '8px 20px', borderRadius: 8, border: '1.5px solid #ccc',
+                  background: 'white', cursor: 'pointer', fontSize: 14 }}>
+                Cancel
+              </button>
+              <button onClick={handleApprove} disabled={approveFeedback.trim() && approveFeedback.trim().split(/\s+/).length > 500}
+                style={{ padding: '8px 20px', borderRadius: 8, border: 'none',
+                  background: !approveFeedback.trim() || approveFeedback.trim().split(/\s+/).length <= 500 ? '#198754' : '#ccc',
+                  color: 'white', cursor: !approveFeedback.trim() || approveFeedback.trim().split(/\s+/).length <= 500 ? 'pointer' : 'not-allowed',
+                  fontWeight: 700, fontSize: 14 }}>
+                Confirm Approve
               </button>
             </div>
           </div>
