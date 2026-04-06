@@ -4,12 +4,15 @@ import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.enums.ResourceStatus;
 import com.group26.heritage.module_e.dto.AdminResourceMediaRow;
 import com.group26.heritage.module_e.dto.AdminResourceRow;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -34,6 +37,28 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
     int updateStatusByCategoryIdAndStatus(@Param("categoryId") Long categoryId,
                                           @Param("sourceStatus") ResourceStatus sourceStatus,
                                           @Param("targetStatus") ResourceStatus targetStatus);
+
+    @Modifying
+    @Query("UPDATE Resource r SET r.status = :status, r.updatedAt = :updatedAt WHERE r.id = :id")
+    int updateStatus(@Param("id") Long id,
+                     @Param("status") ResourceStatus status,
+                     @Param("updatedAt") LocalDateTime updatedAt);
+
+    @Modifying
+    @Query("UPDATE Resource r SET r.status = :status, r.archiveReason = :reason, r.updatedAt = :updatedAt WHERE r.id = :id")
+    int updateStatusWithReason(@Param("id") Long id,
+                               @Param("status") ResourceStatus status,
+                               @Param("reason") String reason,
+                               @Param("updatedAt") LocalDateTime updatedAt);
+
+    Page<Resource> findByStatus(ResourceStatus status, Pageable pageable);
+    List<Resource> findByStatus(ResourceStatus status);
+    List<Resource> findByContributorId(Long contributorId);
+    Page<Resource> findByCategoryId(Long categoryId, Pageable pageable);
+    Page<Resource> findByStatusAndCategoryId(ResourceStatus status, Long categoryId, Pageable pageable);
+    Page<Resource> findByStatusAndContributorId(ResourceStatus status, Long contributorId, Pageable pageable);
+    List<Resource> findByContributorIdAndStatus(Long contributorId, ResourceStatus status);
+    Page<Resource> findAll(Pageable pageable);
 
     @Query(value = """
         select r.id as id,

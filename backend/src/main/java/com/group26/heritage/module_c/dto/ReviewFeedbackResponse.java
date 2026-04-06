@@ -1,5 +1,7 @@
 package com.group26.heritage.module_c.dto;
 
+import com.group26.heritage.entity.enums.ReviewDecision;
+import com.group26.heritage.entity.enums.ResourceStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -9,7 +11,8 @@ import java.time.LocalDateTime;
 public class ReviewFeedbackResponse {
     private Long id;
     private String reviewerName;
-    private String status;
+    private ReviewDecision decision;
+    private ResourceStatus previousStatus;
     private String feedbackText;
     private LocalDateTime reviewedAt;
 }

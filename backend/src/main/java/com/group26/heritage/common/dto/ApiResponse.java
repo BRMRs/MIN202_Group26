@@ -4,10 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Generic response wrapper — every controller returns this.
- * success=false means something went wrong, check the message field.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

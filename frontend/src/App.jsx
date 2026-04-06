@@ -5,6 +5,8 @@ import ProtectedRoute from './common/components/ProtectedRoute';
 
 import { LoginPage, RegisterPage, ProfilePage, ContributorApplyPage, AdminApprovalPage } from './module_a/pages';
 import { ResourceSubmissionPage, DraftBoxPage, AdminReviewPage } from './module_b/pages';
+import ReviewerDashboardPage from './module_c/pages/ReviewerDashboardPage';
+import ResourceReviewPage from './module_c/pages/ResourceReviewPage';
 import CategoryManagementPage from './module_e/pages/CategoryManagementPage';
 import ResourceManagementPage from './module_e/pages/ResourceManagementPage';
 import TagManagementPage from './module_e/pages/TagManagementPage';
@@ -23,6 +25,9 @@ function App() {
         <Route path="/module-b/submit" element={<ProtectedRoute roles={['CONTRIBUTOR']}><ResourceSubmissionPage /></ProtectedRoute>} />
         <Route path="/module-b/drafts" element={<ProtectedRoute roles={['CONTRIBUTOR']}><DraftBoxPage /></ProtectedRoute>} />
         <Route path="/module-b/review" element={<ProtectedRoute roles={['ADMIN']}><AdminReviewPage /></ProtectedRoute>} />
+
+        <Route path="/reviews" element={<ProtectedRoute roles={['ADMIN']}><ReviewerDashboardPage /></ProtectedRoute>} />
+        <Route path="/reviews/:resourceId" element={<ProtectedRoute roles={['ADMIN']}><ResourceReviewPage /></ProtectedRoute>} />
 
         <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} />
         <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} />
