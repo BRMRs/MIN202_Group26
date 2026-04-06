@@ -23,6 +23,12 @@ function Navbar() {
           <span>Hi, {user?.username}</span>
           <Link to="/profile">Profile</Link>
           {user?.role === 'VIEWER' && <Link to="/apply-contributor">Become Contributor</Link>}
+          {user?.role === 'CONTRIBUTOR' && (
+            <>
+              <Link to="/module-b/submit">Submit Resource</Link>
+              <Link to="/module-b/drafts">Drafts</Link>
+            </>
+          )}
           {user?.role === 'ADMIN' && <Link to="/admin/users">Admin</Link>}
           <button onClick={handleLogout}>Logout</button>
         </>
