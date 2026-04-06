@@ -32,19 +32,19 @@ export const rejectResource = (resourceId, feedbackText) =>
     { headers: { 'X-User-Id': ADMIN_ID } }
   );
 
-// PBI 3.2 — Unpublish: APPROVED → UNPUBLISHED
-export const unpublishResource = (resourceId) =>
+// PBI 3.2 — Unpublish: APPROVED → UNPUBLISHED (reason mandatory)
+export const unpublishResource = (resourceId, reason) =>
   axiosInstance.post(
     `/reviews/${resourceId}/unpublish`,
-    {},
+    { feedbackText: reason },
     { headers: { 'X-User-Id': ADMIN_ID } }
   );
 
-// PBI 3.2 — Republish: UNPUBLISHED → APPROVED
-export const republishResource = (resourceId) =>
+// PBI 3.2 — Republish: UNPUBLISHED → APPROVED (optional feedback)
+export const republishResource = (resourceId, feedbackText) =>
   axiosInstance.post(
     `/reviews/${resourceId}/republish`,
-    {},
+    { feedbackText },
     { headers: { 'X-User-Id': ADMIN_ID } }
   );
 
