@@ -85,6 +85,14 @@ function ResourceReviewPage() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveReason, setArchiveReason]       = useState('');
 
+  // Unpublish modal state
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
+  const [unpublishReason, setUnpublishReason]       = useState('');
+
+  // Republish modal state
+  const [showRepublishModal, setShowRepublishModal] = useState(false);
+  const [republishFeedback, setRepublishFeedback]   = useState('');
+
   // Approve modal state
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approveFeedback, setApproveFeedback]   = useState('');
@@ -157,11 +165,18 @@ function ResourceReviewPage() {
     }
   };
 
-  // PBI 3.2 — Unpublish / Republish handlers
+  // PBI 3.2 — Unpublish / Republish handlers (with modals)
   const handleUnpublish = async () => {
+    if (!unpublishReason.trim()) return;
+    if (unpublishReason.trim().split(/\s+/).length > 500) {
+      showToast('Unpublish reason must not exceed 500 words.', 'error');
+      return;
+    }
     try {
-      await unpublishResource(resourceId);
+      await unpublishResource(resourceId, unpublishReason);
       showToast('📥 Resource unpublished.');
+      setShowUnpublishModal(false);
+      setUnpublishReason('');
       loadData();
     } catch (e) {
       showToast(e.response?.data?.message || 'Unpublish failed.', 'error');
@@ -170,8 +185,10 @@ function ResourceReviewPage() {
 
   const handleRepublish = async () => {
     try {
-      await republishResource(resourceId);
+      await republishResource(resourceId, republishFeedback);
       showToast('✅ Resource republished.');
+      setShowRepublishModal(false);
+      setRepublishFeedback('');
       loadData();
     } catch (e) {
       showToast(e.response?.data?.message || 'Republish failed.', 'error');
@@ -312,7 +329,7 @@ function ResourceReviewPage() {
               </>
             )}
             {canUnpublish && (
-              <button onClick={handleUnpublish}
+              <button onClick={() => setShowUnpublishModal(true)}
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                   background: '#0d6efd', color: 'white', fontWeight: 700,
                   cursor: 'pointer', fontSize: 14 }}>
@@ -320,7 +337,7 @@ function ResourceReviewPage() {
               </button>
             )}
             {canRepublish && (
-              <button onClick={handleRepublish}
+              <button onClick={() => setShowRepublishModal(true)}
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                   background: '#198754', color: 'white', fontWeight: 700,
                   cursor: 'pointer', fontSize: 14 }}>
@@ -604,31 +621,139 @@ function ResourceReviewPage() {
       {showArchiveModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 440,
+          <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 480,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
             <h3 style={{ margin: '0 0 8px', color: '#6c757d' }}>📦 Archive Resource</h3>
-            <p style={{ color: '#666', fontSize: 14, margin: '0 0 16px' }}>
-              Optionally provide a reason for archiving this resource.
+            <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8,
+              padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#856404' }}>
+              ⚠️ <strong>Warning:</strong> Archiving is permanent and cannot be undone. 
+              The resource will be hidden from public view.
+            </div>
+            <p style={{ color: '#666', fontSize: 14, margin: '0 0 12px' }}>
+              Please provide a reason for archiving (required):
             </p>
             <textarea
               value={archiveReason}
               onChange={e => setArchiveReason(e.target.value)}
-              placeholder="Archive reason (optional)…"
+              placeholder="Reason for archiving..."
               rows={3}
               style={{ width: '100%', padding: 12, borderRadius: 8, border: '1.5px solid #ccc',
                 fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }}
             />
+            {archiveReason.trim() && (
+              <p style={{ color: archiveReason.trim().split(/\s+/).length > 500 ? '#dc3545' : '#666', fontSize: 12, margin: '4px 0 0', textAlign: 'right' }}>
+                {archiveReason.trim().split(/\s+/).length} / 500 words
+              </p>
+            )}
+            {!archiveReason.trim() && (
+              <p style={{ color: '#dc3545', fontSize: 12, margin: '4px 0 0' }}>
+                Archive reason is required.
+              </p>
+            )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
               <button onClick={() => { setShowArchiveModal(false); setArchiveReason(''); }}
                 style={{ padding: '8px 20px', borderRadius: 8, border: '1.5px solid #ccc',
                   background: 'white', cursor: 'pointer', fontSize: 14 }}>
                 Cancel
               </button>
-              <button onClick={handleArchive}
+              <button onClick={handleArchive} disabled={!archiveReason.trim() || archiveReason.trim().split(/\s+/).length > 500}
                 style={{ padding: '8px 20px', borderRadius: 8, border: 'none',
-                  background: '#6c757d', color: 'white', fontWeight: 700,
-                  cursor: 'pointer', fontSize: 14 }}>
+                  background: (!archiveReason.trim() || archiveReason.trim().split(/\s+/).length > 500) ? '#ccc' : '#6c757d',
+                  color: 'white', fontWeight: 700, cursor: (!archiveReason.trim() || archiveReason.trim().split(/\s+/).length > 500) ? 'not-allowed' : 'pointer',
+                  fontSize: 14 }}>
                 Confirm Archive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unpublish Modal */}
+      {showUnpublishModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 440,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 8px', color: '#0d6efd' }}>📥 Unpublish Resource</h3>
+            <p style={{ color: '#666', fontSize: 14, margin: '0 0 16px' }}>
+              Please provide a reason for unpublishing (required):
+            </p>
+            <textarea
+              value={unpublishReason}
+              onChange={e => setUnpublishReason(e.target.value)}
+              placeholder="Reason for unpublishing..."
+              rows={3}
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1.5px solid #ccc',
+                fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }}
+            />
+            {unpublishReason.trim() && (
+              <p style={{ color: unpublishReason.trim().split(/\s+/).length > 500 ? '#dc3545' : '#666', fontSize: 12, margin: '4px 0 0', textAlign: 'right' }}>
+                {unpublishReason.trim().split(/\s+/).length} / 500 words
+              </p>
+            )}
+            {!unpublishReason.trim() && (
+              <p style={{ color: '#dc3545', fontSize: 12, margin: '4px 0 0' }}>
+                Unpublish reason is required.
+              </p>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+              <button onClick={() => { setShowUnpublishModal(false); setUnpublishReason(''); }}
+                style={{ padding: '8px 20px', borderRadius: 8, border: '1.5px solid #ccc',
+                  background: 'white', cursor: 'pointer', fontSize: 14 }}>
+                Cancel
+              </button>
+              <button onClick={handleUnpublish} disabled={!unpublishReason.trim() || unpublishReason.trim().split(/\s+/).length > 500}
+                style={{ padding: '8px 20px', borderRadius: 8, border: 'none',
+                  background: (!unpublishReason.trim() || unpublishReason.trim().split(/\s+/).length > 500) ? '#ccc' : '#0d6efd',
+                  color: 'white', fontWeight: 700, cursor: (!unpublishReason.trim() || unpublishReason.trim().split(/\s+/).length > 500) ? 'not-allowed' : 'pointer',
+                  fontSize: 14 }}>
+                Confirm Unpublish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Republish Modal */}
+      {showRepublishModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 440,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 8px', color: '#198754' }}>🔄 Republish Resource</h3>
+            {history.filter(fb => fb.decision === 'UNPUBLISHED').length > 0 && (
+              <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8,
+                padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#856404' }}>
+                <strong>Previous unpublish reason:</strong><br/>
+                {history.find(fb => fb.decision === 'UNPUBLISHED')?.feedbackText || 'N/A'}
+              </div>
+            )}
+            <p style={{ color: '#666', fontSize: 14, margin: '0 0 16px' }}>
+              I have reviewed the previous unpublish reason and confirm this resource can be republished:
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, cursor: 'pointer' }}>
+              <input type="checkbox" style={{ width: 18, height: 18 }} />
+              <span style={{ fontSize: 14, color: '#333' }}>I have reviewed and addressed the unpublish reason</span>
+            </label>
+            <textarea
+              value={republishFeedback}
+              onChange={e => setRepublishFeedback(e.target.value)}
+              placeholder="Optional: Add feedback for republishing..."
+              rows={3}
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1.5px solid #ccc',
+                fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+              <button onClick={() => { setShowRepublishModal(false); setRepublishFeedback(''); }}
+                style={{ padding: '8px 20px', borderRadius: 8, border: '1.5px solid #ccc',
+                  background: 'white', cursor: 'pointer', fontSize: 14 }}>
+                Cancel
+              </button>
+              <button onClick={handleRepublish}
+                style={{ padding: '8px 20px', borderRadius: 8, border: 'none',
+                  background: '#198754', color: 'white', fontWeight: 700,
+                  cursor: 'pointer', fontSize: 14 }}>
+                Confirm Republish
               </button>
             </div>
           </div>
