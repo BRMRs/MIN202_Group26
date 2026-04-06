@@ -1,20 +1,47 @@
-# Frontend dependencies and build
-frontend/node_modules/
-frontend/dist/
-frontend/.env
+# IDE
+.vscode/
+.idea/
+*.iml
 
-# Backend build output
-backend/target/
-backend/*.log
-
-# Old legacy top-level directories (from previous structure)
-target/
-
-# macOS
+# OS
 .DS_Store
 **/.DS_Store
+Thumbs.db
 
-# uploads (runtime files, not source code)
+# Logs
+*.log
+logs/
+
+# Backend build
+backend/target/
+backend/*.jar
+backend/*.class
+
+# Frontend build
+frontend/dist/
+frontend/build/
+frontend/.cache/
+frontend/node_modules/
+frontend/*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temp files
+*.tmp
+*.swp
+*~
+
+# Project specific
+.sisyphus/
+docs/
+
+# Legacy directories
+target/
+
+# Uploads (runtime files, not source code)
 backend/uploads/*
 !backend/uploads/.gitkeep
 uploads/
