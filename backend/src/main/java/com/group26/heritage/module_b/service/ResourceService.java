@@ -43,6 +43,7 @@ public class ResourceService {
     @Transactional
     public Resource createDraft(Long contributorId) {
         Resource resource = new Resource();
+        resource.setTitle("");
         resource.setContributorId(contributorId);
         resource.setStatus(ResourceStatus.DRAFT);
         return repository.save(resource);

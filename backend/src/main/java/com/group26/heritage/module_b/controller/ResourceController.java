@@ -1,6 +1,6 @@
 package com.group26.heritage.module_b.controller;
 
-import com.group26.heritage.common.AuthService;
+import com.group26.heritage.module_a.service.AuthService;
 import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.enums.UserRole;
 import com.group26.heritage.module_b.dto.ResourceRequest;
