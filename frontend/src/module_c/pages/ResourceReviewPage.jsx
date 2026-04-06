@@ -88,8 +88,15 @@ function ResourceReviewPage() {
       ]);
       setResource(detailRes.data.data);
       setHistory(historyRes.data.data || []);
-    } catch {
-      setError('Failed to load resource. Make sure the backend is running.');
+    } catch (err) {
+      const msg = err.response?.data?.message || '';
+      if (msg.includes('no longer available')) {
+        setError('⚠️ Resource no longer available.');
+      } else if (err.response?.status === 403) {
+        setError('⚠️ Resource no longer available.');
+      } else {
+        setError('Failed to load resource. Make sure the backend is running.');
+      }
     } finally {
       setLoading(false);
     }
@@ -224,8 +231,14 @@ function ResourceReviewPage() {
         </button>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{r?.title}</h1>
-          <div style={{ marginTop: 4 }}>
+          <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
             <StatusBadge status={r?.status} />
+            {r?.status === 'ARCHIVED' && (
+              <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
+                background: '#6c757d', color: 'white' }}>
+                ARCHIVED
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -259,7 +272,7 @@ function ResourceReviewPage() {
         )}
 
         {/* Action buttons — PBI 3.2: hidden for non-actionable statuses */}
-        {(isPending || canArchive || canUnpublish || canRepublish || canResubmit) && (
+        {(isPending || canArchive || canUnpublish || canRepublish || canResubmit) && !r?.status?.includes('ARCHIVED') && (
           <div style={{ background: 'white', borderRadius: 10, padding: '16px 20px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20,
             display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
