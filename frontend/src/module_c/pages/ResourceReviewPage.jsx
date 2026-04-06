@@ -70,6 +70,16 @@ function ResourceReviewPage() {
   // Reject modal state
   const [showRejectModal, setShowRejectModal]   = useState(false);
   const [rejectFeedback, setRejectFeedback]     = useState('');
+  const [selectedTemplate, setSelectedTemplate]   = useState('');
+
+  // Rejection templates
+  const REJECTION_TEMPLATES = [
+    { id: 'insufficient', label: 'Insufficient Evidence', text: 'The submitted content lacks sufficient historical evidence or source citations to verify the claims made.' },
+    { id: 'poor_quality', label: 'Poor Content Quality', text: 'The content does not meet our quality standards. Please improve clarity, organization, and detail.' },
+    { id: 'duplicate', label: 'Duplicate Content', text: 'Similar content already exists on the platform. Please review existing entries before resubmitting.' },
+    { id: 'inappropriate', label: 'Inappropriate Content', text: 'The submitted content contains material that is not appropriate for our heritage platform.' },
+    { id: 'incomplete', label: 'Incomplete Submission', text: 'The submission is missing required fields or essential information. Please complete all sections.' },
+  ];
 
   // Archive modal state
   const [showArchiveModal, setShowArchiveModal] = useState(false);
@@ -530,30 +540,50 @@ function ResourceReviewPage() {
             <p style={{ color: '#666', fontSize: 14, margin: '0 0 16px' }}>
               Feedback is <strong>mandatory</strong> when rejecting. The contributor will see this message.
             </p>
+            <select
+              value={selectedTemplate}
+              onChange={e => {
+                const tpl = REJECTION_TEMPLATES.find(t => t.id === e.target.value);
+                setSelectedTemplate(e.target.value);
+                if (tpl) setRejectFeedback(tpl.text);
+              }}
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #ccc',
+                fontSize: 14, marginBottom: 12, boxSizing: 'border-box' }}
+            >
+              <option value="">-- Select a template (optional) --</option>
+              {REJECTION_TEMPLATES.map(t => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
             <textarea
               value={rejectFeedback}
-              onChange={e => setRejectFeedback(e.target.value)}
+              onChange={e => { setRejectFeedback(e.target.value); setSelectedTemplate(''); }}
               placeholder="Explain why this resource is being rejected…"
               rows={4}
               style={{ width: '100%', padding: 12, borderRadius: 8, border: '1.5px solid #ccc',
                 fontSize: 14, resize: 'vertical', boxSizing: 'border-box',
                 borderColor: rejectFeedback.trim() ? '#ccc' : '#dc3545' }}
             />
+            {rejectFeedback.trim() && (
+              <p style={{ color: rejectFeedback.trim().split(/\s+/).length > 500 ? '#dc3545' : '#666', fontSize: 12, margin: '4px 0 0', textAlign: 'right' }}>
+                {rejectFeedback.trim().split(/\s+/).length} / 500 words
+              </p>
+            )}
             {!rejectFeedback.trim() && (
               <p style={{ color: '#dc3545', fontSize: 12, margin: '4px 0 0' }}>
                 Feedback is required.
               </p>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
-              <button onClick={() => { setShowRejectModal(false); setRejectFeedback(''); }}
+              <button onClick={() => { setShowRejectModal(false); setRejectFeedback(''); setSelectedTemplate(''); }}
                 style={{ padding: '8px 20px', borderRadius: 8, border: '1.5px solid #ccc',
                   background: 'white', cursor: 'pointer', fontSize: 14 }}>
                 Cancel
               </button>
-              <button onClick={handleReject} disabled={!rejectFeedback.trim()}
+              <button onClick={handleReject} disabled={!rejectFeedback.trim() || rejectFeedback.trim().split(/\s+/).length > 500}
                 style={{ padding: '8px 20px', borderRadius: 8, border: 'none',
-                  background: rejectFeedback.trim() ? '#dc3545' : '#ccc',
-                  color: 'white', cursor: rejectFeedback.trim() ? 'pointer' : 'not-allowed',
+                  background: rejectFeedback.trim() && rejectFeedback.trim().split(/\s+/).length <= 500 ? '#dc3545' : '#ccc',
+                  color: 'white', cursor: rejectFeedback.trim() && rejectFeedback.trim().split(/\s+/).length <= 500 ? 'pointer' : 'not-allowed',
                   fontWeight: 700, fontSize: 14 }}>
                 Confirm Reject
               </button>
