@@ -29,7 +29,16 @@ function Navbar() {
               <Link to="/module-b/drafts">Drafts</Link>
             </>
           )}
-          {user?.role === 'ADMIN' && <Link to="/admin/users">Admin</Link>}
+          {user?.role === 'ADMIN' && (
+            <>
+              <Link to="/admin/users">Users</Link>
+              <Link to="/module-b/review">Review Resources</Link>
+              <Link to="/reviews">Review Dashboard</Link>
+              <Link to="/admin/categories">Categories</Link>
+              <Link to="/admin/tags">Tags</Link>
+              <Link to="/admin/resources">Resources</Link>
+            </>
+          )}
           <button onClick={handleLogout}>Logout</button>
         </>
       ) : (
