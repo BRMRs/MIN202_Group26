@@ -221,7 +221,7 @@ CREATE TABLE review_feedback (
     id              BIGINT   NOT NULL AUTO_INCREMENT,
     resource_id     BIGINT   NOT NULL,
     reviewer_id     BIGINT   NOT NULL,
-    decision        ENUM('APPROVED','REJECTED','ARCHIVED') NOT NULL,
+    decision        ENUM('APPROVED','REJECTED','UNPUBLISHED','REPUBLISHED','ARCHIVED') NOT NULL,
     previous_status ENUM('DRAFT','PENDING_REVIEW','APPROVED','REJECTED',
                          'UNPUBLISHED','ARCHIVED') NOT NULL,
     feedback_text   TEXT     NULL,
