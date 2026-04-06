@@ -1,13 +1,43 @@
-import axiosInstance from '../../common/api/axiosInstance';
+import axios from 'axios';
 
 /**
  * Discover API — Module D
  * Summary D-PBI 1 (Browse), D-PBI 2 (Search), D-PBI 3 (Filter), D-PBI 4 (Detail)
  */
 
-void axiosInstance;
+const apiClient = axios.create({
+  baseURL: '/api',
+});
 
-// TODO: export const browseResources = (page = 0, size = 12) => axiosInstance.get('/discover/resources', { params: { page, size } });
-// TODO: export const searchResources = (keyword, page = 0) => axiosInstance.get('/discover/resources/search', { params: { keyword, page } });
-// TODO: export const filterResources = (categoryId, tagId, page = 0) => axiosInstance.get('/discover/resources/filter', { params: { categoryId, tagId, page } });
-// TODO: export const getResourceDetail = (id) => axiosInstance.get(`/discover/resources/${id}`);
+/** Shown when browse/search request fails (network or server error), not when the list is simply empty. */
+export const DISCOVER_LOAD_ERROR_MESSAGE = "We couldn't load this content.";
+
+const cleanParams = (params) =>
+  Object.fromEntries(
+    Object.entries(params).filter(([, value]) => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string' && value.trim() === '') return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      return true;
+    }),
+  );
+
+export const browseResources = ({ page = 0, size = 10, sortBy = 'createdAt', direction = 'DESC' } = {}) =>
+  apiClient.get('/discover/resources', { params: { page, size, sortBy, direction } });
+
+export const searchAndFilterResources = ({
+  keyword,
+  categoryId,
+  tagIds = [],
+  page = 0,
+  size = 10,
+  sortBy = 'createdAt',
+  direction = 'DESC',
+} = {}) =>
+  apiClient.get('/discover/resources', {
+    params: cleanParams({ keyword, categoryId, tagIds, page, size, sortBy, direction }),
+  });
+
+export const listCategories = () => apiClient.get('/discover/categories');
+export const listTags = () => apiClient.get('/discover/tags');
+export const getResourceDetail = (id) => apiClient.get(`/discover/resources/${id}`);

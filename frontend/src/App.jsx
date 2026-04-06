@@ -7,6 +7,7 @@ import { LoginPage, RegisterPage, ProfilePage, ContributorApplyPage, AdminApprov
 import { ResourceSubmissionPage, DraftBoxPage, AdminReviewPage } from './module_b/pages';
 import ReviewerDashboardPage from './module_c/pages/ReviewerDashboardPage';
 import ResourceReviewPage from './module_c/pages/ResourceReviewPage';
+import { HomePage, ResourceDetailPage, SearchResultsPage } from './module_d/pages';
 import CategoryManagementPage from './module_e/pages/CategoryManagementPage';
 import ResourceManagementPage from './module_e/pages/ResourceManagementPage';
 import TagManagementPage from './module_e/pages/TagManagementPage';
@@ -16,6 +17,10 @@ function App() {
     <>
       <Navbar />
       <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/search" element={<SearchResultsPage />} />
+        <Route path="/resources/:id" element={<ResourceDetailPage />} />
+
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
