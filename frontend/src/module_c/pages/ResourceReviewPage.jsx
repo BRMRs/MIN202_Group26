@@ -200,7 +200,7 @@ function ResourceReviewPage() {
   const handleResubmit = async () => {
     if (!r?.contributorId) return;
     try {
-      await resubmitResource(resourceId, r.contributorId);
+      await resubmitResource(resourceId);
       showToast('↩ Resource resubmitted for review — it will now appear in the review queue.');
       loadData();
     } catch (e) {
@@ -359,7 +359,7 @@ function ResourceReviewPage() {
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                   background: '#fd7e14', color: 'white', fontWeight: 700,
                   cursor: 'pointer', fontSize: 14 }}
-                title="Simulate contributor resubmission (sends X-User-Id = contributor's ID)">
+                title="Resubmit this resource for review">
                 ↩ Resubmit (Contributor)
               </button>
             )}
