@@ -1,12 +1,13 @@
 package com.group26.heritage.module_b.controller;
 
-import com.group26.heritage.module_a.service.AuthService;
 import com.group26.heritage.entity.Resource;
+import com.group26.heritage.entity.User;
 import com.group26.heritage.entity.enums.UserRole;
 import com.group26.heritage.module_b.dto.ResourceRequest;
 import com.group26.heritage.module_b.service.ResourceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,97 +20,92 @@ import java.util.Map;
 public class ResourceController {
 
     private final ResourceService service;
-    private final AuthService authService;
 
-    public ResourceController(ResourceService service, AuthService authService) {
+    public ResourceController(ResourceService service) {
         this.service = service;
-        this.authService = authService;
     }
 
     @PostMapping
-    public Resource createDraft(@RequestHeader("X-Auth-Token") String token) {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        return service.createDraft(authService.getUserId(token));
+    public Resource createDraft(@AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return service.createDraft(user.getId());
     }
 
     @PostMapping("/{id}/save-draft")
     public Resource saveDraft(@PathVariable Long id,
-                              @RequestHeader("X-Auth-Token") String token,
+                              @AuthenticationPrincipal User user,
                               @RequestBody(required = false) ResourceRequest payload) {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        return service.saveDraft(id, authService.getUserId(token), payload);
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return service.saveDraft(id, user.getId(), payload);
     }
 
     @PostMapping("/{id}/file")
     public Resource uploadFile(@PathVariable Long id,
-                               @RequestHeader("X-Auth-Token") String token,
+                               @AuthenticationPrincipal User user,
                                @RequestParam("file") MultipartFile file) throws IOException {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        return service.uploadFile(id, authService.getUserId(token), file);
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return service.uploadFile(id, user.getId(), file);
     }
 
     @PatchMapping("/{id}/external-link")
     public Resource externalLink(@PathVariable Long id,
-                                 @RequestHeader("X-Auth-Token") String token,
+                                 @AuthenticationPrincipal User user,
                                  @RequestBody Map<String, String> body) {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        return service.updateExternalLink(id, authService.getUserId(token), body.get("externalLink"));
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return service.updateExternalLink(id, user.getId(), body.get("externalLink"));
     }
 
     @PostMapping("/{id}/submit")
     public Resource submit(@PathVariable Long id,
-                           @RequestHeader("X-Auth-Token") String token) {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        return service.submit(id, authService.getUserId(token));
+                           @AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return service.submit(id, user.getId());
     }
 
     @GetMapping("/mine")
-    public List<Resource> mine(@RequestHeader("X-Auth-Token") String token) {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        return service.listMine(authService.getUserId(token));
+    public List<Resource> mine(@AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return service.listMine(user.getId());
     }
 
     @GetMapping("/drafts")
-    public List<Resource> drafts(@RequestHeader("X-Auth-Token") String token) {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        return service.listDrafts(authService.getUserId(token));
+    public List<Resource> drafts(@AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return service.listDrafts(user.getId());
     }
 
     @DeleteMapping("/{id}/draft")
     public Map<String, String> deleteDraft(@PathVariable Long id,
-                                           @RequestHeader("X-Auth-Token") String token) {
-        requireRole(token, UserRole.CONTRIBUTOR);
-        service.deleteDraft(id, authService.getUserId(token));
-        return Map.of("message", "草稿已删除");
+                                           @AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.CONTRIBUTOR);
+        service.deleteDraft(id, user.getId());
+        return Map.of("message", "Draft deleted");
     }
 
     @GetMapping("/options")
-    public Map<String, Object> options(@RequestHeader("X-Auth-Token") String token) {
-        requireRole(token, UserRole.CONTRIBUTOR);
+    public Map<String, Object> options(@AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.CONTRIBUTOR);
         return service.options();
     }
 
     @PostMapping("/{id}/review")
     public Resource review(@PathVariable Long id,
-                           @RequestHeader("X-Auth-Token") String token,
+                           @AuthenticationPrincipal User user,
                            @RequestBody Map<String, Object> body) {
-        requireRole(token, UserRole.ADMIN);
+        requireRole(user, UserRole.ADMIN);
         boolean approved = Boolean.TRUE.equals(body.get("approved"));
         String feedback = body.get("feedback") == null ? null : body.get("feedback").toString();
         return service.review(id, approved, feedback);
     }
 
     @GetMapping("/pending")
-    public List<Resource> pending(@RequestHeader("X-Auth-Token") String token) {
-        requireRole(token, UserRole.ADMIN);
+    public List<Resource> pending(@AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.ADMIN);
         return service.listPending();
     }
 
     @GetMapping("/approved")
-    public List<Resource> approved(@RequestHeader("X-Auth-Token") String token) {
-        UserRole role = authService.getUserRole(token);
-        if (role != UserRole.CONTRIBUTOR && role != UserRole.VIEWER)
-            throw new IllegalStateException("当前角色无权限");
+    public List<Resource> approved(@AuthenticationPrincipal User user) {
         return service.listApproved();
     }
 
@@ -118,8 +114,9 @@ public class ResourceController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
     }
 
-    private void requireRole(String token, UserRole expected) {
-        UserRole actual = authService.getUserRole(token);
-        if (actual != expected) throw new IllegalStateException("当前角色无权限");
+    private void requireRole(User user, UserRole expected) {
+        if (user.getRole() != expected) {
+            throw new IllegalStateException("Access denied: insufficient role");
+        }
     }
 }
