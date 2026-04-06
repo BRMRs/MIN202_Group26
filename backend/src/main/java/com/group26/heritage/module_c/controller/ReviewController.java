@@ -91,16 +91,21 @@ public class ReviewController {
     }
 
     // ---------------------------------------------------------------
-    // PBI 3.2 — Unpublish: APPROVED → UNPUBLISHED
+    // PBI 3.2 — Unpublish: APPROVED → UNPUBLISHED (reason mandatory)
     // POST /api/reviews/{resourceId}/unpublish
     // ---------------------------------------------------------------
     @PostMapping("/{resourceId}/unpublish")
     public ResponseEntity<ApiResponse<ResourceReviewDetailResponse>> unpublish(
             @PathVariable Long resourceId,
-            @RequestHeader("X-User-Id") Long adminId) {
+            @RequestHeader("X-User-Id") Long adminId,
+            @RequestBody ReviewDecisionRequest request) {
+
+        if (request == null || request.getFeedbackText() == null || request.getFeedbackText().isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Unpublish reason is mandatory."));
+        }
 
         return ResponseEntity.ok(ApiResponse.success("Resource unpublished.",
-                reviewService.unpublishResource(resourceId, adminId)));
+                reviewService.unpublishResource(resourceId, adminId, request.getFeedbackText())));
     }
 
     // ---------------------------------------------------------------

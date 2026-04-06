@@ -159,9 +159,17 @@ public class ReviewService {
         return toDetailResponse(findResourceOrThrow(resourceId));
     }
 
-    // PBI 3.2 — Unpublish: APPROVED → UNPUBLISHED
+    // PBI 3.2 — Unpublish: APPROVED → UNPUBLISHED (reason mandatory)
     @Transactional
-    public ResourceReviewDetailResponse unpublishResource(Long resourceId, Long adminId) {
+    public ResourceReviewDetailResponse unpublishResource(Long resourceId, Long adminId, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Unpublish reason is mandatory.");
+        }
+
+        if (reason.trim().split("\\s+").length > 500) {
+            throw new IllegalArgumentException("Unpublish reason must not exceed 500 words");
+        }
+
         findAdminOrThrow(adminId);
         Resource resource = findResourceOrThrow(resourceId);
 
@@ -170,8 +178,11 @@ public class ReviewService {
                     "Only APPROVED resources can be unpublished. Current: " + resource.getStatus());
         }
 
+        ResourceStatus previous = resource.getStatus();
         resourceRepository.updateStatus(resourceId, ResourceStatus.UNPUBLISHED, LocalDateTime.now());
         resourceRepository.flush();
+
+        saveReviewFeedback(resourceId, adminId, ReviewDecision.UNPUBLISHED, previous, reason);
         return toDetailResponse(findResourceOrThrow(resourceId));
     }
 
