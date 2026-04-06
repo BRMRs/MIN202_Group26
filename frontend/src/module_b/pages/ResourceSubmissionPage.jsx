@@ -20,13 +20,16 @@ export default function ResourceSubmissionPage() {
 
   const handleLogin = async () => {
     try {
+      console.log('Attempting login with:', loginForm)
       const res = await api.post('/auth/login', loginForm)
+      console.log('Login response:', res)
       const t = res.data.token
       sessionStorage.setItem('authToken', t)
       setToken(t)
       setLoginMsg('')
     } catch (e) {
-      setLoginMsg(e.response?.data?.error || '登录失败')
+      console.error('Login error:', e)
+      setLoginMsg(e.response?.data?.error || e.response?.data?.message || e.message || '登录失败')
     }
   }
 
