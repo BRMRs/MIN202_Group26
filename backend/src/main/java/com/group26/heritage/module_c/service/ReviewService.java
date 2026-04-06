@@ -209,9 +209,9 @@ public class ReviewService {
         return toDetailResponse(findResourceOrThrow(resourceId));
     }
 
-    // PBI 3.2 — Republish: UNPUBLISHED → APPROVED
+    // PBI 3.2 — Republish: UNPUBLISHED → APPROVED (save feedback)
     @Transactional
-    public ResourceReviewDetailResponse republishResource(Long resourceId, Long adminId) {
+    public ResourceReviewDetailResponse republishResource(Long resourceId, Long adminId, String feedback) {
         findAdminOrThrow(adminId);
         Resource resource = findResourceOrThrow(resourceId);
 
@@ -220,8 +220,11 @@ public class ReviewService {
                     "Only UNPUBLISHED resources can be republished. Current: " + resource.getStatus());
         }
 
+        ResourceStatus previous = resource.getStatus();
         resourceRepository.updateStatus(resourceId, ResourceStatus.APPROVED, LocalDateTime.now());
         resourceRepository.flush();
+
+        saveReviewFeedback(resourceId, adminId, ReviewDecision.REPUBLISHED, previous, feedback);
         return toDetailResponse(findResourceOrThrow(resourceId));
     }
 

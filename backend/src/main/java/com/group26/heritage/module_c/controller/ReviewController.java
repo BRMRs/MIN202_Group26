@@ -109,16 +109,18 @@ public class ReviewController {
     }
 
     // ---------------------------------------------------------------
-    // PBI 3.2 — Republish: UNPUBLISHED → APPROVED
+    // PBI 3.2 — Republish: UNPUBLISHED → APPROVED (optional feedback)
     // POST /api/reviews/{resourceId}/republish
     // ---------------------------------------------------------------
     @PostMapping("/{resourceId}/republish")
     public ResponseEntity<ApiResponse<ResourceReviewDetailResponse>> republish(
             @PathVariable Long resourceId,
-            @RequestHeader("X-User-Id") Long adminId) {
+            @RequestHeader("X-User-Id") Long adminId,
+            @RequestBody(required = false) ReviewDecisionRequest request) {
 
+        String feedback = (request != null) ? request.getFeedbackText() : null;
         return ResponseEntity.ok(ApiResponse.success("Resource republished.",
-                reviewService.republishResource(resourceId, adminId)));
+                reviewService.republishResource(resourceId, adminId, feedback)));
     }
 
     // ---------------------------------------------------------------
