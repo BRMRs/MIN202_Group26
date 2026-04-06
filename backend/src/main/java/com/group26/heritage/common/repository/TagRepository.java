@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Tag Repository — shared across modules B, D, E.
@@ -12,6 +13,19 @@ import java.util.List;
  */
 @Repository
 public interface TagRepository extends JpaRepository<Tag, Long> {
-    // TODO: Optional<Tag> findByName(String name);
-    // TODO: List<Tag> findByNameContainingIgnoreCase(String keyword);
+    List<Tag> findAllByIsDeletedFalseOrderByNameAsc();
+
+    List<Tag> findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByNameAsc(String keyword);
+
+    Optional<Tag> findByIdAndIsDeletedFalse(Long id);
+
+    Optional<Tag> findByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIsDeletedFalse(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNotAndIsDeletedFalse(String name, Long id);
+
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }

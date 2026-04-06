@@ -32,5 +32,8 @@ public class Category {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // TODO: @OneToMany(mappedBy = "categoryId") private List<Resource> resources;
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

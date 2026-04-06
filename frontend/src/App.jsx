@@ -6,6 +6,11 @@ import ProtectedRoute from './common/components/ProtectedRoute';
 // Module A pages
 import { LoginPage, RegisterPage, ProfilePage, ContributorApplyPage, AdminApprovalPage } from './module_a/pages';
 
+// Module E pages
+import CategoryManagementPage from './module_e/pages/CategoryManagementPage';
+import ResourceManagementPage from './module_e/pages/ResourceManagementPage';
+import TagManagementPage from './module_e/pages/TagManagementPage';
+
 function App() {
   return (
     <>
@@ -32,9 +37,10 @@ function App() {
         {/* <Route path="/search" element={<SearchResultsPage />} /> */}
         {/* <Route path="/resources/:id" element={<ResourceDetailPage />} /> */}
 
-        {/* ===== Module E: System Administration (TODO) ===== */}
-        {/* <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} /> */}
-        {/* <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} /> */}
+        {/* ===== Module E: System Administration ===== */}
+        <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} />
+        <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} />
+        <Route path="/admin/resources" element={<ProtectedRoute roles={['ADMIN']}><ResourceManagementPage /></ProtectedRoute>} />
         {/* <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} /> */}
         {/* <Route path="/admin/reports" element={<ProtectedRoute roles={['ADMIN']}><ReportPage /></ProtectedRoute>} /> */}
 

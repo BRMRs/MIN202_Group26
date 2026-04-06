@@ -27,5 +27,13 @@ public class Tag {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        if (this.isDeleted == null) {
+            this.isDeleted = false;
+        }
+    }
+
     // TODO: @ManyToMany(mappedBy = "tags") private Set<Resource> resources;
 }
