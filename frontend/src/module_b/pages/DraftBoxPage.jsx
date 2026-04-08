@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { resourceApi } from '../api/resourceApi'
 import DraftForm from '../components/DraftForm'
 import styles from './DraftBoxPage.module.css'
+import { parseApiError } from '../../common/utils/apiError'
 
 export default function DraftBoxPage() {
   const [drafts, setDrafts] = useState([])
@@ -41,7 +42,7 @@ export default function DraftBoxPage() {
       setExpanded(null)
       refresh()
     } catch (e) {
-      setMsg(e.response?.data?.error || '保存失败')
+      setMsg(parseApiError(e))
     }
   }
 
@@ -50,10 +51,10 @@ export default function DraftBoxPage() {
       if (files[id]) await resourceApi.uploadFile(id, files[id])
       await resourceApi.saveDraft(id, forms[id])
       await resourceApi.submit(id)
-      setMsg(`草稿 #${id} 已提交审核`)
+      setMsg(`草稿 #${id} 已提交审核，管理员可在「资源审核」页面查看。`)
       refresh()
     } catch (e) {
-      setMsg(e.response?.data?.error || '提交失败')
+      setMsg(parseApiError(e))
     }
   }
 
@@ -64,7 +65,7 @@ export default function DraftBoxPage() {
       setMsg('草稿已删除')
       refresh()
     } catch (e) {
-      setMsg(e.response?.data?.error || '删除失败')
+      setMsg(parseApiError(e))
     }
   }
 
@@ -76,15 +77,6 @@ export default function DraftBoxPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1>Community Heritage</h1>
-        <nav>
-          <a href="/module-b/submit">提交资源</a>
-          <a href="/module-b/drafts">草稿箱</a>
-          <a href="/module-b/review">审核台</a>
-        </nav>
-      </header>
-
       <main className={styles.main}>
         <h2>草稿箱</h2>
         {msg && <div className={styles.msg}>{msg}</div>}

@@ -3,6 +3,11 @@ import { NavLink } from "react-router-dom";
 
 const navigationItems = [
   {
+    to: "/reviews",
+    label: "资源审核 (Module C)",
+    icon: ReviewIcon,
+  },
+  {
     to: "/admin/categories",
     label: "Category Management",
     icon: CategoryIcon,
@@ -18,6 +23,20 @@ const navigationItems = [
     icon: ResourceIcon,
   },
 ];
+
+function ReviewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" style={styles.icon} aria-hidden="true">
+      <path
+        d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function CategoryIcon() {
   return (

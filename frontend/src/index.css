@@ -1,4 +1,18 @@
 /* Base styles — Heritage Platform */
+:root {
+  /* Module B / shared UI — must be defined here; module CSS uses var(--primary) etc. */
+  --primary: #2d6a4f;
+  --primary-dark: #1b4332;
+  --bg: #f4f7f5;
+  --card: #ffffff;
+  --radius: 10px;
+  --muted: #64748b;
+  --text: #1e293b;
+  --border: #e2e8f0;
+  --success: #166534;
+  --danger: #b91c1c;
+}
+
 * {
   margin: 0;
   padding: 0;

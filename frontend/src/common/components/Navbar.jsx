@@ -25,15 +25,14 @@ function Navbar() {
           {user?.role === 'VIEWER' && <Link to="/apply-contributor">Become Contributor</Link>}
           {user?.role === 'CONTRIBUTOR' && (
             <>
-              <Link to="/module-b/submit">Submit Resource</Link>
-              <Link to="/module-b/drafts">Drafts</Link>
+              <Link to="/module-b/submit">提交资源</Link>
+              <Link to="/module-b/drafts">草稿箱</Link>
             </>
           )}
           {user?.role === 'ADMIN' && (
             <>
               <Link to="/admin/users">Users</Link>
-              <Link to="/module-b/review">Review Resources</Link>
-              <Link to="/reviews">Review Dashboard</Link>
+              <Link to="/reviews">资源审核</Link>
               <Link to="/admin/categories">Categories</Link>
               <Link to="/admin/tags">Tags</Link>
               <Link to="/admin/resources">Resources</Link>

@@ -1,19 +1,10 @@
-/**
- * Home page demo with temporary viewer login.
- * Integration note: replace local login with Module A auth API/context.
- */
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { browseResources, DISCOVER_LOAD_ERROR_MESSAGE } from '../api/discoverApi';
 import '../styles/discovery.css';
 
-const VIEWER_DEMO_LOGIN_KEY = 'module_d_viewer_demo_logged_in';
-
 function HomePage() {
   const navigate = useNavigate();
-  const [viewerLoggedIn, setViewerLoggedIn] = useState(
-    () => window.sessionStorage.getItem(VIEWER_DEMO_LOGIN_KEY) === 'true',
-  );
   const [resources, setResources] = useState([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -42,32 +33,8 @@ function HomePage() {
   };
 
   useEffect(() => {
-    if (viewerLoggedIn) fetchData(0);
-  }, [viewerLoggedIn, sortMode]);
-
-  const handleLoginDemo = () => {
-    window.sessionStorage.setItem(VIEWER_DEMO_LOGIN_KEY, 'true');
-    setViewerLoggedIn(true);
-  };
-
-  const handleLogoutDemo = () => {
-    window.sessionStorage.removeItem(VIEWER_DEMO_LOGIN_KEY);
-    setViewerLoggedIn(false);
-  };
-
-  if (!viewerLoggedIn) {
-    return (
-      <div className="d-page">
-        <div className="d-login-card">
-        <h1>Viewer Login (Demo)</h1>
-        <p>Temporary test block. Real login will be connected by Module A teammate.</p>
-        <button className="d-button" type="button" onClick={handleLoginDemo}>
-          Login as Viewer (Demo)
-        </button>
-        </div>
-      </div>
-    );
-  }
+    fetchData(0);
+  }, [sortMode]);
 
   return (
     <div className="d-page">
@@ -79,9 +46,6 @@ function HomePage() {
         <div className="d-controls">
           <button className="d-button d-button-secondary" type="button" onClick={() => navigate('/search')} aria-label="Search">
             🔍
-          </button>
-          <button className="d-button d-button-secondary" type="button" onClick={handleLogoutDemo}>
-            Logout
           </button>
         </div>
       </header>

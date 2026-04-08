@@ -31,15 +31,6 @@ export default function AdminReviewPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1>Community Heritage</h1>
-        <nav>
-          <a href="/module-b/submit">提交资源</a>
-          <a href="/module-b/drafts">草稿箱</a>
-          <a href="/module-b/review">审核台</a>
-        </nav>
-      </header>
-
       <main className={styles.main}>
         <h2>审核台 <span className={styles.badge}>{pending.length}</span></h2>
         {msg && <div className={styles.msg}>{msg}</div>}

@@ -1,10 +1,10 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './common/components/Navbar';
 import Footer from './common/components/Footer';
 import ProtectedRoute from './common/components/ProtectedRoute';
 
 import { LoginPage, RegisterPage, ProfilePage, ContributorApplyPage, AdminApprovalPage } from './module_a/pages';
-import { ResourceSubmissionPage, DraftBoxPage, AdminReviewPage } from './module_b/pages';
+import { ResourceSubmissionPage, DraftBoxPage } from './module_b/pages';
 import ReviewerDashboardPage from './module_c/pages/ReviewerDashboardPage';
 import ResourceReviewPage from './module_c/pages/ResourceReviewPage';
 import { HomePage, ResourceDetailPage, SearchResultsPage } from './module_d/pages';
@@ -29,7 +29,7 @@ function App() {
 
         <Route path="/module-b/submit" element={<ProtectedRoute roles={['CONTRIBUTOR']}><ResourceSubmissionPage /></ProtectedRoute>} />
         <Route path="/module-b/drafts" element={<ProtectedRoute roles={['CONTRIBUTOR']}><DraftBoxPage /></ProtectedRoute>} />
-        <Route path="/module-b/review" element={<ProtectedRoute roles={['ADMIN']}><AdminReviewPage /></ProtectedRoute>} />
+        <Route path="/module-b/review" element={<ProtectedRoute roles={['ADMIN']}><Navigate to="/reviews" replace /></ProtectedRoute>} />
 
         <Route path="/reviews" element={<ProtectedRoute roles={['ADMIN']}><ReviewerDashboardPage /></ProtectedRoute>} />
         <Route path="/reviews/:resourceId" element={<ProtectedRoute roles={['ADMIN']}><ResourceReviewPage /></ProtectedRoute>} />

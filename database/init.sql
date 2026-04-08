@@ -285,13 +285,27 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- Default admin account
 -- Username : admin
--- Password : admin123  ← BCrypt hash; change on first login!
+-- Password : admin123
 INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
 VALUES (
     'admin',
     'admin@heritage.org',
-    '$2a$10$N.zmdr9zjPTBSMqlLGsKyuNEBDLGSGFEKMFt8J6.5OB.bHm1GE8Ri',
+    '$2b$10$bkTyuuBfW3LZZ9NIOLqUaehjTh8XpyNeWbqwjtM27ybnfxr6ZIoCq',
     'ADMIN',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- Demo contributor account
+-- Username : contributor_demo
+-- Password : demo123
+INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
+VALUES (
+    'contributor_demo',
+    'contributor@heritage.org',
+    '$2b$10$CuGOqM.Zb4HhOJLK753hRuIDxSpekpcX4lliubMWcgzMILlxeRImG',
+    'CONTRIBUTOR',
     TRUE,
     NOW(),
     NOW()
