@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
+import Toast from '../../common/components/Toast';
 
 function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', password: '' });
-  const [error, setError] = useState('');
+  const [toast, setToast] = useState(null); // { message, type }
   const [loading, setLoading] = useState(false);
+
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,23 +20,26 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setToast(null);
 
     if (!form.username || !form.password) {
-      setError('Please fill in all fields.');
+      showToast('Please fill in all fields.');
       return;
     }
 
     setLoading(true);
     try {
       const userData = await login(form);
-      if (userData.role === 'ADMIN') {
-        navigate('/admin/users');
-      } else {
-        navigate('/');
-      }
+      showToast('Login successful! Redirecting...', 'success');
+      setTimeout(() => {
+        if (userData.role === 'ADMIN') {
+          navigate('/admin/users');
+        } else {
+          navigate('/');
+        }
+      }, 1000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid username or password.');
+      showToast(err.response?.data?.message || 'Invalid username or password.');
     } finally {
       setLoading(false);
     }
@@ -39,8 +47,14 @@ function LoginPage() {
 
   return (
     <div style={{ maxWidth: 400, margin: '4rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: 8 }}>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <h2>Login</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div>
           <label>Username</label>

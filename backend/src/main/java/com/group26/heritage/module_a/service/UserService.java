@@ -53,7 +53,7 @@ public class UserService {
     }
 
     @Transactional
-    public ContributorApplication applyForContributor(Long userId) {
+    public ContributorApplication applyForContributor(Long userId, String reason) {
         User user = getProfile(userId);
         if (user.getRole() != UserRole.VIEWER) {
             throw new IllegalArgumentException("Only VIEWER can apply for contributor role");
@@ -65,6 +65,7 @@ public class UserService {
         application.setUserId(userId);
         application.setStatus(ApplicationStatus.PENDING);
         application.setAppliedAt(LocalDateTime.now());
+        application.setReason(reason);
         return applicationRepository.save(application);
     }
 
