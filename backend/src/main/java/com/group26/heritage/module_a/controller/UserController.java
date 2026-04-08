@@ -3,8 +3,10 @@ package com.group26.heritage.module_a.controller;
 import com.group26.heritage.common.dto.ApiResponse;
 import com.group26.heritage.entity.ContributorApplication;
 import com.group26.heritage.entity.User;
+import com.group26.heritage.module_a.dto.ContributorApplyRequest;
 import com.group26.heritage.module_a.dto.ProfileUpdateRequest;
 import com.group26.heritage.module_a.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,8 +34,9 @@ public class UserController {
     }
 
     @PostMapping("/apply-contributor")
-    public ApiResponse<ContributorApplication> applyForContributor(@AuthenticationPrincipal User user) {
-        ContributorApplication app = userService.applyForContributor(user.getId());
+    public ApiResponse<ContributorApplication> applyForContributor(@AuthenticationPrincipal User user,
+                                                                    @Valid @RequestBody ContributorApplyRequest request) {
+        ContributorApplication app = userService.applyForContributor(user.getId(), request.getReason());
         return ApiResponse.success("Application submitted", app);
     }
 }
