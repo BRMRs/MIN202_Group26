@@ -8,8 +8,6 @@ import {
 } from '../api/discoverApi';
 import '../styles/discovery.css';
 
-const VIEWER_DEMO_LOGIN_KEY = 'module_d_viewer_demo_logged_in';
-
 function SearchResultsPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -76,15 +74,11 @@ function SearchResultsPage() {
   };
 
   useEffect(() => {
-    if (window.sessionStorage.getItem(VIEWER_DEMO_LOGIN_KEY) !== 'true') {
-      navigate('/');
-      return;
-    }
     Promise.all([listCategories(), listTags()]).then(([c, t]) => {
       setCategories(c?.data ?? []);
       setTags(t?.data ?? []);
     });
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     setKeywordInput(query.keyword);
