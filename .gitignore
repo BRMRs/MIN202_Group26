@@ -17,6 +17,7 @@ logs/
 backend/target/
 backend/*.jar
 backend/*.class
+backend/uploads/
 
 # Frontend build
 frontend/dist/
