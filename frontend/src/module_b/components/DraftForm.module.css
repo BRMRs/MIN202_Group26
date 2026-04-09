@@ -1,6 +1,41 @@
-.form { display: flex; flex-direction: column; gap: 18px; }
+/* DraftForm.module.css — aligned with Browse page visual language */
 
-.field { display: flex; flex-direction: column; gap: 6px; }
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Section header ── */
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f0ebe2;
+}
+
+.sectionDivider {
+  border: none;
+  border-top: 1px solid #f0ebe2;
+  margin: 24px 0;
+}
+
+/* ── Fields ── */
+.fieldsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
 .labelRow {
   display: flex;
@@ -8,32 +43,129 @@
   align-items: center;
 }
 
-label { font-weight: 600; font-size: 14px; }
-
-.req { color: var(--danger); }
-.muted { color: var(--muted); font-weight: 400; font-size: 13px; }
-
-.count { font-size: 12px; color: var(--muted); }
-.countWarn { font-size: 12px; color: var(--danger); font-weight: 600; }
-
-.input, .textarea, .fileInput {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+.label {
   font-size: 14px;
-  color: var(--text);
-  background: #f9fafb;
-  transition: border 0.2s;
+  font-weight: 600;
+  color: #374151;
 }
-.input:focus, .textarea:focus {
+
+.req {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.muted {
+  color: #9ca3af;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.count {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.countWarn {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* ── Inputs ── */
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #f9fafb;
+  transition: border-color 0.18s, background 0.18s;
+  font-family: inherit;
+}
+
+.input:focus,
+.textarea:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: #2d6a4f;
   background: #fff;
 }
 
-.textarea { min-height: 120px; resize: vertical; }
+.input::placeholder,
+.textarea::placeholder {
+  color: #9ca3af;
+}
 
-.fileInput { padding: 6px 12px; background: #fff; cursor: pointer; }
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.55;
+}
 
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* ── Two-column grid ── */
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Styled file upload area ── */
+.uploadArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 28px 20px;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+  background: #fafaf8;
+  text-align: center;
+  width: 100%;
+}
+
+.uploadArea:hover {
+  border-color: #2d6a4f;
+  background: #f0fdf4;
+}
+
+.uploadAreaHasFile {
+  border-color: #2d6a4f;
+  background: #f0fdf4;
+  border-style: solid;
+}
+
+.uploadIcon {
+  font-size: 26px;
+  opacity: 0.55;
+  line-height: 1;
+}
+
+.uploadFileName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d6a4f;
+}
+
+.uploadPrompt {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.uploadHint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.fileInputHidden {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+}

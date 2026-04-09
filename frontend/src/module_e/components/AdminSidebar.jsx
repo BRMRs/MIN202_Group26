@@ -3,6 +3,11 @@ import { NavLink } from "react-router-dom";
 
 const navigationItems = [
   {
+    to: "/admin/users",
+    label: "Contributor Applications",
+    icon: ApplicationsIcon,
+  },
+  {
     to: "/reviews",
     label: "资源审核 (Module C)",
     icon: ReviewIcon,
@@ -23,6 +28,19 @@ const navigationItems = [
     icon: ResourceIcon,
   },
 ];
+
+function ApplicationsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" style={styles.icon} aria-hidden="true">
+      <path
+        d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 14c-5 0-7 2.5-7 4v1h14v-1c0-1.5-2-4-7-4Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function ReviewIcon() {
   return (

@@ -2,9 +2,16 @@ import { useState, useEffect } from 'react';
 import useAuth from '../../common/hooks/useAuth';
 import { updateProfile } from '../api/userApi';
 import { VALIDATION } from '../../common/utils/constants';
+import styles from './ProfilePage.module.css';
+
+function roleBadgeClass(role) {
+  if (role === 'CONTRIBUTOR') return `${styles.roleBadge} ${styles.roleBadgeContributor}`;
+  if (role === 'ADMIN') return `${styles.roleBadge} ${styles.roleBadgeAdmin}`;
+  return `${styles.roleBadge} ${styles.roleBadgeViewer}`;
+}
 
 function ProfilePage() {
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ username: '', bio: '', avatarUrl: '' });
   const [error, setError] = useState('');
@@ -57,68 +64,141 @@ function ProfilePage() {
     }
   };
 
-  if (!user) return <div>Loading...</div>;
+  if (!user) return <div style={{ padding: '2rem' }}>Loading...</div>;
+
+  const initials = user.username?.[0]?.toUpperCase() || 'U';
+  const roleLabel = user.role
+    ? user.role.charAt(0) + user.role.slice(1).toLowerCase()
+    : 'Viewer';
 
   return (
-    <div style={{ maxWidth: 500, margin: '2rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: 8 }}>
-      <h2>My Profile</h2>
-
-      {!editing ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {user.avatarUrl && (
-            <img src={user.avatarUrl} alt="avatar" style={{ width: 80, height: 80, borderRadius: '50%' }} />
-          )}
-          <p><strong>Username:</strong> {user.username}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Role:</strong> {user.role}</p>
-          <p><strong>Bio:</strong> {user.bio || <em>No bio yet</em>}</p>
-          {success && <p style={{ color: 'green' }}>{success}</p>}
-          <button onClick={() => setEditing(true)} style={{ width: 120, padding: '0.5rem', cursor: 'pointer' }}>
-            Edit Profile
-          </button>
+    <div className={styles.page}>
+      <div className={styles.container}>
+        {/* Page header */}
+        <div className={styles.pageHeader}>
+          <p className={styles.pageEyebrow}>Community Heritage Platform</p>
+          <h1 className={styles.pageTitle}>My Profile</h1>
+          <p className={styles.pageSubtitle}>
+            Manage your account information and contributor status.
+          </p>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <div>
-            <label>Username</label>
-            <input
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              style={{ display: 'block', width: '100%', padding: '0.5rem', marginTop: 4 }}
-            />
+
+        {/* Main card */}
+        <div className={styles.card}>
+          {/* Avatar + identity row */}
+          <div className={styles.avatarRow}>
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} alt="avatar" className={styles.avatarImg} />
+            ) : (
+              <div className={styles.avatar}>{initials}</div>
+            )}
+            <div className={styles.avatarInfo}>
+              <div className={styles.usernameDisplay}>{user.username}</div>
+              <span className={roleBadgeClass(user.role)}>{roleLabel}</span>
+            </div>
           </div>
-          <div>
-            <label>Bio <span style={{ color: '#888', fontSize: '0.85rem' }}>({form.bio.length}/{VALIDATION.MAX_BIO_LENGTH})</span></label>
-            <textarea
-              name="bio"
-              value={form.bio}
-              onChange={handleChange}
-              rows={3}
-              style={{ display: 'block', width: '100%', padding: '0.5rem', marginTop: 4 }}
-            />
-          </div>
-          <div>
-            <label>Avatar URL</label>
-            <input
-              name="avatarUrl"
-              value={form.avatarUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/avatar.jpg"
-              style={{ display: 'block', width: '100%', padding: '0.5rem', marginTop: 4 }}
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button type="submit" disabled={loading} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-            <button type="button" onClick={handleCancel} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+
+          {!editing ? (
+            <>
+              {success && <div className={styles.successAlert}>{success}</div>}
+
+              {/* Account Information */}
+              <p className={styles.sectionLabel}>Account Information</p>
+              <div className={styles.infoGrid}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Username</span>
+                  <span className={styles.infoValue}>{user.username}</span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Email</span>
+                  <span className={styles.infoValue}>{user.email}</span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Role</span>
+                  <span className={styles.infoValue}>{user.role}</span>
+                </div>
+              </div>
+
+              <hr className={styles.divider} />
+
+              {/* About / Bio */}
+              <p className={styles.sectionLabel}>About</p>
+              <div className={styles.infoGrid}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Bio</span>
+                  {user.bio ? (
+                    <span className={styles.infoValue}>{user.bio}</span>
+                  ) : (
+                    <span className={styles.infoEmpty}>No bio yet</span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.actions}>
+                <button className={styles.btnPrimary} onClick={() => setEditing(true)}>
+                  Edit Profile
+                </button>
+              </div>
+            </>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              {error && <div className={styles.errorAlert}>{error}</div>}
+
+              <p className={styles.sectionLabel}>Edit Profile</p>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.label} htmlFor="username">Username</label>
+                <input
+                  id="username"
+                  className={styles.input}
+                  name="username"
+                  value={form.username}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <div className={styles.labelRow}>
+                  <label className={styles.label} htmlFor="bio">Bio</label>
+                  <span className={styles.counter}>
+                    {form.bio.length}/{VALIDATION.MAX_BIO_LENGTH}
+                  </span>
+                </div>
+                <textarea
+                  id="bio"
+                  className={styles.textarea}
+                  name="bio"
+                  value={form.bio}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.label} htmlFor="avatarUrl">Avatar URL</label>
+                <input
+                  id="avatarUrl"
+                  className={styles.input}
+                  name="avatarUrl"
+                  value={form.avatarUrl}
+                  onChange={handleChange}
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+
+              <div className={styles.actions}>
+                <button type="button" className={styles.btnSecondary} onClick={handleCancel}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.btnPrimary} disabled={loading}>
+                  {loading ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

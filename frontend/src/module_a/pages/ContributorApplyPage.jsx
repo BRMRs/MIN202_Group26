@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
 import { applyForContributor } from '../api/userApi';
 import { APPLICATION_STATUS } from '../../common/utils/constants';
+import styles from './ContributorApplyPage.module.css';
 
 const MAX_REASON_LENGTH = 100;
 
@@ -18,12 +19,39 @@ function ContributorApplyPage() {
   // Already a contributor or admin — nothing to do here
   if (user && user.role !== 'VIEWER') {
     return (
-      <div style={{ maxWidth: 480, margin: '4rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: 8 }}>
-        <h2>Contributor Application</h2>
-        <p>You are already a <strong>{user.role}</strong>. No application needed.</p>
-        <button onClick={() => navigate('/')} style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}>
-          Go Home
-        </button>
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.stateCard}>
+            <span className={styles.stateIcon}>✓</span>
+            <h2 className={styles.stateTitle}>
+              You're already a {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+            </h2>
+            <p className={styles.stateText}>No application needed — you already have contributor access.</p>
+            <button className={styles.btnAction} onClick={() => navigate('/')}>
+              Back to Browse
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === APPLICATION_STATUS.PENDING) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.stateCard}>
+            <span className={styles.stateIcon}>🕐</span>
+            <h2 className={styles.stateTitle}>Application submitted</h2>
+            <p className={styles.stateText}>
+              Your application is <strong>pending review</strong> by an administrator.
+            </p>
+            <p className={styles.stateText}>You will be notified once a decision has been made.</p>
+            <button className={styles.btnAction} onClick={() => navigate('/profile')}>
+              Back to Profile
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -56,59 +84,68 @@ function ContributorApplyPage() {
     }
   };
 
-  if (status === APPLICATION_STATUS.PENDING) {
-    return (
-      <div style={{ maxWidth: 480, margin: '4rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: 8 }}>
-        <h2>Application Submitted</h2>
-        <p>Your application is <strong>pending review</strong> by an administrator.</p>
-        <p>You will be notified once a decision has been made.</p>
-        <button onClick={() => navigate('/profile')} style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}>
-          Back to Profile
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ maxWidth: 480, margin: '4rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: 8 }}>
-      <h2>Apply to Become a Contributor</h2>
-      <p>As a contributor you can submit cultural heritage resources for review and publication.</p>
-      <p>Your application will be reviewed by an administrator.</p>
-
-      <div style={{ marginTop: '1.5rem' }}>
-        <label htmlFor="reason" style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 500 }}>
-          Reason for Application <span style={{ color: 'red' }}>*</span>
-        </label>
-        <textarea
-          id="reason"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          maxLength={MAX_REASON_LENGTH}
-          rows={4}
-          placeholder="Please explain why you want to become a contributor..."
-          style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box', resize: 'vertical', fontSize: '0.95rem' }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-          {reasonError ? (
-            <span style={{ color: 'red' }}>{reasonError}</span>
-          ) : (
-            <span />
-          )}
-          <span style={{ color: reason.length >= MAX_REASON_LENGTH ? 'red' : '#888' }}>
-            {reason.length}/{MAX_REASON_LENGTH}
-          </span>
+    <div className={styles.page}>
+      <div className={styles.container}>
+        {/* Page header */}
+        <div className={styles.pageHeader}>
+          <p className={styles.pageEyebrow}>Community Heritage Platform</p>
+          <h1 className={styles.pageTitle}>Become a Contributor</h1>
+          <p className={styles.pageSubtitle}>
+            Share cultural and community heritage resources with the world.
+          </p>
         </div>
-      </div>
 
-      {error && <p style={{ color: 'red', marginTop: '0.75rem' }}>{error}</p>}
+        {/* Contributor benefits info panel */}
+        <div className={styles.infoPanel}>
+          <span className={styles.infoIcon}>🏛️</span>
+          <div className={styles.infoText}>
+            <strong>Contributor access</strong> lets you submit heritage resources, save drafts,
+            and track your submissions through the review process.
+            Your application will be reviewed by an administrator.
+          </div>
+        </div>
 
-      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-        <button onClick={handleApply} disabled={loading} style={{ padding: '0.6rem 1.2rem', cursor: 'pointer' }}>
-          {loading ? 'Submitting...' : 'Submit Application'}
-        </button>
-        <button onClick={() => navigate('/profile')} style={{ padding: '0.6rem 1.2rem', cursor: 'pointer' }}>
-          Cancel
-        </button>
+        {/* Application card */}
+        <div className={styles.card}>
+          <p className={styles.sectionLabel}>Application Details</p>
+
+          {error && <div className={styles.errorAlert}>{error}</div>}
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor="reason">
+              Reason for Application <span className={styles.req}>*</span>
+            </label>
+            <textarea
+              id="reason"
+              className={styles.textarea}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={MAX_REASON_LENGTH}
+              rows={5}
+              placeholder="Please explain why you want to become a contributor and what kind of heritage resources you plan to share…"
+            />
+            <div className={styles.counterRow}>
+              {reasonError ? (
+                <span className={styles.fieldError}>{reasonError}</span>
+              ) : (
+                <span />
+              )}
+              <span className={reason.length >= MAX_REASON_LENGTH ? styles.counterWarn : styles.counter}>
+                {reason.length}/{MAX_REASON_LENGTH}
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.actions}>
+            <button className={styles.btnSecondary} type="button" onClick={() => navigate('/profile')}>
+              Cancel
+            </button>
+            <button className={styles.btnPrimary} type="button" onClick={handleApply} disabled={loading}>
+              {loading ? 'Submitting…' : 'Submit Application'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

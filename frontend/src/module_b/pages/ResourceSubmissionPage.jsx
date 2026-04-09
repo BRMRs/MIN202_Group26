@@ -21,7 +21,7 @@ export default function ResourceSubmissionPage() {
     if (!isAuthenticated) return
     resourceApi.getOptions()
       .then(r => setOptions(r.data))
-      .catch(() => setMsg('选项加载失败，请稍后重试'))
+      .catch(() => setMsg('Failed to load options. Please refresh and try again.'))
   }, [isAuthenticated])
 
   const validate = () => {
@@ -46,7 +46,7 @@ export default function ResourceSubmissionPage() {
       if (file) await resourceApi.uploadFile(draft.id, file)
       await resourceApi.saveDraft(draft.id, form)
       await resourceApi.submit(draft.id)
-      setMsg('提交成功！资源已进入待审核状态，管理员可在「资源审核」页面（Module C）进行审核。')
+      setMsg('Resource submitted successfully! It is now pending review by an administrator.')
       setForm({ title: '', category: '', place: '', description: '', tags: '', copyrightDeclaration: '', externalLink: '' })
       setFile(null)
     } catch (e) {
@@ -62,8 +62,8 @@ export default function ResourceSubmissionPage() {
       const { data: draft } = await resourceApi.createDraft()
       if (file) await resourceApi.uploadFile(draft.id, file)
       await resourceApi.saveDraft(draft.id, form)
-      setMsg('草稿已保存')
-      setTimeout(() => setMsg(''), 1500)
+      setMsg('Draft saved.')
+      setTimeout(() => setMsg(''), 2000)
     } catch (e) {
       setMsg(parseApiError(e))
     } finally {
@@ -74,13 +74,19 @@ export default function ResourceSubmissionPage() {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <div className={styles.card}>
-          <h2>提交文化遗产资源</h2>
-          <p className={styles.hint}>填写信息后点击「提交资源」将进入待审核队列；管理员在 Module C 的「资源审核」界面处理，不再使用旧版 Module B 审核页。</p>
+        {/* Page header */}
+        <div className={styles.pageHeader}>
+          <p className={styles.pageEyebrow}>Community Heritage Platform</p>
+          <h1 className={styles.pageTitle}>Submit a Heritage Resource</h1>
+          <p className={styles.pageSubtitle}>
+            Fill in the details below and submit for administrator review.
+          </p>
+        </div>
 
+        <div className={styles.card}>
           {!isAuthenticated && (
-            <div style={{marginBottom:16,padding:12,border:'1px solid #d0d7e2',borderRadius:8,background:'#f8fafc'}}>
-              <p>Please <a href="/login">log in</a> as a Contributor to submit resources.</p>
+            <div className={styles.authNotice}>
+              Please <a href="/login">log in</a> as a Contributor to submit resources.
             </div>
           )}
 
@@ -106,10 +112,10 @@ export default function ResourceSubmissionPage() {
           {isAuthenticated && (
             <div className={styles.actions}>
               <button type="button" className={styles.btnSecondary} onClick={handleSaveDraft} disabled={saving}>
-                {saving ? '处理中…' : '保存草稿'}
+                {saving ? 'Saving…' : 'Save Draft'}
               </button>
               <button type="button" className={styles.btnPrimary} onClick={handleSaveAndSubmit} disabled={saving}>
-                {saving ? '提交中…' : '提交资源'}
+                {saving ? 'Submitting…' : 'Submit Resource'}
               </button>
             </div>
           )}
