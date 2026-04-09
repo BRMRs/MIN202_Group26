@@ -29,13 +29,14 @@ export const searchAndFilterResources = ({
   keyword,
   categoryId,
   tagIds = [],
+  place,
   page = 0,
   size = 10,
   sortBy = 'createdAt',
   direction = 'DESC',
 } = {}) =>
   apiClient.get('/discover/resources', {
-    params: cleanParams({ keyword, categoryId, tagIds, page, size, sortBy, direction }),
+    params: cleanParams({ keyword, categoryId, tagIds, place, page, size, sortBy, direction }),
   });
 
 export const listCategories = () => apiClient.get('/discover/categories');

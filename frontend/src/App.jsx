@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
 import Navbar from './common/components/Navbar';
 import Footer from './common/components/Footer';
 import ProtectedRoute from './common/components/ProtectedRoute';

@@ -1,51 +1,81 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const navLink = (to, label) => (
+    <Link to={to} className={`hn-link${pathname === to ? ' hn-link-active' : ''}`}>
+      {label}
+    </Link>
+  );
+
   return (
-    <nav style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1.5rem', borderBottom: '1px solid #ddd' }}>
-      <Link to="/" style={{ fontWeight: 'bold', fontSize: '1.1rem', textDecoration: 'none' }}>
-        Heritage Platform
-      </Link>
+    <nav className="hn-nav">
+      <div className="hn-inner">
+        {/* Logo */}
+        <Link to="/" className="hn-logo">
+          <span className="hn-logo-icon">🏛</span>
+          Heritage Platform
+        </Link>
 
-      <span style={{ flex: 1 }} />
+        {/* Centre nav links */}
+        <div className="hn-links">
+          {navLink('/', 'Browse')}
 
-      {isAuthenticated ? (
-        <>
-          <span>Hi, {user?.username}</span>
-          <Link to="/profile">Profile</Link>
-          {user?.role === 'VIEWER' && <Link to="/apply-contributor">Become Contributor</Link>}
-          {user?.role === 'CONTRIBUTOR' && (
+          {isAuthenticated && (
             <>
-              <Link to="/module-b/submit">提交资源</Link>
-              <Link to="/module-b/drafts">草稿箱</Link>
+              {user?.role === 'VIEWER' && navLink('/apply-contributor', 'Become Contributor')}
+
+              {user?.role === 'CONTRIBUTOR' && (
+                <>
+                  {navLink('/module-b/submit', 'Submit Resource')}
+                  {navLink('/module-b/drafts', 'My Drafts')}
+                </>
+              )}
+
+              {user?.role === 'ADMIN' && (
+                <>
+                  {navLink('/admin/users', 'Users')}
+                  {navLink('/reviews', 'Review Queue')}
+                  {navLink('/admin/categories', 'Categories')}
+                  {navLink('/admin/tags', 'Tags')}
+                  {navLink('/admin/resources', 'Resources')}
+                </>
+              )}
             </>
           )}
-          {user?.role === 'ADMIN' && (
+        </div>
+
+        {/* Right: auth controls */}
+        <div className="hn-right">
+          {isAuthenticated ? (
             <>
-              <Link to="/admin/users">Users</Link>
-              <Link to="/reviews">资源审核</Link>
-              <Link to="/admin/categories">Categories</Link>
-              <Link to="/admin/tags">Tags</Link>
-              <Link to="/admin/resources">Resources</Link>
+              <Link to="/profile" className="hn-profile-link" title="View profile">
+                <span className="hn-avatar">
+                  {user?.username?.[0]?.toUpperCase() || 'U'}
+                </span>
+                <span className="hn-username">{user?.username}</span>
+              </Link>
+              <button className="hn-logout-btn" type="button" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="hn-login-link">Login</Link>
+              <Link to="/register" className="hn-register-btn">Register</Link>
             </>
           )}
-          <button onClick={handleLogout}>Logout</button>
-        </>
-      ) : (
-        <>
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
-        </>
-      )}
+        </div>
+      </div>
     </nav>
   );
 }
