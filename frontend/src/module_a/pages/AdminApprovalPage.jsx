@@ -47,7 +47,7 @@ function AdminApprovalPage() {
     }
   };
 
-  const pendingCount = applications.filter((a) => a.status === 'PENDING').length;
+  const pendingCount  = applications.filter((a) => a.status === 'PENDING').length;
   const approvedCount = applications.filter((a) => a.status === 'APPROVED').length;
   const rejectedCount = applications.filter((a) => a.status === 'REJECTED').length;
 
@@ -56,79 +56,74 @@ function AdminApprovalPage() {
       ? applications
       : applications.filter((a) => a.status === filterStatus);
 
+  const statCards = [
+    { value: pendingCount,        label: 'Pending',  color: '#b45309' },
+    { value: approvedCount,       label: 'Approved', color: '#166534' },
+    { value: rejectedCount,       label: 'Rejected', color: '#b91c1c' },
+    { value: applications.length, label: 'Total',    color: '#374151' },
+  ];
+
   return (
     <div style={styles.layout}>
       <AdminSidebar />
+
       <main style={styles.main}>
         <div style={styles.page}>
-          {/* Hero panel */}
-          <div style={styles.hero}>
-            <div style={styles.heroTopRow}>
-              <div>
-                <h1 style={styles.title}>Contributor Applications</h1>
-                <p style={styles.subtitle}>Review and manage contributor access requests.</p>
-              </div>
-            </div>
 
-            {/* Summary stats */}
-            <div style={styles.statsRow}>
-              <div style={styles.statCard}>
-                <div style={styles.statValue}>{pendingCount}</div>
-                <div style={styles.statLabel}>Pending</div>
-              </div>
-              <div style={styles.statCard}>
-                <div style={styles.statValue}>{approvedCount}</div>
-                <div style={styles.statLabel}>Approved</div>
-              </div>
-              <div style={styles.statCard}>
-                <div style={styles.statValue}>{rejectedCount}</div>
-                <div style={styles.statLabel}>Rejected</div>
-              </div>
-              <div style={styles.statCard}>
-                <div style={styles.statValue}>{applications.length}</div>
-                <div style={styles.statLabel}>Total</div>
-              </div>
-            </div>
-
-            {/* Status filter */}
-            <div style={styles.toolbar}>
-              <div style={styles.filterGroup}>
-                {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
-                  <button
-                    key={status}
-                    style={{
-                      ...styles.filterBtn,
-                      ...(filterStatus === status ? styles.filterBtnActive : {}),
-                    }}
-                    onClick={() => setFilterStatus(status)}
-                  >
-                    {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
-              <span style={styles.metaPill}>
-                {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
-              </span>
-            </div>
-
-            {error && <div style={styles.errorBanner}>{error}</div>}
+          {/* Page header */}
+          <div style={styles.pageHeader}>
+            <h1 style={styles.title}>Contributor Applications</h1>
+            <p style={styles.subtitle}>Review and manage contributor access requests.</p>
           </div>
+
+          {/* Summary stats */}
+          <div style={styles.statsRow}>
+            {statCards.map(({ value, label, color }) => (
+              <div key={label} style={styles.statCard}>
+                <div style={{ ...styles.statValue, color }}>{value}</div>
+                <div style={styles.statLabel}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filter tabs + record count */}
+          <div style={styles.toolbar}>
+            <div style={styles.filterGroup}>
+              {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+                <button
+                  key={status}
+                  style={{
+                    ...styles.filterBtn,
+                    ...(filterStatus === status ? styles.filterBtnActive : {}),
+                  }}
+                  onClick={() => setFilterStatus(status)}
+                >
+                  {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+            <span style={styles.recordCount}>
+              {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
+            </span>
+          </div>
+
+          {error && <div style={styles.errorBanner}>{error}</div>}
 
           {/* Table card */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Applications</h2>
-              {loading && <span style={styles.loadingText}>Loading...</span>}
+              <span style={styles.cardTitle}>Applications</span>
+              {loading && <span style={styles.loadingText}>Loading…</span>}
             </div>
 
             <div style={styles.tableWrap}>
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    <th style={{ ...styles.th, width: 60 }}>ID</th>
+                    <th style={{ ...styles.th, width: 64 }}>ID</th>
                     <th style={styles.th}>User ID</th>
                     <th style={styles.th}>Applied At</th>
-                    <th style={{ ...styles.th, width: 130 }}>Status</th>
+                    <th style={{ ...styles.th, width: 120 }}>Status</th>
                     <th style={{ ...styles.th, width: 180 }}>Actions</th>
                   </tr>
                 </thead>
@@ -143,11 +138,16 @@ function AdminApprovalPage() {
                     </tr>
                   ) : (
                     filtered.map((app) => (
-                      <tr key={app.id} style={styles.tr}>
+                      <tr
+                        key={app.id}
+                        style={styles.tr}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f7fcf9'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}
+                      >
                         <td style={styles.tdMono}>{app.id}</td>
                         <td style={styles.td}>{app.userId}</td>
                         <td style={styles.td}>
-                          {app.appliedAt ? new Date(app.appliedAt).toLocaleString() : '-'}
+                          {app.appliedAt ? new Date(app.appliedAt).toLocaleString() : '—'}
                         </td>
                         <td style={styles.td}>
                           <span
@@ -200,6 +200,7 @@ function AdminApprovalPage() {
               </table>
             </div>
           </div>
+
         </div>
       </main>
     </div>
@@ -207,235 +208,246 @@ function AdminApprovalPage() {
 }
 
 const styles = {
+  /* ── Layout shell ── */
   layout: {
     minHeight: '100vh',
-    background:
-      'radial-gradient(1200px 600px at 20% 0%, rgba(255, 233, 210, 0.8), transparent 55%), radial-gradient(900px 500px at 85% 10%, rgba(210, 235, 255, 0.75), transparent 52%), #0b0d12',
+    background: '#f4f7f5',
     display: 'flex',
   },
   main: {
     marginLeft: 260,
     flex: 1,
-    padding: '32px',
-    overflowY: 'auto',
+    padding: '36px 40px',
+    minHeight: '100vh',
   },
   page: {
-    maxWidth: 1080,
+    maxWidth: 1020,
     margin: '0 auto',
-    color: '#eaf0ff',
-    fontFamily:
-      'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif',
   },
-  hero: {
-    marginBottom: 18,
-    padding: '18px 18px 14px',
-    borderRadius: 16,
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-    backdropFilter: 'blur(10px)',
-  },
-  heroTopRow: {
-    marginBottom: 16,
+
+  /* ── Page header ── */
+  pageHeader: {
+    marginBottom: 24,
   },
   title: {
     margin: 0,
-    fontSize: 30,
+    fontSize: 24,
+    fontWeight: 700,
     letterSpacing: '-0.02em',
-    lineHeight: 1.1,
+    color: '#1a2e1f',
+    lineHeight: 1.2,
   },
   subtitle: {
-    margin: '10px 0 0',
-    color: 'rgba(234,240,255,0.78)',
+    margin: '6px 0 0',
+    color: '#6b7280',
     fontSize: 14,
     lineHeight: 1.6,
   },
+
+  /* ── Summary stat cards ── */
   statsRow: {
     display: 'flex',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 20,
     flexWrap: 'wrap',
   },
   statCard: {
-    padding: '12px 18px',
+    background: '#fff',
+    border: '1px solid #e8e3dc',
     borderRadius: 12,
-    border: '1px solid rgba(255,255,255,0.10)',
-    background: 'rgba(0,0,0,0.18)',
-    minWidth: 90,
+    padding: '14px 22px',
+    minWidth: 100,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 900,
-    color: '#ffffff',
+    fontSize: 26,
+    fontWeight: 800,
     lineHeight: 1.1,
   },
   statLabel: {
     fontSize: 11,
-    color: 'rgba(234,240,255,0.55)',
-    marginTop: 4,
+    color: '#9ca3af',
+    marginTop: 5,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
+    fontWeight: 600,
   },
+
+  /* ── Filter toolbar ── */
   toolbar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+    marginBottom: 14,
     flexWrap: 'wrap',
   },
   filterGroup: {
     display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap',
+    gap: 3,
+    background: '#fff',
+    border: '1px solid #e8e3dc',
+    borderRadius: 10,
+    padding: '4px',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
   },
   filterBtn: {
-    padding: '7px 14px',
-    borderRadius: 10,
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(0,0,0,0.20)',
-    color: 'rgba(234,240,255,0.72)',
+    padding: '6px 14px',
+    borderRadius: 7,
+    border: 'none',
+    background: 'transparent',
+    color: '#6b7280',
     fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
+    lineHeight: 1.4,
   },
   filterBtnActive: {
-    background: 'rgba(120, 170, 255, 0.18)',
-    borderColor: 'rgba(120, 170, 255, 0.40)',
-    color: '#ffffff',
+    background: '#2d6a4f',
+    color: '#fff',
   },
-  metaPill: {
-    padding: '7px 12px',
-    borderRadius: 999,
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(0,0,0,0.18)',
-    color: 'rgba(234,240,255,0.72)',
+  recordCount: {
     fontSize: 12,
-    fontWeight: 600,
+    color: '#9ca3af',
+    fontWeight: 500,
   },
+
+  /* ── Error banner ── */
   errorBanner: {
-    marginTop: 12,
-    padding: '10px 12px',
-    borderRadius: 12,
-    border: '1px solid rgba(255, 107, 107, 0.35)',
-    background: 'rgba(255, 107, 107, 0.12)',
-    color: '#ffecec',
+    marginBottom: 14,
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '1px solid #fca5a5',
+    background: '#fef2f2',
+    color: '#b91c1c',
     fontSize: 13,
     lineHeight: 1.5,
   },
+
+  /* ── Table card ── */
   card: {
-    borderRadius: 16,
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(0,0,0,0.22)',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+    background: '#fff',
+    borderRadius: 14,
+    border: '1px solid #e8e3dc',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
     overflow: 'hidden',
   },
   cardHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '14px 16px',
-    borderBottom: '1px solid rgba(255,255,255,0.10)',
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+    padding: '12px 20px',
+    borderBottom: '1px solid #f0ebe2',
+    background: '#fafaf8',
   },
   cardTitle: {
-    margin: 0,
-    fontSize: 14,
+    fontSize: 11,
+    fontWeight: 700,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
-    color: 'rgba(234,240,255,0.78)',
+    color: '#9ca3af',
   },
   loadingText: {
     fontSize: 12,
-    color: 'rgba(234,240,255,0.65)',
+    color: '#9ca3af',
   },
+
+  /* ── Table ── */
   tableWrap: { overflowX: 'auto' },
   table: {
     width: '100%',
-    borderCollapse: 'separate',
-    borderSpacing: 0,
+    borderCollapse: 'collapse',
     fontSize: 14,
   },
   th: {
     textAlign: 'left',
-    padding: '12px 16px',
-    color: 'rgba(234,240,255,0.65)',
+    padding: '11px 20px',
+    color: '#6b7280',
     fontSize: 11,
-    letterSpacing: '0.08em',
+    letterSpacing: '0.07em',
     textTransform: 'uppercase',
-    borderBottom: '1px solid rgba(255,255,255,0.10)',
-    background: 'rgba(255,255,255,0.02)',
+    fontWeight: 700,
+    borderBottom: '1px solid #f0ebe2',
+    background: '#fafaf8',
     whiteSpace: 'nowrap',
   },
   tr: {
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    borderBottom: '1px solid #f5f1ec',
+    transition: 'background 120ms ease',
   },
   td: {
-    padding: '13px 16px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    padding: '13px 20px',
+    borderBottom: '1px solid #f5f1ec',
     verticalAlign: 'middle',
-    color: 'rgba(234,240,255,0.85)',
+    color: '#374151',
   },
   tdMono: {
-    padding: '13px 16px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-    fontFamily:
-      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-    color: 'rgba(234,240,255,0.65)',
+    padding: '13px 20px',
+    borderBottom: '1px solid #f5f1ec',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
+    color: '#9ca3af',
+    fontSize: 13,
     verticalAlign: 'middle',
   },
   emptyCell: {
-    padding: '36px 16px',
-    color: 'rgba(234,240,255,0.45)',
+    padding: '48px 20px',
+    color: '#9ca3af',
     fontStyle: 'italic',
     textAlign: 'center',
+    fontSize: 14,
   },
+
+  /* ── Status badges ── */
   badge: {
     display: 'inline-flex',
     alignItems: 'center',
-    padding: '5px 10px',
+    padding: '4px 10px',
     borderRadius: 999,
     fontSize: 12,
-    fontWeight: 700,
-    letterSpacing: '0.04em',
+    fontWeight: 600,
+    letterSpacing: '0.03em',
     border: '1px solid transparent',
   },
   badgePending: {
-    background: 'rgba(255, 196, 72, 0.12)',
-    color: 'rgba(255, 224, 140, 0.95)',
-    borderColor: 'rgba(255, 196, 72, 0.28)',
+    background: '#fef3c7',
+    color: '#92400e',
+    borderColor: '#fde68a',
   },
   badgeApproved: {
-    background: 'rgba(72, 255, 171, 0.12)',
-    color: 'rgba(162, 255, 210, 0.95)',
-    borderColor: 'rgba(72, 255, 171, 0.22)',
+    background: '#dcfce7',
+    color: '#166534',
+    borderColor: '#bbf7d0',
   },
   badgeRejected: {
-    background: 'rgba(255, 107, 107, 0.12)',
-    color: 'rgba(255, 180, 180, 0.95)',
-    borderColor: 'rgba(255, 107, 107, 0.25)',
+    background: '#fee2e2',
+    color: '#b91c1c',
+    borderColor: '#fca5a5',
   },
+
+  /* ── Action buttons ── */
   actions: {
     display: 'flex',
     gap: 8,
     alignItems: 'center',
   },
   actionBtn: {
-    padding: '7px 14px',
-    borderRadius: 10,
+    padding: '6px 14px',
+    borderRadius: 8,
     fontSize: 13,
-    fontWeight: 700,
+    fontWeight: 600,
     cursor: 'pointer',
-    border: '1px solid transparent',
+    border: '1.5px solid transparent',
   },
   approveBtn: {
-    background: 'rgba(72, 255, 171, 0.10)',
-    color: 'rgba(162, 255, 210, 0.95)',
-    borderColor: 'rgba(72, 255, 171, 0.25)',
+    background: '#f0fdf4',
+    color: '#166534',
+    borderColor: '#86efac',
   },
   rejectBtn: {
-    background: 'rgba(255, 107, 107, 0.10)',
-    color: 'rgba(255, 180, 180, 0.95)',
-    borderColor: 'rgba(255, 107, 107, 0.25)',
+    background: '#fff1f2',
+    color: '#b91c1c',
+    borderColor: '#fca5a5',
   },
   actionBtnDisabled: {
     opacity: 0.5,

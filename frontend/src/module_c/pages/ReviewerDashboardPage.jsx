@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getResources } from '../api/reviewApi';
+import { AdminSidebar } from '../../module_e/components';
 
-// PBI 3.1 — Task: Design resource management list UI with status filters (#26)
-// PBI 3.4 — Task: Ensure the Review Queue automatically includes resubmitted items
 /**
  * Reviewer Dashboard Page — Module C
  * PBI 3.1: List pending resources with status filters, chronological sorting
  * PBI 3.4: Show resubmission badge for PENDING_REVIEW items with prior rejections
  */
+
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'PENDING_REVIEW', label: 'Pending Review' },
@@ -20,20 +20,28 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS = {
-  PENDING_REVIEW: { bg: '#fff3cd', color: '#856404', border: '#ffc107' },
-  APPROVED:       { bg: '#d1e7dd', color: '#0a3622', border: '#198754' },
-  REJECTED:       { bg: '#f8d7da', color: '#58151c', border: '#dc3545' },
-  UNPUBLISHED:    { bg: '#cfe2ff', color: '#052c65', border: '#0d6efd' },
-  ARCHIVED:       { bg: '#e2e3e5', color: '#383d41', border: '#6c757d' },
-  DRAFT:          { bg: '#f0f0f0', color: '#555',    border: '#aaa' },
+  PENDING_REVIEW: { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+  APPROVED:       { bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },
+  REJECTED:       { bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5' },
+  UNPUBLISHED:    { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
+  ARCHIVED:       { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' },
+  DRAFT:          { bg: '#f9fafb', color: '#9ca3af', border: '#e5e7eb' },
 };
 
 function StatusBadge({ status }) {
   const s = STATUS_COLORS[status] || STATUS_COLORS.DRAFT;
   return (
     <span style={{
-      padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '4px 10px',
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 600,
+      letterSpacing: '0.03em',
+      background: s.bg,
+      color: s.color,
+      border: `1px solid ${s.border}`,
       whiteSpace: 'nowrap',
     }}>
       {status?.replace('_', ' ')}
@@ -45,12 +53,22 @@ function StatusBadge({ status }) {
 function ResubmissionBadge({ rejectionCount }) {
   if (!rejectionCount || rejectionCount < 1) return null;
   return (
-    <span title={`Previously rejected ${rejectionCount} time(s) — audit trail available on detail page`}
+    <span
+      title={`Previously rejected ${rejectionCount} time(s) — audit trail available on detail page`}
       style={{
-        marginLeft: 6, padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700,
-        background: '#fff0f0', color: '#c0392b', border: '1px solid #e74c3c',
-        verticalAlign: 'middle', cursor: 'default', whiteSpace: 'nowrap',
-      }}>
+        marginLeft: 6,
+        padding: '2px 8px',
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 700,
+        background: '#fee2e2',
+        color: '#b91c1c',
+        border: '1px solid #fca5a5',
+        verticalAlign: 'middle',
+        cursor: 'default',
+        whiteSpace: 'nowrap',
+      }}
+    >
       ↩ Resubmission ×{rejectionCount}
     </span>
   );
@@ -59,11 +77,11 @@ function ResubmissionBadge({ rejectionCount }) {
 function ReviewerDashboardPage() {
   const navigate = useNavigate();
 
-  const [resources, setResources]     = useState([]);
-  const [totalPages, setTotalPages]   = useState(0);
-  const [totalItems, setTotalItems]   = useState(0);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
+  const [resources, setResources]   = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
 
   // Filters
   const [activeStatus, setActiveStatus] = useState('PENDING_REVIEW');
@@ -102,174 +120,433 @@ function ReviewerDashboardPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f7f5', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={styles.layout}>
+      <AdminSidebar />
 
-      {/* Header */}
-      <div style={{ background: '#2d6a4f', color: 'white', padding: '20px 32px' }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>📋 Resource Review Dashboard</h1>
-        <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: 14 }}>
-          PBI 3.1 + PBI 3.4 — Module C · Heritage Platform Admin
-        </p>
-      </div>
+      <main style={styles.main}>
+        <div style={styles.page}>
 
-      <div style={{ padding: '24px 32px' }}>
+          {/* Page header */}
+          <div style={styles.pageHeader}>
+            <h1 style={styles.title}>Resource Review</h1>
+            <p style={styles.subtitle}>
+              Review submitted resources, approve or reject contributions, and manage publication status.
+            </p>
+          </div>
 
-        {/* Testing notice */}
-        <div style={{ background: '#fff8e1', border: '1px solid #f0c040', borderRadius: 8,
-          padding: '10px 16px', marginBottom: 20, fontSize: 13, color: '#7a5800' }}>
-          ⚠️ <strong>Testing Mode:</strong> Requests are sent as Admin (ID=1).
-          Replace with JWT auth once Module A is complete.
-        </div>
+          {/* Testing mode notice — PBI 3.1 */}
+          <div style={styles.testingNotice}>
+            <strong>Testing Mode:</strong> Requests are sent as Admin (ID=1).
+            Replace with JWT auth once Module A is complete.
+          </div>
 
-        {/* Filter + Sort bar */}
-        <div style={{ background: 'white', borderRadius: 10, padding: '16px 20px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20,
-          display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          {/* Filter + sort card */}
+          <div style={styles.filterCard}>
+            <div style={styles.filterRow}>
+              <div style={styles.filterPills}>
+                {STATUS_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleStatusChange(opt.value)}
+                    style={{
+                      ...styles.filterBtn,
+                      ...(activeStatus === opt.value ? styles.filterBtnActive : {}),
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
 
-          <span style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>Status:</span>
-
-          {/* Status filter pills */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {STATUS_OPTIONS.map(opt => (
-              <button key={opt.value} onClick={() => handleStatusChange(opt.value)}
-                style={{
-                  padding: '5px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer',
-                  border: '1.5px solid',
-                  borderColor: activeStatus === opt.value ? '#2d6a4f' : '#d0d0d0',
-                  background: activeStatus === opt.value ? '#2d6a4f' : 'white',
-                  color: activeStatus === opt.value ? 'white' : '#444',
-                  fontWeight: activeStatus === opt.value ? 600 : 400,
-                  transition: 'all 0.15s',
-                }}>
-                {opt.label}
+              <button onClick={handleSortToggle} style={styles.sortBtn}>
+                {sortDir === 'desc' ? '↓ Newest First' : '↑ Oldest First'}
               </button>
-            ))}
+            </div>
+
+            <div style={styles.counts}>
+              {loading ? 'Loading…' : `${totalItems} resource(s) found`}
+            </div>
+
+            {error && (
+              <div style={styles.errorBanner}>
+                {error}
+              </div>
+            )}
           </div>
 
-          {/* Sort toggle */}
-          <div style={{ marginLeft: 'auto' }}>
-            <button onClick={handleSortToggle}
-              style={{ padding: '6px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                border: '1.5px solid #2d6a4f', background: 'white', color: '#2d6a4f',
-                fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-              {sortDir === 'desc' ? '↓ Newest First' : '↑ Oldest First'}
-            </button>
-          </div>
-        </div>
+          {/* Table card */}
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <span style={styles.cardTitle}>Resources</span>
+              {loading && <span style={styles.loadingText}>Loading…</span>}
+            </div>
 
-        {/* Result count */}
-        <div style={{ marginBottom: 12, fontSize: 13, color: '#666' }}>
-          {loading ? 'Loading…' : `${totalItems} resource(s) found`}
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div style={{ background: '#f8d7da', border: '1px solid #dc3545', borderRadius: 8,
-            padding: '12px 16px', color: '#58151c', marginBottom: 16, fontSize: 14 }}>
-            ❌ {error}
-          </div>
-        )}
-
-        {/* Table */}
-        <div style={{ background: 'white', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead>
-              <tr style={{ background: '#f0f4f2', borderBottom: '2px solid #e0e8e4' }}>
-                {['#', 'Title', 'Contributor', 'Category', 'Status', 'Place', 'Created', 'Action']
-                  .map(h => (
-                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left',
-                      fontWeight: 600, color: '#2d6a4f', fontSize: 13 }}>
-                      {h}
-                    </th>
-                  ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#888' }}>
-                  Loading resources…
-                </td></tr>
-              ) : resources.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#888' }}>
-                  No resources found for this filter.
-                </td></tr>
-              ) : (
-                resources.map((r, idx) => (
-                  <tr key={r.id}
-                    style={{ borderBottom: '1px solid #f0f0f0',
-                      background: idx % 2 === 0 ? 'white' : '#fafafa' }}>
-                    <td style={{ padding: '12px 16px', color: '#999', fontSize: 12 }}>
-                      {page * PAGE_SIZE + idx + 1}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: '#1a1a1a', maxWidth: 200 }}>
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.title}
-                        {/* PBI 3.4 — show resubmission badge inline with title */}
-                        <ResubmissionBadge rejectionCount={r.rejectionCount} />
-                      </div>
-                      {r.coverUrl && (
-                        <img src={r.coverUrl} alt=""
-                          style={{ width: 40, height: 30, objectFit: 'cover', borderRadius: 4,
-                            marginTop: 4, display: 'block' }}
-                          onError={e => { e.target.style.display = 'none'; }} />
-                      )}
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#555' }}>
-                      {r.contributorName}
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#555' }}>
-                      {r.categoryName}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <StatusBadge status={r.status} />
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#777', fontSize: 13 }}>
-                      {r.place}
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#777', fontSize: 12, whiteSpace: 'nowrap' }}>
-                      {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <button onClick={() => navigate(`/reviews/${r.id}`)}
-                        style={{ padding: '5px 14px', borderRadius: 6, fontSize: 13,
-                          background: '#2d6a4f', color: 'white', border: 'none',
-                          cursor: 'pointer', fontWeight: 600 }}>
-                        Review →
-                      </button>
-                    </td>
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    {['#', 'Title', 'Contributor', 'Category', 'Status', 'Place', 'Created', 'Action'].map(h => (
+                      <th key={h} style={styles.th}>{h}</th>
+                    ))}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 12, marginTop: 20 }}>
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-              style={{ padding: '7px 18px', borderRadius: 8, border: '1.5px solid #ccc',
-                cursor: page === 0 ? 'not-allowed' : 'pointer', background: 'white',
-                color: page === 0 ? '#bbb' : '#333', fontWeight: 600 }}>
-              ← Prev
-            </button>
-            <span style={{ fontSize: 14, color: '#555' }}>
-              Page {page + 1} of {totalPages}
-            </span>
-            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              style={{ padding: '7px 18px', borderRadius: 8, border: '1.5px solid #ccc',
-                cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer',
-                background: 'white', color: page >= totalPages - 1 ? '#bbb' : '#333',
-                fontWeight: 600 }}>
-              Next →
-            </button>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} style={styles.emptyCell}>Loading resources…</td>
+                    </tr>
+                  ) : resources.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={styles.emptyCell}>
+                        No resources found for this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    resources.map((r, idx) => (
+                      <tr
+                        key={r.id}
+                        style={styles.tr}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#f7fcf9'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = ''; }}
+                      >
+                        <td style={styles.tdMono}>
+                          {page * PAGE_SIZE + idx + 1}
+                        </td>
+                        <td style={styles.td}>
+                          <div style={styles.titleCell}>
+                            <div style={styles.titleText}>
+                              {r.title}
+                              {/* PBI 3.4 — show resubmission badge inline with title */}
+                              <ResubmissionBadge rejectionCount={r.rejectionCount} />
+                            </div>
+                            {r.coverUrl && (
+                              <img
+                                src={r.coverUrl}
+                                alt=""
+                                style={styles.coverThumb}
+                                onError={e => { e.target.style.display = 'none'; }}
+                              />
+                            )}
+                          </div>
+                        </td>
+                        <td style={styles.td}>{r.contributorName || '—'}</td>
+                        <td style={styles.td}>{r.categoryName || '—'}</td>
+                        <td style={styles.td}>
+                          <StatusBadge status={r.status} />
+                        </td>
+                        <td style={{ ...styles.td, color: '#9ca3af', fontSize: 13 }}>
+                          {r.place || '—'}
+                        </td>
+                        <td style={{ ...styles.td, color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>
+                          {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
+                        </td>
+                        <td style={styles.td}>
+                          <button
+                            onClick={() => navigate(`/reviews/${r.id}`)}
+                            style={styles.reviewBtn}
+                          >
+                            Review →
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={styles.pagination}>
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                style={{ ...styles.pageBtn, ...(page === 0 ? styles.pageBtnDisabled : {}) }}
+              >
+                ← Prev
+              </button>
+              <span style={styles.pageInfo}>
+                Page {page + 1} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                style={{
+                  ...styles.pageBtn,
+                  ...(page >= totalPages - 1 ? styles.pageBtnDisabled : {}),
+                }}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+
+        </div>
+      </main>
     </div>
   );
 }
+
+const styles = {
+  /* ── Layout shell ── */
+  layout: {
+    minHeight: '100vh',
+    background: '#f4f7f5',
+    display: 'flex',
+  },
+  main: {
+    marginLeft: 260,
+    flex: 1,
+    padding: '36px 40px',
+    minHeight: '100vh',
+  },
+  page: {
+    maxWidth: 1200,
+    margin: '0 auto',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif',
+    color: '#374151',
+  },
+
+  /* ── Page header ── */
+  pageHeader: {
+    marginBottom: 16,
+  },
+  title: {
+    margin: 0,
+    fontSize: 24,
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+    color: '#1a2e1f',
+    lineHeight: 1.2,
+  },
+  subtitle: {
+    margin: '6px 0 0',
+    color: '#6b7280',
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+
+  /* ── Testing notice ── */
+  testingNotice: {
+    marginBottom: 16,
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '1px solid #fde68a',
+    background: '#fef9c3',
+    color: '#92400e',
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+
+  /* ── Filter card ── */
+  filterCard: {
+    background: '#fff',
+    borderRadius: 14,
+    border: '1px solid #e8e3dc',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+    padding: '14px 20px',
+    marginBottom: 16,
+  },
+  filterRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  filterPills: {
+    display: 'flex',
+    gap: 4,
+    background: '#f9fafb',
+    border: '1px solid #e8e3dc',
+    borderRadius: 10,
+    padding: '4px',
+    flexWrap: 'wrap',
+  },
+  filterBtn: {
+    padding: '6px 12px',
+    borderRadius: 7,
+    border: 'none',
+    background: 'transparent',
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.12s',
+  },
+  filterBtnActive: {
+    background: '#2d6a4f',
+    color: '#fff',
+    fontWeight: 600,
+  },
+  sortBtn: {
+    padding: '7px 14px',
+    borderRadius: 9,
+    border: '1.5px solid #2d6a4f',
+    background: '#fff',
+    color: '#2d6a4f',
+    fontWeight: 600,
+    fontSize: 13,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  counts: {
+    marginTop: 10,
+    color: '#9ca3af',
+    fontSize: 12,
+    fontWeight: 500,
+  },
+
+  /* ── Error banner ── */
+  errorBanner: {
+    marginTop: 10,
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '1px solid #fca5a5',
+    background: '#fef2f2',
+    color: '#b91c1c',
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+
+  /* ── Table card ── */
+  card: {
+    background: '#fff',
+    borderRadius: 14,
+    border: '1px solid #e8e3dc',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 20px',
+    borderBottom: '1px solid #f0ebe2',
+    background: '#fafaf8',
+  },
+  cardTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: '#9ca3af',
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+
+  /* ── Table ── */
+  tableWrap: { overflowX: 'auto' },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: 14,
+  },
+  th: {
+    textAlign: 'left',
+    padding: '11px 16px',
+    color: '#6b7280',
+    fontSize: 11,
+    letterSpacing: '0.07em',
+    textTransform: 'uppercase',
+    fontWeight: 700,
+    borderBottom: '1px solid #f0ebe2',
+    background: '#fafaf8',
+    whiteSpace: 'nowrap',
+  },
+  tr: {
+    borderBottom: '1px solid #f5f1ec',
+    transition: 'background 120ms ease',
+  },
+  td: {
+    padding: '12px 16px',
+    borderBottom: '1px solid #f5f1ec',
+    verticalAlign: 'middle',
+    color: '#374151',
+  },
+  tdMono: {
+    padding: '12px 16px',
+    borderBottom: '1px solid #f5f1ec',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
+    color: '#9ca3af',
+    fontSize: 13,
+    verticalAlign: 'middle',
+  },
+  emptyCell: {
+    padding: '48px 20px',
+    color: '#9ca3af',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  titleCell: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  titleText: {
+    fontWeight: 600,
+    color: '#1a2e1f',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: 220,
+  },
+  coverThumb: {
+    width: 44,
+    height: 32,
+    objectFit: 'cover',
+    borderRadius: 5,
+    border: '1px solid #e8e3dc',
+    display: 'block',
+  },
+  reviewBtn: {
+    padding: '6px 14px',
+    borderRadius: 8,
+    border: '1px solid #2d6a4f',
+    background: '#2d6a4f',
+    color: '#fff',
+    fontWeight: 600,
+    fontSize: 13,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+
+  /* ── Pagination ── */
+  pagination: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 20,
+  },
+  pageBtn: {
+    padding: '7px 18px',
+    borderRadius: 9,
+    border: '1px solid #e8e3dc',
+    background: '#fff',
+    color: '#374151',
+    fontWeight: 600,
+    fontSize: 13,
+    cursor: 'pointer',
+  },
+  pageBtnDisabled: {
+    color: '#d1d5db',
+    borderColor: '#f3f4f6',
+    cursor: 'not-allowed',
+  },
+  pageInfo: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: 500,
+  },
+};
 
 export default ReviewerDashboardPage;

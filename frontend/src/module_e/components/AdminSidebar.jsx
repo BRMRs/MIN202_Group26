@@ -9,7 +9,7 @@ const navigationItems = [
   },
   {
     to: "/reviews",
-    label: "资源审核 (Module C)",
+    label: "Resource Review",
     icon: ReviewIcon,
   },
   {
@@ -92,23 +92,23 @@ function ResourceIcon() {
 function AdminSidebar() {
   return (
     <aside style={styles.sidebar}>
+      {/* Brand block */}
       <div style={styles.brandBlock}>
-        <div style={styles.kicker}>Module E</div>
-        <h2 style={styles.title}>Module E Admin</h2>
-        <p style={styles.subtitle}>System administration workspace for taxonomies and content controls.</p>
+        <div style={styles.kicker}>Admin Panel</div>
+        <h2 style={styles.title}>Heritage Platform</h2>
       </div>
 
-      <nav style={styles.nav} aria-label="Module E navigation">
+      {/* Navigation */}
+      <nav style={styles.nav} aria-label="Admin navigation">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-
           return (
             <NavLink
               key={item.to}
               to={item.to}
               style={({ isActive }) => ({
                 ...styles.link,
-                ...(isActive ? styles.linkActive : null),
+                ...(isActive ? styles.linkActive : {}),
               })}
             >
               <span style={styles.iconWrap}>
@@ -126,87 +126,80 @@ function AdminSidebar() {
 const styles = {
   sidebar: {
     position: "fixed",
-    top: 0,
+    top: 58,
     left: 0,
     width: 260,
-    height: "100vh",
-    padding: "22px 18px",
+    height: "calc(100vh - 58px)",
+    padding: "24px 16px 24px",
     display: "flex",
     flexDirection: "column",
-    gap: 24,
-    color: "#ecf3ff",
-    background: "linear-gradient(180deg, rgba(17, 21, 32, 0.82), rgba(10, 12, 18, 0.72))",
-    borderRight: "1px solid rgba(255,255,255,0.12)",
-    boxShadow: "0 18px 48px rgba(0,0,0,0.30)",
-    backdropFilter: "blur(18px)",
-    WebkitBackdropFilter: "blur(18px)",
+    gap: 20,
+    background: "#ffffff",
+    borderRight: "1px solid #e8e3dc",
+    boxShadow: "2px 0 8px rgba(0,0,0,0.04)",
     zIndex: 40,
+    overflowY: "auto",
   },
   brandBlock: {
-    padding: "8px 6px 14px",
-    borderBottom: "1px solid rgba(255,255,255,0.10)",
+    padding: "4px 8px 18px",
+    borderBottom: "1px solid #f0ebe2",
   },
   kicker: {
-    marginBottom: 8,
-    fontSize: 12,
-    letterSpacing: "0.16em",
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.14em",
     textTransform: "uppercase",
-    color: "rgba(236,243,255,0.60)",
+    color: "#2d6a4f",
+    marginBottom: 6,
   },
   title: {
     margin: 0,
-    fontSize: 24,
-    lineHeight: 1.1,
-    letterSpacing: "-0.02em",
-  },
-  subtitle: {
-    margin: "10px 0 0",
-    fontSize: 13,
-    lineHeight: 1.55,
-    color: "rgba(236,243,255,0.72)",
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: "-0.01em",
+    color: "#1a2e1f",
+    lineHeight: 1.2,
   },
   nav: {
     display: "flex",
     flexDirection: "column",
-    gap: 10,
+    gap: 2,
   },
   link: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
-    padding: "13px 14px",
-    borderRadius: 14,
-    color: "rgba(236,243,255,0.84)",
+    gap: 10,
+    padding: "9px 12px",
+    borderRadius: 10,
+    color: "#4b5563",
     textDecoration: "none",
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.03)",
-    transition: "all 180ms ease",
+    border: "1px solid transparent",
+    transition: "all 140ms ease",
   },
   linkActive: {
-    background: "linear-gradient(180deg, rgba(120, 170, 255, 0.22), rgba(85, 125, 255, 0.18))",
-    borderColor: "rgba(120, 170, 255, 0.42)",
-    boxShadow: "0 12px 28px rgba(45, 110, 255, 0.18)",
-    color: "#ffffff",
+    background: "#f0fdf4",
+    borderColor: "#bbf7d0",
+    color: "#166534",
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "#f3f4f6",
     flexShrink: 0,
   },
   icon: {
-    width: 18,
-    height: 18,
+    width: 16,
+    height: 16,
   },
   linkLabel: {
-    fontSize: 14,
-    fontWeight: 700,
-    letterSpacing: "0.01em",
+    fontSize: 13,
+    fontWeight: 600,
+    letterSpacing: "0.005em",
+    lineHeight: 1.3,
   },
 };
 

@@ -85,14 +85,14 @@ function statusActions(status) {
 
 function statusBadge(status) {
   const normalized = normalizeStatus(status);
-  if (normalized === "APPROVED") return styles.ok;
-  if (normalized === "UNPUBLISHED") return styles.warn;
-  if (normalized === "ARCHIVED") return styles.danger;
-  return styles.mutedBadge;
+  if (normalized === "APPROVED") return styles.badgeOk;
+  if (normalized === "UNPUBLISHED") return styles.badgeWarn;
+  if (normalized === "ARCHIVED") return styles.badgeDanger;
+  return styles.badgeMuted;
 }
 
 function categoryBadge(status) {
-  return status === "ACTIVE" ? styles.okMini : styles.warnMini;
+  return status === "ACTIVE" ? styles.badgeCatActive : styles.badgeCatInactive;
 }
 
 function ResourceManagementPage() {
@@ -335,162 +335,218 @@ function ResourceManagementPage() {
   }
 
   return (
-    <div className="flex min-h-screen" style={styles.layout}>
+    <div style={styles.layout}>
       <AdminSidebar />
-      <main className="flex-1 p-8 overflow-y-auto" style={styles.main}>
+      <main style={styles.main}>
         <div style={styles.page}>
-          <section style={styles.hero}>
-            <h1 style={styles.title}>Resource Management</h1>
-            <p style={styles.subtitle}>Review resources, adjust status/category, and inspect multimedia details.</p>
 
+          {/* Page header */}
+          <div style={styles.pageHeader}>
+            <h1 style={styles.title}>Resource Management</h1>
+            <p style={styles.subtitle}>Review resources, adjust status / category, and inspect multimedia details.</p>
+          </div>
+
+          {/* Filter bar card */}
+          <div style={styles.filterCard}>
             <div style={styles.toolbar}>
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by title / description / contributor_id"
-                style={styles.input}
+                placeholder="Search by title / description / contributor ID…"
+                style={styles.searchInput}
                 disabled={loading}
               />
-              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} style={styles.select} disabled={loading}>
+              <select
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+                style={styles.select}
+                disabled={loading}
+              >
                 <option value="ALL">All Categories</option>
                 {allCategories.map((category) => (
                   <option key={category.id} value={String(category.id)}>{category.name}</option>
                 ))}
               </select>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} style={styles.select} disabled={loading}>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                style={styles.select}
+                disabled={loading}
+              >
                 {uniqueStatuses.map((status) => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
             </div>
+            <div style={styles.counts}>
+              {loading ? "Loading…" : `Total: ${resources.length} · Showing: ${filteredResources.length}`}
+            </div>
 
-            <div style={styles.counts}>Total: {resources.length} | Showing: {filteredResources.length}</div>
-            {noticeMessage ? <div style={styles.notice}>{noticeMessage}</div> : null}
-            {errorMessage ? <div style={styles.error}>{errorMessage}</div> : null}
-          </section>
+            {noticeMessage ? <div style={styles.noticeBanner}>{noticeMessage}</div> : null}
+            {errorMessage ? <div style={styles.errorBanner}>{errorMessage}</div> : null}
+          </div>
 
-          <section style={styles.card}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Title</th>
-                  <th style={styles.th}>Category</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Created By</th>
-                  <th style={styles.th}>Updated At</th>
-                  <th style={styles.th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!loading && filteredResources.length === 0 ? (
+          {/* Table card */}
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <span style={styles.cardTitle}>Resources</span>
+              {loading ? <span style={styles.loadingText}>Loading…</span> : null}
+            </div>
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
                   <tr>
-                    <td style={styles.td} colSpan={6}>No resources found.</td>
+                    <th style={styles.th}>Title</th>
+                    <th style={styles.th}>Category</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Created By</th>
+                    <th style={styles.th}>Updated At</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
-                ) : (
-                  filteredResources.map((resource) => {
-                    const actions = statusActions(resource.status);
-                    return (
-                      <tr key={resource.id} style={styles.tr} onClick={() => openDetail(resource)}>
-                        <td style={styles.td}>
-                          <div style={styles.titleCell}>
-                            <div style={styles.titleText}>{resource.title}</div>
-                            <div style={styles.metaText}>#{resource.id}</div>
-                          </div>
-                        </td>
-                        <td style={styles.td}>
-                          <div>{resource.categoryName}</div>
-                          <span style={{ ...styles.badgeMini, ...categoryBadge(resource.categoryStatus) }}>{resource.categoryStatus}</span>
-                        </td>
-                        <td style={styles.td}>
-                          <span style={{ ...styles.badge, ...statusBadge(resource.status) }}>{resource.status}</span>
-                        </td>
-                        <td style={styles.td}>
-                          <div>ID: {resource.contributorId ?? "-"}</div>
-                        </td>
-                        <td style={styles.td}>{formatTimestamp(resource.updatedAt)}</td>
-                        <td style={styles.td} onClick={(event) => event.stopPropagation()}>
-                          <div style={styles.actions}>
-                            <button type="button" style={styles.actionBtn} onClick={() => openChangeCategory(resource)} disabled={loading}>Change Category</button>
-                            <div style={styles.menuWrap}>
+                </thead>
+                <tbody>
+                  {!loading && filteredResources.length === 0 ? (
+                    <tr>
+                      <td style={styles.emptyCell} colSpan={6}>No resources found.</td>
+                    </tr>
+                  ) : (
+                    filteredResources.map((resource) => {
+                      const actions = statusActions(resource.status);
+                      return (
+                        <tr
+                          key={resource.id}
+                          style={styles.tr}
+                          onClick={() => openDetail(resource)}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#f7fcf9"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                        >
+                          <td style={styles.td}>
+                            <div style={styles.titleCell}>
+                              <div style={styles.titleText}>{resource.title}</div>
+                              <div style={styles.metaText}>#{resource.id}</div>
+                            </div>
+                          </td>
+                          <td style={styles.td}>
+                            <div style={styles.categoryName}>{resource.categoryName}</div>
+                            <span style={{ ...styles.badgeMini, ...categoryBadge(resource.categoryStatus) }}>
+                              {resource.categoryStatus}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <span style={{ ...styles.badge, ...statusBadge(resource.status) }}>
+                              {resource.status}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <div style={styles.metaText}>ID: {resource.contributorId ?? "-"}</div>
+                          </td>
+                          <td style={styles.td}>
+                            <div style={styles.metaText}>{formatTimestamp(resource.updatedAt)}</div>
+                          </td>
+                          <td style={styles.td} onClick={(event) => event.stopPropagation()}>
+                            <div style={styles.actions}>
                               <button
                                 type="button"
                                 style={styles.actionBtn}
-                                onClick={() => setOpenStatusMenuFor((current) => (current === resource.id ? null : resource.id))}
+                                onClick={() => openChangeCategory(resource)}
                                 disabled={loading}
-                                title=""
                               >
-                                Status Change ▾
+                                Change Category
                               </button>
-                              {openStatusMenuFor === resource.id ? (
-                                <div style={styles.menuPanel}>
-                                  {actions.length === 0 ? (
-                                    <div style={styles.menuMuted}>No transition available</div>
-                                  ) : (
-                                    actions.map((action) => (
-                                      <button
-                                        key={action.key}
-                                        type="button"
-                                        style={styles.menuItem}
-                                        onClick={() => handleStatusSelection(resource, action.key)}
-                                        disabled={loading}
-                                      >
-                                        {action.label}
-                                      </button>
-                                    ))
-                                  )}
-                                </div>
-                              ) : null}
+                              <div style={styles.menuWrap}>
+                                <button
+                                  type="button"
+                                  style={styles.actionBtn}
+                                  onClick={() =>
+                                    setOpenStatusMenuFor((current) =>
+                                      current === resource.id ? null : resource.id
+                                    )
+                                  }
+                                  disabled={loading}
+                                >
+                                  Status Change ▾
+                                </button>
+                                {openStatusMenuFor === resource.id ? (
+                                  <div style={styles.menuPanel}>
+                                    {actions.length === 0 ? (
+                                      <div style={styles.menuMuted}>No transition available</div>
+                                    ) : (
+                                      actions.map((action) => (
+                                        <button
+                                          key={action.key}
+                                          type="button"
+                                          style={styles.menuItem}
+                                          onClick={() => handleStatusSelection(resource, action.key)}
+                                          disabled={loading}
+                                        >
+                                          {action.label}
+                                        </button>
+                                      ))
+                                    )}
+                                  </div>
+                                ) : null}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </section>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </main>
 
+      {/* Detail drawer */}
       {detailOpen ? (
         <div style={styles.overlay}>
           <div style={styles.modalLarge}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>{detailResource?.title || "Resource Detail"}</h3>
-              <button type="button" style={styles.btn} onClick={closeDetail}>Close</button>
+              <button type="button" style={styles.cancelButton} onClick={closeDetail}>Close</button>
             </div>
-            {detailLoading ? <div style={styles.loading}>Loading detail...</div> : null}
-            {detailError ? <div style={styles.error}>{detailError}</div> : null}
+            {detailLoading ? <div style={styles.loadingDetail}>Loading detail…</div> : null}
+            {detailError ? <div style={styles.errorBanner}>{detailError}</div> : null}
 
             {detailResource ? (
               <>
                 <div style={styles.detailGrid}>
-                  <div><strong style={styles.strong}>Status:</strong> <span style={{ ...styles.badge, ...statusBadge(detailResource.status) }}>{detailResource.status}</span></div>
                   <div>
-                    <strong style={styles.strong}>Category:</strong>
+                    <strong style={styles.detailLabel}>Status:</strong>
+                    {" "}<span style={{ ...styles.badge, ...statusBadge(detailResource.status) }}>{detailResource.status}</span>
+                  </div>
+                  <div>
+                    <strong style={styles.detailLabel}>Category:</strong>
                     <span style={styles.categoryInline}>
                       <span>{detailResource.categoryName}</span>
-                      <span style={{ ...styles.badgeMini, ...categoryBadge(detailResource.categoryStatus) }}>{detailResource.categoryStatus}</span>
+                      <span style={{ ...styles.badgeMini, ...categoryBadge(detailResource.categoryStatus) }}>
+                        {detailResource.categoryStatus}
+                      </span>
                     </span>
                   </div>
-                  <div><strong style={styles.strong}>Tags:</strong> {detailResource.tags.join(", ") || "-"}</div>
-                  <div><strong style={styles.strong}>Contributor ID:</strong> {detailResource.contributorId ?? "-"}</div>
-                  <div><strong style={styles.strong}>Created At:</strong> {formatTimestamp(detailResource.createdAt)}</div>
-                  <div><strong style={styles.strong}>Updated At:</strong> {formatTimestamp(detailResource.updatedAt)}</div>
-                  <div><strong style={styles.strong}>Place:</strong> {detailResource.place || "-"}</div>
+                  <div><strong style={styles.detailLabel}>Tags:</strong> {detailResource.tags.join(", ") || "-"}</div>
+                  <div><strong style={styles.detailLabel}>Contributor ID:</strong> {detailResource.contributorId ?? "-"}</div>
+                  <div><strong style={styles.detailLabel}>Created At:</strong> {formatTimestamp(detailResource.createdAt)}</div>
+                  <div><strong style={styles.detailLabel}>Updated At:</strong> {formatTimestamp(detailResource.updatedAt)}</div>
+                  <div><strong style={styles.detailLabel}>Place:</strong> {detailResource.place || "-"}</div>
                   <div>
-                    <strong style={styles.strong}>External Link:</strong>{" "}
+                    <strong style={styles.detailLabel}>External Link:</strong>{" "}
                     {detailResource.externalLink ? (
-                      <a href={detailResource.externalLink} target="_blank" rel="noreferrer" style={styles.link}>
+                      <a href={detailResource.externalLink} target="_blank" rel="noreferrer" style={styles.detailLink}>
                         Open link
                       </a>
-                    ) : (
-                      "-"
-                    )}
+                    ) : "-"}
                   </div>
-                  <div style={styles.detailWide}><strong style={styles.strong}>Copyright Declaration:</strong> {detailResource.copyrightDeclaration || "-"}</div>
-                  <div style={styles.detailWide}><strong style={styles.strong}>Archive Reason:</strong> {detailResource.archiveReason || "-"}</div>
+                  <div style={styles.detailWide}>
+                    <strong style={styles.detailLabel}>Copyright Declaration:</strong>{" "}
+                    {detailResource.copyrightDeclaration || "-"}
+                  </div>
+                  <div style={styles.detailWide}>
+                    <strong style={styles.detailLabel}>Archive Reason:</strong>{" "}
+                    {detailResource.archiveReason || "-"}
+                  </div>
                 </div>
 
                 <section style={styles.panel}>
@@ -515,12 +571,24 @@ function ResourceManagementPage() {
                             <div style={styles.mediaName}>{item.fileName || "Unnamed file"}</div>
                             <div style={styles.metaText}>{item.mimeType || "Unknown type"}</div>
 
-                            {kind === "image" ? <img src={item.fileUrl} alt={item.fileName || "resource media"} style={styles.mediaPreview} loading="lazy" /> : null}
-                            {kind === "video" ? <video controls style={styles.mediaPreview} src={item.fileUrl}><track kind="captions" /></video> : null}
-                            {kind === "audio" ? <audio controls style={styles.audio} src={item.fileUrl}>Audio not supported.</audio> : null}
-                            {kind === "file" ? <a href={item.fileUrl} target="_blank" rel="noreferrer" style={styles.link}>Open file</a> : null}
+                            {kind === "image" ? (
+                              <img src={item.fileUrl} alt={item.fileName || "resource media"} style={styles.mediaPreview} loading="lazy" />
+                            ) : null}
+                            {kind === "video" ? (
+                              <video controls style={styles.mediaPreview} src={item.fileUrl}>
+                                <track kind="captions" />
+                              </video>
+                            ) : null}
+                            {kind === "audio" ? (
+                              <audio controls style={styles.audio} src={item.fileUrl}>Audio not supported.</audio>
+                            ) : null}
+                            {kind === "file" ? (
+                              <a href={item.fileUrl} target="_blank" rel="noreferrer" style={styles.detailLink}>Open file</a>
+                            ) : null}
 
-                            <div style={styles.mediaFoot}>Sort: {item.sortOrder ?? 0} | {formatTimestamp(item.uploadedAt)}</div>
+                            <div style={styles.mediaFoot}>
+                              Sort: {item.sortOrder ?? 0} · {formatTimestamp(item.uploadedAt)}
+                            </div>
                           </article>
                         );
                       })}
@@ -533,66 +601,101 @@ function ResourceManagementPage() {
         </div>
       ) : null}
 
+      {/* Archive modal */}
       {archiveOpen && archiveTarget ? (
         <div style={styles.overlay}>
           <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Archive Resource #{archiveTarget.id}</h3>
-            <form onSubmit={submitArchive}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Archive Resource #{archiveTarget.id}</h3>
+            </div>
+            <form onSubmit={submitArchive} style={styles.modalBody}>
+              <label style={styles.formLabel}>Archive Reason <span style={styles.req}>*</span></label>
               <textarea
                 value={archiveReason}
                 onChange={(event) => setArchiveReason(event.target.value)}
                 style={styles.textarea}
                 rows={5}
                 maxLength={2000}
-                placeholder="Please provide archive reason"
+                placeholder="Please provide an archive reason…"
                 disabled={loading}
               />
               <div style={styles.modalActions}>
-                <button type="button" style={styles.btn} onClick={() => setArchiveOpen(false)} disabled={loading}>Cancel</button>
-                <button type="submit" style={styles.btnPrimary} disabled={loading}>Confirm Archive</button>
+                <button type="button" style={styles.cancelButton} onClick={() => setArchiveOpen(false)} disabled={loading}>
+                  Cancel
+                </button>
+                <button type="submit" style={styles.primaryButton} disabled={loading}>
+                  Confirm Archive
+                </button>
               </div>
             </form>
           </div>
         </div>
       ) : null}
 
+      {/* Republish modal */}
       {republishOpen && republishTarget ? (
         <div style={styles.overlay}>
           <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Republish Resource #{republishTarget.id}</h3>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Republish Resource #{republishTarget.id}</h3>
+            </div>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
                 submitRepublish(republishTarget.id, republishCategoryId);
               }}
+              style={styles.modalBody}
             >
-              <select value={republishCategoryId} onChange={(event) => setRepublishCategoryId(event.target.value)} style={styles.selectWide} disabled={loading}>
+              <label style={styles.formLabel}>Select Active Category</label>
+              <select
+                value={republishCategoryId}
+                onChange={(event) => setRepublishCategoryId(event.target.value)}
+                style={styles.selectWide}
+                disabled={loading}
+              >
                 {activeCategories.map((category) => (
                   <option key={category.id} value={String(category.id)}>{category.name}</option>
                 ))}
               </select>
               <div style={styles.modalActions}>
-                <button type="button" style={styles.btn} onClick={() => setRepublishOpen(false)} disabled={loading}>Cancel</button>
-                <button type="submit" style={styles.btnPrimary} disabled={loading}>Confirm Republish</button>
+                <button type="button" style={styles.cancelButton} onClick={() => setRepublishOpen(false)} disabled={loading}>
+                  Cancel
+                </button>
+                <button type="submit" style={styles.primaryButton} disabled={loading}>
+                  Confirm Republish
+                </button>
               </div>
             </form>
           </div>
         </div>
       ) : null}
 
+      {/* Change category modal */}
       {changeCategoryOpen && changeCategoryTarget ? (
         <div style={styles.overlay}>
           <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Change Category (Resource #{changeCategoryTarget.id})</h3>
-            <form onSubmit={submitChangeCategory}>
-              <select value={nextCategoryId} onChange={(event) => setNextCategoryId(event.target.value)} style={styles.selectWide} disabled={loading}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Change Category (Resource #{changeCategoryTarget.id})</h3>
+            </div>
+            <form onSubmit={submitChangeCategory} style={styles.modalBody}>
+              <label style={styles.formLabel}>Select Active Category</label>
+              <select
+                value={nextCategoryId}
+                onChange={(event) => setNextCategoryId(event.target.value)}
+                style={styles.selectWide}
+                disabled={loading}
+              >
                 {activeCategories.map((category) => (
                   <option key={category.id} value={String(category.id)}>{category.name}</option>
                 ))}
               </select>
               <div style={styles.modalActions}>
-                <button type="button" style={styles.btn} onClick={() => setChangeCategoryOpen(false)} disabled={loading}>Cancel</button>
-                <button type="submit" style={styles.btnPrimary} disabled={loading}>Save Category</button>
+                <button type="button" style={styles.cancelButton} onClick={() => setChangeCategoryOpen(false)} disabled={loading}>
+                  Cancel
+                </button>
+                <button type="submit" style={styles.primaryButton} disabled={loading}>
+                  Save Category
+                </button>
               </div>
             </form>
           </div>
@@ -603,67 +706,447 @@ function ResourceManagementPage() {
 }
 
 const styles = {
-  layout: { minHeight: "100vh", background: "radial-gradient(1200px 600px at 20% 0%, rgba(255,233,210,.8), transparent 55%), radial-gradient(900px 500px at 85% 10%, rgba(210,235,255,.75), transparent 52%), #0b0d12" },
-  main: { marginLeft: 260 },
-  page: { color: "#eef3ff", fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif' },
-  hero: { maxWidth: 1280, margin: "0 auto 18px", padding: 18, borderRadius: 16, border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04))" },
-  title: { margin: 0, fontSize: 32 },
-  subtitle: { marginTop: 8, color: "rgba(238,243,255,.78)", fontSize: 14 },
-  toolbar: { display: "flex", gap: 12, marginTop: 16, alignItems: "center", flexWrap: "wrap" },
-  input: { width: "100%", maxWidth: 560, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(0,0,0,.25)", color: "#eef3ff", outline: "none" },
-  select: { minWidth: 180, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(0,0,0,.25)", color: "#eef3ff", outline: "none" },
-  selectWide: { width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(0,0,0,.25)", color: "#eef3ff", outline: "none" },
-  counts: { marginTop: 10, color: "rgba(238,243,255,.72)", fontSize: 12 },
-  notice: { marginTop: 10, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(72,255,171,.35)", background: "rgba(72,255,171,.12)", color: "#ddffed" },
-  error: { marginTop: 10, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,107,107,.35)", background: "rgba(255,107,107,.12)", color: "#ffecec" },
-  card: { maxWidth: 1280, margin: "0 auto", borderRadius: 16, border: "1px solid rgba(255,255,255,.12)", background: "rgba(0,0,0,.24)", overflow: "auto" },
-  table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: 14 },
-  th: { textAlign: "left", padding: 12, color: "rgba(238,243,255,.72)", fontSize: 12, borderBottom: "1px solid rgba(255,255,255,.1)", whiteSpace: "nowrap", letterSpacing: ".08em", textTransform: "uppercase" },
-  tr: { cursor: "pointer" },
-  td: { padding: 12, borderBottom: "1px solid rgba(255,255,255,.08)", color: "#eef3ff", verticalAlign: "top" },
-  titleCell: { display: "flex", flexDirection: "column", gap: 4 },
-  titleText: { fontWeight: 800, color: "#fff" },
-  metaText: { color: "rgba(238,243,255,.62)", fontSize: 12 },
-  badge: { display: "inline-flex", padding: "6px 10px", borderRadius: 999, fontSize: 12, border: "1px solid rgba(255,255,255,.14)" },
-  badgeMini: { display: "inline-flex", padding: "3px 8px", borderRadius: 999, fontSize: 11, border: "1px solid rgba(255,255,255,.14)", marginTop: 6, width: "fit-content" },
-  ok: { background: "rgba(72,255,171,.12)", color: "rgba(174,255,218,.96)", borderColor: "rgba(72,255,171,.24)" },
-  warn: { background: "rgba(255,201,72,.12)", color: "rgba(255,227,164,.96)", borderColor: "rgba(255,201,72,.24)" },
-  danger: { background: "rgba(255,107,107,.12)", color: "rgba(255,203,203,.96)", borderColor: "rgba(255,107,107,.26)" },
-  mutedBadge: { background: "rgba(172,160,255,.12)", color: "rgba(228,223,255,.96)", borderColor: "rgba(172,160,255,.25)" },
-  okMini: { background: "rgba(72,255,171,.1)", color: "rgba(174,255,218,.96)", borderColor: "rgba(72,255,171,.24)" },
-  warnMini: { background: "rgba(255,170,107,.1)", color: "rgba(255,223,190,.95)", borderColor: "rgba(255,170,107,.24)" },
-  actions: { display: "flex", flexDirection: "column", gap: 8, minWidth: 170 },
-  actionBtn: { padding: "9px 11px", borderRadius: 11, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.06)", color: "#eef3ff", cursor: "pointer", fontWeight: 700, width: "100%", textAlign: "left" },
-  btn: { padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.06)", color: "#eef3ff", cursor: "pointer", fontWeight: 700, width: "auto", textAlign: "center" },
-  btnPrimary: { padding: "9px 11px", borderRadius: 11, border: "1px solid rgba(255,255,255,.18)", background: "linear-gradient(180deg, rgba(120,170,255,.95), rgba(85,125,255,.95))", color: "#071022", cursor: "pointer", fontWeight: 900 },
+  /* ── Layout shell ── */
+  layout: {
+    minHeight: "100vh",
+    background: "#f4f7f5",
+    display: "flex",
+  },
+  main: {
+    marginLeft: 260,
+    flex: 1,
+    padding: "36px 40px",
+    minHeight: "100vh",
+  },
+  page: {
+    maxWidth: 1200,
+    margin: "0 auto",
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif',
+    color: "#374151",
+  },
+
+  /* ── Page header ── */
+  pageHeader: {
+    marginBottom: 20,
+  },
+  title: {
+    margin: 0,
+    fontSize: 24,
+    fontWeight: 700,
+    letterSpacing: "-0.02em",
+    color: "#1a2e1f",
+    lineHeight: 1.2,
+  },
+  subtitle: {
+    margin: "6px 0 0",
+    color: "#6b7280",
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+
+  /* ── Filter card ── */
+  filterCard: {
+    background: "#fff",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+    padding: "14px 20px",
+    marginBottom: 16,
+  },
+  toolbar: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 220,
+    padding: "9px 12px",
+    borderRadius: 10,
+    border: "1px solid #e8e3dc",
+    background: "#f9fafb",
+    color: "#374151",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+  },
+  select: {
+    minWidth: 160,
+    padding: "9px 12px",
+    borderRadius: 10,
+    border: "1px solid #e8e3dc",
+    background: "#f9fafb",
+    color: "#374151",
+    fontSize: 14,
+    outline: "none",
+    cursor: "pointer",
+  },
+  counts: {
+    marginTop: 10,
+    color: "#9ca3af",
+    fontSize: 12,
+    fontWeight: 500,
+  },
+
+  /* ── Banners ── */
+  noticeBanner: {
+    marginTop: 10,
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: "1px solid #bbf7d0",
+    background: "#f0fdf4",
+    color: "#166534",
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+  errorBanner: {
+    marginTop: 10,
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: "1px solid #fca5a5",
+    background: "#fef2f2",
+    color: "#b91c1c",
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+
+  /* ── Table card ── */
+  card: {
+    background: "#fff",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+    overflow: "hidden",
+  },
+  cardHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "12px 20px",
+    borderBottom: "1px solid #f0ebe2",
+    background: "#fafaf8",
+  },
+  cardTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "#9ca3af",
+  },
+  loadingText: {
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+
+  /* ── Table ── */
+  tableWrap: { overflowX: "auto" },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: 14,
+  },
+  th: {
+    textAlign: "left",
+    padding: "11px 16px",
+    color: "#6b7280",
+    fontSize: 11,
+    letterSpacing: "0.07em",
+    textTransform: "uppercase",
+    fontWeight: 700,
+    borderBottom: "1px solid #f0ebe2",
+    background: "#fafaf8",
+    whiteSpace: "nowrap",
+  },
+  tr: {
+    borderBottom: "1px solid #f5f1ec",
+    transition: "background 120ms ease",
+    cursor: "pointer",
+  },
+  td: {
+    padding: "13px 16px",
+    borderBottom: "1px solid #f5f1ec",
+    verticalAlign: "top",
+    color: "#374151",
+  },
+  emptyCell: {
+    padding: "48px 20px",
+    color: "#9ca3af",
+    fontStyle: "italic",
+    textAlign: "center",
+    fontSize: 14,
+  },
+  titleCell: { display: "flex", flexDirection: "column", gap: 3 },
+  titleText: { fontWeight: 600, color: "#1a2e1f" },
+  metaText: { color: "#9ca3af", fontSize: 12 },
+  categoryName: { color: "#374151", fontWeight: 500, marginBottom: 4 },
+
+  /* ── Status badges ── */
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "4px 10px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: "0.03em",
+    border: "1px solid transparent",
+  },
+  badgeMini: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 8px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 600,
+    border: "1px solid transparent",
+  },
+  badgeOk: { background: "#dcfce7", color: "#166534", borderColor: "#bbf7d0" },
+  badgeWarn: { background: "#fef3c7", color: "#92400e", borderColor: "#fde68a" },
+  badgeDanger: { background: "#fee2e2", color: "#b91c1c", borderColor: "#fca5a5" },
+  badgeMuted: { background: "#f3f4f6", color: "#6b7280", borderColor: "#e5e7eb" },
+  badgeCatActive: { background: "#dcfce7", color: "#166534", borderColor: "#bbf7d0" },
+  badgeCatInactive: { background: "#fef3c7", color: "#92400e", borderColor: "#fde68a" },
+
+  /* ── Row action buttons ── */
+  actions: { display: "flex", flexDirection: "column", gap: 6, minWidth: 160 },
+  actionBtn: {
+    padding: "7px 12px",
+    borderRadius: 8,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: 13,
+    width: "100%",
+    textAlign: "left",
+  },
   menuWrap: { position: "relative" },
-  menuPanel: { position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 16, width: "100%", borderRadius: 10, border: "1px solid rgba(255,255,255,.14)", background: "rgba(15,20,31,.98)", padding: 6, display: "flex", flexDirection: "column", gap: 4 },
-  menuItem: { borderRadius: 8, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.04)", color: "#eef3ff", padding: "7px 9px", textAlign: "left", cursor: "pointer", fontWeight: 700 },
-  menuMuted: { color: "rgba(238,243,255,.64)", fontSize: 12, padding: "7px 9px" },
-  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,.66)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 140 },
-  modal: { width: "min(680px, 100%)", borderRadius: 16, border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(180deg, rgba(20,24,35,.99), rgba(11,14,24,.99))", color: "#f7fbff", padding: 16 },
-  modalLarge: { width: "min(1100px, 100%)", maxHeight: "90vh", overflowY: "auto", borderRadius: 16, border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(180deg, rgba(20,24,35,.99), rgba(11,14,24,.99))", color: "#f7fbff", padding: 16 },
-  modalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  modalTitle: { margin: 0, fontSize: 24, color: "#fff" },
-  loading: { marginTop: 10, color: "rgba(238,243,255,.8)", fontSize: 13 },
-  detailGrid: { marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 14, color: "#f7fbff" },
+  menuPanel: {
+    position: "absolute",
+    top: "calc(100% + 4px)",
+    left: 0,
+    zIndex: 20,
+    width: "100%",
+    borderRadius: 10,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+    padding: 6,
+    display: "flex",
+    flexDirection: "column",
+    gap: 3,
+  },
+  menuItem: {
+    borderRadius: 7,
+    border: "1px solid #f0ebe2",
+    background: "#f9fafb",
+    color: "#374151",
+    padding: "7px 10px",
+    textAlign: "left",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: 13,
+  },
+  menuMuted: { color: "#9ca3af", fontSize: 12, padding: "7px 10px" },
+
+  /* ── Shared buttons ── */
+  primaryButton: {
+    padding: "9px 16px",
+    borderRadius: 9,
+    border: "1px solid #2d6a4f",
+    background: "#2d6a4f",
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  },
+  cancelButton: {
+    padding: "8px 16px",
+    borderRadius: 9,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    fontWeight: 600,
+    fontSize: 13,
+    cursor: "pointer",
+  },
+
+  /* ── Modal overlay ── */
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.40)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    zIndex: 140,
+  },
+  modal: {
+    width: "min(640px, 100%)",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+    overflow: "hidden",
+  },
+  modalLarge: {
+    width: "min(1060px, 100%)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  },
+  modalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "14px 20px",
+    borderBottom: "1px solid #f0ebe2",
+    background: "#fafaf8",
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: 17,
+    fontWeight: 700,
+    color: "#1a2e1f",
+    letterSpacing: "-0.01em",
+  },
+  modalBody: {
+    padding: "16px 20px 20px",
+  },
+  formLabel: {
+    display: "block",
+    fontSize: 12,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "#6b7280",
+    fontWeight: 700,
+    marginBottom: 8,
+  },
+  req: { color: "#b91c1c" },
+  loadingDetail: {
+    padding: "16px 20px",
+    color: "#9ca3af",
+    fontSize: 13,
+  },
+  textarea: {
+    width: "100%",
+    marginTop: 2,
+    padding: "9px 12px",
+    borderRadius: 9,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    fontSize: 14,
+    resize: "vertical",
+    outline: "none",
+    boxSizing: "border-box",
+  },
+  selectWide: {
+    width: "100%",
+    padding: "9px 12px",
+    borderRadius: 9,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+    cursor: "pointer",
+  },
+  modalActions: {
+    marginTop: 16,
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
+
+  /* ── Detail view ── */
+  detailGrid: {
+    margin: "16px 20px 0",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 12,
+    fontSize: 14,
+    color: "#374151",
+  },
   detailWide: { gridColumn: "1 / span 2" },
-  strong: { color: "#dfe8ff" },
+  detailLabel: { color: "#6b7280", fontWeight: 700 },
   categoryInline: { display: "inline-flex", alignItems: "center", gap: 8, marginLeft: 8 },
-  panel: { marginTop: 12, border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: 12, background: "rgba(255,255,255,.03)" },
-  panelTitle: { fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(238,243,255,.72)", marginBottom: 8 },
-  panelText: { color: "#f7fbff", whiteSpace: "pre-wrap", lineHeight: 1.6 },
-  mediaGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 },
-  mediaCard: { border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: 10, background: "rgba(0,0,0,.24)", display: "flex", flexDirection: "column", gap: 8 },
+  detailLink: {
+    display: "inline-block",
+    padding: "4px 10px",
+    borderRadius: 7,
+    border: "1.5px solid #86efac",
+    background: "#f0fdf4",
+    color: "#166534",
+    textDecoration: "none",
+    fontWeight: 600,
+    fontSize: 13,
+  },
+
+  /* ── Detail panels ── */
+  panel: {
+    margin: "12px 20px",
+    border: "1px solid #f0ebe2",
+    borderRadius: 10,
+    padding: "12px 14px",
+    background: "#fafaf8",
+  },
+  panelTitle: {
+    fontSize: 11,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "#9ca3af",
+    fontWeight: 700,
+    marginBottom: 8,
+  },
+  panelText: { color: "#374151", whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 14 },
+
+  /* ── Media grid ── */
+  mediaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+    gap: 10,
+  },
+  mediaCard: {
+    border: "1px solid #e8e3dc",
+    borderRadius: 10,
+    padding: 12,
+    background: "#fff",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
   mediaHead: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  typePill: { padding: "3px 8px", borderRadius: 999, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.06)", fontSize: 11, letterSpacing: ".05em", color: "#eef3ff" },
-  mediaName: { color: "#fff", fontWeight: 700, wordBreak: "break-word" },
-  mediaPreview: { width: "100%", maxHeight: 180, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(255,255,255,.12)", background: "rgba(0,0,0,.28)" },
+  typePill: {
+    padding: "3px 8px",
+    borderRadius: 999,
+    border: "1px solid #e5e7eb",
+    background: "#f3f4f6",
+    fontSize: 11,
+    letterSpacing: "0.05em",
+    color: "#6b7280",
+    fontWeight: 600,
+  },
+  mediaName: { color: "#1a2e1f", fontWeight: 600, wordBreak: "break-word", fontSize: 13 },
+  mediaPreview: {
+    width: "100%",
+    maxHeight: 180,
+    borderRadius: 8,
+    objectFit: "cover",
+    border: "1px solid #e8e3dc",
+    background: "#f9fafb",
+  },
   audio: { width: "100%" },
-  link: { display: "inline-block", width: "fit-content", padding: "6px 9px", borderRadius: 8, border: "1px solid rgba(120,170,255,.34)", background: "rgba(120,170,255,.12)", color: "#d3e2ff", textDecoration: "none", fontWeight: 700 },
-  mediaFoot: { marginTop: "auto", color: "rgba(238,243,255,.58)", fontSize: 11 },
-  textarea: { width: "100%", marginTop: 8, padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(0,0,0,.25)", color: "#eef3ff", resize: "vertical", outline: "none" },
-  modalActions: { marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 8 },
+  mediaFoot: { marginTop: "auto", color: "#9ca3af", fontSize: 11 },
 };
 
 export default ResourceManagementPage;

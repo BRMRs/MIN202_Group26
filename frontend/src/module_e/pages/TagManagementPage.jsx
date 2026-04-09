@@ -272,18 +272,21 @@ function TagManagementPage() {
   }
 
   return (
-    <div className="flex min-h-screen" style={styles.layout}>
+    <div style={styles.layout}>
       <AdminSidebar />
-      <main className="flex-1 p-8 overflow-y-auto" style={styles.main}>
+      <main style={styles.main}>
         <div style={styles.page}>
+
+          {/* Success toast */}
           {successMessage ? (
             <div role="status" style={{ ...styles.toast, ...styles.toastSuccess }}>
               {successMessage}
             </div>
           ) : null}
 
-          <div style={styles.hero}>
-            <div style={styles.heroTopRow}>
+          {/* Page header */}
+          <div style={styles.pageHeader}>
+            <div style={styles.headerRow}>
               <div>
                 <h1 style={styles.title}>Tag Management</h1>
                 <p style={styles.subtitle}>
@@ -291,12 +294,12 @@ function TagManagementPage() {
                   same experience as Category Management.
                 </p>
               </div>
-
               <button type="button" onClick={openCreateModal} style={styles.primaryButton} disabled={loading}>
                 + New Tag
               </button>
             </div>
 
+            {/* Search + meta */}
             <div style={styles.toolbar}>
               <div style={styles.searchWrap}>
                 <label htmlFor="tag-search" style={styles.srOnly}>
@@ -306,13 +309,11 @@ function TagManagementPage() {
                   id="tag-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name"
+                  placeholder="Search by name…"
                   style={styles.searchInput}
                   disabled={loading}
                 />
-                <div style={styles.searchHint}>Searches tag name</div>
               </div>
-
               <div style={styles.metaPills}>
                 <span style={styles.metaPill}>
                   Total: <strong style={styles.metaStrong}>{tags.length}</strong>
@@ -320,7 +321,9 @@ function TagManagementPage() {
                 <span style={styles.metaPill}>
                   Showing: <strong style={styles.metaStrong}>{filteredTags.length}</strong>
                 </span>
-                {isUsingMockData ? <span style={styles.metaPill}>Mock mode</span> : null}
+                {isUsingMockData ? (
+                  <span style={{ ...styles.metaPill, ...styles.metaPillWarn }}>Mock mode</span>
+                ) : null}
               </div>
             </div>
 
@@ -331,10 +334,11 @@ function TagManagementPage() {
             ) : null}
           </div>
 
+          {/* Table card */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Tags</h2>
-              {loading ? <span style={styles.loadingText}>Loading...</span> : null}
+              <span style={styles.cardTitle}>Tags</span>
+              {loading ? <span style={styles.loadingText}>Loading…</span> : null}
             </div>
 
             <div style={styles.tableWrap}>
@@ -355,7 +359,12 @@ function TagManagementPage() {
                     </tr>
                   ) : (
                     filteredTags.map((tag) => (
-                      <tr key={tag.id} style={styles.tr}>
+                      <tr
+                        key={tag.id}
+                        style={styles.tr}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#f7fcf9"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                      >
                         <td style={styles.tdMono}>{tag.id}</td>
                         <td style={styles.td}>
                           <div style={styles.nameCell}>
@@ -366,7 +375,7 @@ function TagManagementPage() {
                           <div style={styles.actions}>
                             <button
                               type="button"
-                              style={styles.secondaryButton}
+                              style={styles.editBtn}
                               onClick={() => openEditModal(tag)}
                               disabled={loading}
                             >
@@ -392,6 +401,7 @@ function TagManagementPage() {
         </div>
       </main>
 
+      {/* Create / Edit modal */}
       {isModalOpen ? (
         <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Tag form">
           <div style={styles.modal}>
@@ -401,7 +411,7 @@ function TagManagementPage() {
                 <div style={styles.modalTitle}>Details</div>
               </div>
               <button type="button" onClick={closeModal} style={styles.iconButton} aria-label="Close" disabled={loading}>
-                X
+                ✕
               </button>
             </div>
 
@@ -423,7 +433,7 @@ function TagManagementPage() {
               </div>
 
               <div style={styles.modalFooter}>
-                <button type="button" onClick={closeModal} style={styles.secondaryButton} disabled={loading}>
+                <button type="button" onClick={closeModal} style={styles.cancelButton} disabled={loading}>
                   Cancel
                 </button>
                 <button type="submit" style={styles.primaryButton} disabled={loading}>
@@ -435,6 +445,7 @@ function TagManagementPage() {
         </div>
       ) : null}
 
+      {/* Confirm dialog (delete / restore) */}
       {confirmDialog ? (
         <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label={confirmDialog.title}>
           <div style={styles.confirmModal}>
@@ -444,7 +455,7 @@ function TagManagementPage() {
               <button
                 type="button"
                 onClick={closeConfirmDialog}
-                style={styles.secondaryButton}
+                style={styles.cancelButton}
                 disabled={loading}
               >
                 {confirmDialog.cancelText}
@@ -470,227 +481,262 @@ function TagManagementPage() {
 }
 
 const styles = {
+  /* ── Layout shell ── */
   layout: {
     minHeight: "100vh",
-    background:
-      "radial-gradient(1200px 600px at 20% 0%, rgba(255, 233, 210, 0.8), transparent 55%), radial-gradient(900px 500px at 85% 10%, rgba(210, 235, 255, 0.75), transparent 52%), #0b0d12",
+    background: "#f4f7f5",
+    display: "flex",
   },
   main: {
     marginLeft: 260,
+    flex: 1,
+    padding: "36px 40px",
+    minHeight: "100vh",
   },
   page: {
-    minHeight: "100%",
-    color: "#eaf0ff",
-    fontFamily:
-      'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif',
+    maxWidth: 1080,
+    margin: "0 auto",
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif',
+    color: "#374151",
     position: "relative",
   },
+
+  /* ── Toast ── */
   toast: {
     position: "sticky",
     top: 8,
     zIndex: 60,
     maxWidth: 420,
-    margin: "0 auto 12px",
-    padding: "12px 14px",
-    borderRadius: 14,
-    boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
-    backdropFilter: "blur(8px)",
+    margin: "0 auto 16px",
+    padding: "11px 14px",
+    borderRadius: 10,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.07)",
     textAlign: "center",
     fontSize: 13,
     lineHeight: 1.5,
   },
   toastSuccess: {
-    border: "1px solid rgba(108, 217, 169, 0.35)",
-    background: "rgba(29, 78, 58, 0.88)",
-    color: "#ecfff6",
+    border: "1px solid #bbf7d0",
+    background: "#f0fdf4",
+    color: "#166534",
   },
-  hero: {
-    maxWidth: 1080,
-    margin: "0 auto 18px",
-    padding: "18px 18px 14px",
-    borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
-    backdropFilter: "blur(10px)",
+
+  /* ── Page header ── */
+  pageHeader: {
+    marginBottom: 20,
   },
-  heroTopRow: {
+  headerRow: {
     display: "flex",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 16,
+    marginBottom: 16,
   },
   title: {
     margin: 0,
-    fontSize: 30,
+    fontSize: 24,
+    fontWeight: 700,
     letterSpacing: "-0.02em",
-    lineHeight: 1.1,
+    color: "#1a2e1f",
+    lineHeight: 1.2,
   },
   subtitle: {
-    margin: "10px 0 0",
-    maxWidth: 820,
-    color: "rgba(234,240,255,0.78)",
+    margin: "6px 0 0",
+    color: "#6b7280",
     fontSize: 14,
     lineHeight: 1.6,
+    maxWidth: 680,
   },
+
+  /* ── Search toolbar ── */
   toolbar: {
     display: "flex",
-    alignItems: "flex-end",
+    alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    marginTop: 16,
+    flexWrap: "wrap",
   },
   searchWrap: {
     flex: 1,
-    minWidth: 260,
+    minWidth: 240,
   },
   searchInput: {
     width: "100%",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "rgba(0,0,0,0.25)",
-    color: "#eaf0ff",
+    padding: "9px 12px",
+    borderRadius: 10,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    fontSize: 14,
     outline: "none",
-  },
-  searchHint: {
-    marginTop: 6,
-    fontSize: 12,
-    color: "rgba(234,240,255,0.62)",
+    boxSizing: "border-box",
   },
   metaPills: {
     display: "flex",
     alignItems: "center",
     gap: 8,
     flexWrap: "wrap",
-    justifyContent: "flex-end",
   },
   metaPill: {
     display: "inline-flex",
     alignItems: "center",
-    gap: 6,
-    padding: "8px 10px",
+    gap: 4,
+    padding: "5px 10px",
     borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(0,0,0,0.18)",
-    color: "rgba(234,240,255,0.82)",
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#6b7280",
     fontSize: 12,
   },
-  metaStrong: { color: "#ffffff" },
+  metaPillWarn: {
+    borderColor: "#fde68a",
+    background: "#fef3c7",
+    color: "#92400e",
+  },
+  metaStrong: { color: "#374151", fontWeight: 700 },
+
+  /* ── Error banner ── */
   errorBanner: {
     marginTop: 12,
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255, 107, 107, 0.35)",
-    background: "rgba(255, 107, 107, 0.12)",
-    color: "#ffecec",
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: "1px solid #fca5a5",
+    background: "#fef2f2",
+    color: "#b91c1c",
     fontSize: 13,
     lineHeight: 1.5,
   },
+
+  /* ── Table card ── */
   card: {
-    maxWidth: 1080,
-    margin: "0 auto",
-    borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(0,0,0,0.22)",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+    background: "#fff",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
     overflow: "hidden",
   },
   cardHeader: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "14px 16px",
-    borderBottom: "1px solid rgba(255,255,255,0.10)",
-    background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
+    padding: "12px 20px",
+    borderBottom: "1px solid #f0ebe2",
+    background: "#fafaf8",
   },
   cardTitle: {
-    margin: 0,
-    fontSize: 14,
+    fontSize: 11,
+    fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
-    color: "rgba(234,240,255,0.78)",
+    color: "#9ca3af",
   },
   loadingText: {
     fontSize: 12,
-    color: "rgba(234,240,255,0.65)",
+    color: "#9ca3af",
   },
+
+  /* ── Table ── */
   tableWrap: { overflowX: "auto" },
   table: {
     width: "100%",
-    borderCollapse: "separate",
-    borderSpacing: 0,
+    borderCollapse: "collapse",
     fontSize: 14,
   },
   th: {
     textAlign: "left",
-    padding: "12px 12px",
-    color: "rgba(234,240,255,0.70)",
-    fontSize: 12,
-    letterSpacing: "0.08em",
+    padding: "11px 20px",
+    color: "#6b7280",
+    fontSize: 11,
+    letterSpacing: "0.07em",
     textTransform: "uppercase",
-    borderBottom: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.02)",
+    fontWeight: 700,
+    borderBottom: "1px solid #f0ebe2",
+    background: "#fafaf8",
     whiteSpace: "nowrap",
   },
   tr: {
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
+    borderBottom: "1px solid #f5f1ec",
+    transition: "background 120ms ease",
   },
   td: {
-    padding: "12px 12px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    verticalAlign: "top",
+    padding: "13px 20px",
+    borderBottom: "1px solid #f5f1ec",
+    verticalAlign: "middle",
+    color: "#374151",
   },
   tdMono: {
-    padding: "12px 12px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-    color: "rgba(234,240,255,0.9)",
+    padding: "13px 20px",
+    borderBottom: "1px solid #f5f1ec",
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
+    color: "#9ca3af",
+    fontSize: 13,
+    verticalAlign: "middle",
   },
   emptyCell: {
-    padding: "18px 12px",
-    color: "rgba(234,240,255,0.70)",
+    padding: "48px 20px",
+    color: "#9ca3af",
     fontStyle: "italic",
+    textAlign: "center",
+    fontSize: 14,
   },
   nameCell: { display: "flex", alignItems: "center", gap: 10 },
-  nameText: { fontWeight: 700, color: "#ffffff" },
-  actions: { display: "flex", gap: 10, flexWrap: "wrap" },
+  nameText: { fontWeight: 600, color: "#1a2e1f" },
+
+  /* ── Action buttons ── */
+  actions: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
   primaryButton: {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "linear-gradient(180deg, rgba(120, 170, 255, 0.95), rgba(85, 125, 255, 0.95))",
-    color: "#081022",
-    fontWeight: 900,
+    padding: "9px 16px",
+    borderRadius: 9,
+    border: "1px solid #2d6a4f",
+    background: "#2d6a4f",
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: 13,
     cursor: "pointer",
-    boxShadow: "0 10px 30px rgba(45, 110, 255, 0.25)",
+    whiteSpace: "nowrap",
+    lineHeight: 1.4,
   },
-  secondaryButton: {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "rgba(255,255,255,0.06)",
-    color: "#eaf0ff",
-    fontWeight: 800,
+  editBtn: {
+    padding: "6px 14px",
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    border: "1.5px solid #86efac",
+    background: "#f0fdf4",
+    color: "#166534",
+  },
+  cancelButton: {
+    padding: "8px 16px",
+    borderRadius: 9,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    fontWeight: 600,
+    fontSize: 13,
     cursor: "pointer",
   },
   ghostButton: {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "rgba(0,0,0,0.18)",
-    color: "#eaf0ff",
-    fontWeight: 900,
+    padding: "6px 14px",
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 600,
     cursor: "pointer",
+    border: "1.5px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
   },
   ghostDanger: {
-    borderColor: "rgba(255, 107, 107, 0.25)",
-    color: "rgba(255, 200, 200, 0.95)",
+    borderColor: "#fca5a5",
+    background: "#fff1f2",
+    color: "#b91c1c",
   },
+
+  /* ── Modal overlay ── */
   modalOverlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.62)",
+    background: "rgba(0,0,0,0.40)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -698,30 +744,30 @@ const styles = {
     zIndex: 50,
   },
   modal: {
-    width: "min(680px, 100%)",
-    borderRadius: 18,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "linear-gradient(180deg, rgba(20, 24, 35, 0.98), rgba(12, 14, 18, 0.98))",
-    boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
+    width: "min(560px, 100%)",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
     overflow: "hidden",
   },
   confirmModal: {
-    width: "min(520px, 100%)",
-    borderRadius: 18,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "linear-gradient(180deg, rgba(20, 24, 35, 0.98), rgba(12, 14, 18, 0.98))",
-    boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
-    padding: "20px 20px 18px",
+    width: "min(480px, 100%)",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+    padding: "24px 24px 20px",
   },
   confirmTitle: {
-    fontSize: 18,
-    fontWeight: 900,
+    fontSize: 17,
+    fontWeight: 700,
     letterSpacing: "-0.01em",
-    color: "#ffffff",
+    color: "#1a2e1f",
   },
   confirmText: {
-    margin: "12px 0 0",
-    color: "rgba(234,240,255,0.78)",
+    margin: "10px 0 16px",
+    color: "#6b7280",
     fontSize: 14,
     lineHeight: 1.6,
   },
@@ -729,73 +775,87 @@ const styles = {
     display: "flex",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    padding: "14px 16px",
-    borderBottom: "1px solid rgba(255,255,255,0.10)",
+    padding: "14px 20px",
+    borderBottom: "1px solid #f0ebe2",
+    background: "#fafaf8",
   },
   modalKicker: {
-    fontSize: 12,
-    letterSpacing: "0.14em",
+    fontSize: 11,
+    letterSpacing: "0.10em",
     textTransform: "uppercase",
-    color: "rgba(234,240,255,0.65)",
-    marginBottom: 6,
+    color: "#9ca3af",
+    fontWeight: 700,
+    marginBottom: 4,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 900,
+    fontSize: 16,
+    fontWeight: 700,
     letterSpacing: "-0.01em",
+    color: "#1a2e1f",
   },
   iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "rgba(255,255,255,0.06)",
-    color: "#eaf0ff",
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    border: "1px solid #e8e3dc",
+    background: "#f9fafb",
+    color: "#6b7280",
     cursor: "pointer",
-    fontWeight: 900,
+    fontWeight: 700,
+    fontSize: 13,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  form: { padding: "14px 16px 16px" },
-  formRow: { marginBottom: 14 },
+
+  /* ── Form ── */
+  form: { padding: "16px 20px 20px" },
+  formRow: { marginBottom: 16 },
   label: {
     display: "block",
     fontSize: 12,
-    letterSpacing: "0.10em",
+    letterSpacing: "0.06em",
     textTransform: "uppercase",
-    color: "rgba(234,240,255,0.72)",
-    marginBottom: 8,
+    color: "#6b7280",
+    fontWeight: 700,
+    marginBottom: 6,
   },
-  req: { color: "rgba(255, 200, 200, 0.95)" },
+  req: { color: "#b91c1c" },
   input: {
     width: "100%",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "rgba(0,0,0,0.22)",
-    color: "#eaf0ff",
+    padding: "9px 12px",
+    borderRadius: 9,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    fontSize: 14,
     outline: "none",
+    boxSizing: "border-box",
   },
   inputError: {
-    borderColor: "rgba(255, 107, 107, 0.45)",
-    boxShadow: "0 0 0 4px rgba(255, 107, 107, 0.10)",
+    borderColor: "#fca5a5",
+    boxShadow: "0 0 0 3px rgba(252,165,165,0.15)",
   },
   helpText: {
-    marginTop: 6,
+    marginTop: 5,
     fontSize: 12,
-    color: "rgba(234,240,255,0.58)",
+    color: "#9ca3af",
     lineHeight: 1.5,
   },
   fieldError: {
-    marginTop: 8,
+    marginTop: 6,
     fontSize: 12,
-    color: "rgba(255, 200, 200, 0.95)",
+    color: "#b91c1c",
     lineHeight: 1.4,
   },
   modalFooter: {
     display: "flex",
     justifyContent: "flex-end",
-    gap: 10,
-    paddingTop: 6,
+    gap: 8,
+    paddingTop: 8,
   },
+
+  /* ── Accessibility ── */
   srOnly: {
     position: "absolute",
     width: 1,
