@@ -17,15 +17,15 @@ SET @seed_user_2 = COALESCE(
 );
 
 -- 2) Ensure categories (Music remains INACTIVE for republish-category test)
-INSERT INTO categories (name, description, status, created_at)
+INSERT INTO categories (name, description, status, is_default, created_at)
 VALUES
-  ('Textile', 'Traditional textile resources', 'ACTIVE', NOW()),
-  ('Music', 'Traditional music resources', 'INACTIVE', NOW()),
-  ('Craft', 'Traditional craft resources', 'ACTIVE', NOW()),
-  ('Oral History', 'Oral history resources', 'ACTIVE', NOW()),
-  ('Architecture', 'Traditional architecture resources', 'ACTIVE', NOW()),
-  ('Festival', 'Festival and ceremony resources', 'ACTIVE', NOW()),
-  ('Ritual', 'Ritual documentation resources', 'ACTIVE', NOW())
+  ('Textile', 'Traditional textile resources', 'ACTIVE', FALSE, NOW()),
+  ('Music', 'Traditional music resources', 'INACTIVE', FALSE, NOW()),
+  ('Craft', 'Traditional craft resources', 'ACTIVE', FALSE, NOW()),
+  ('Oral History', 'Oral history resources', 'ACTIVE', FALSE, NOW()),
+  ('Architecture', 'Traditional architecture resources', 'ACTIVE', FALSE, NOW()),
+  ('Festival', 'Festival and ceremony resources', 'ACTIVE', FALSE, NOW()),
+  ('Ritual', 'Ritual documentation resources', 'ACTIVE', FALSE, NOW())
 ON DUPLICATE KEY UPDATE
   description = VALUES(description),
   status = VALUES(status);
