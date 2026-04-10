@@ -1,15 +1,119 @@
+import { useMemo, useRef, useState } from 'react'
 import styles from './DraftForm.module.css'
 
-export default function DraftForm({ form, setForm, options, file, setFile }) {
+const linkPattern = /^https?:\/\//i
+
+const CATEGORY_TRANSLATIONS = {
+  '传统技艺': 'Traditional Craftsmanship',
+  '民俗活动': 'Folk Customs',
+  '民间文学与口述史': 'Folk Literature & Oral History',
+  '传统表演艺术': 'Traditional Performing Arts',
+  '历史建筑与聚落': 'Historic Architecture & Settlements',
+  '传统美术': 'Traditional Fine Arts',
+  '传统体育与游艺': 'Traditional Sports & Games',
+  '非遗美食与饮食习俗': 'Intangible Heritage Cuisine & Foodways'
+}
+
+const translateCategoryName = name => CATEGORY_TRANSLATIONS[name] || name
+
+export default function DraftForm({ form, setForm, options, files, setFiles, serverMedia, externalLinkError, tagSubmitError }) {
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
   const titleMax = options.titleMaxLength || 30
   const descMax = options.descriptionMaxLength || 2000
+  const maxFiles = options.maxFiles || 5
+  const maxFileSizeBytes = options.maxFileSizeBytes || 50 * 1024 * 1024
+  const allowedExt = options.allowedFileExtensions || []
+
+  const previews = useMemo(() => {
+    return (files || []).map(file => {
+      const url = URL.createObjectURL(file)
+      return { file, url }
+    })
+  }, [files])
+
+  const addFiles = incoming => {
+    if (!incoming || incoming.length === 0) return
+    const current = files || []
+    const next = [...current]
+    for (const file of Array.from(incoming)) {
+      if (next.length >= maxFiles) break
+      if (file.size > maxFileSizeBytes) {
+        showFileError('File exceeds 50MB. Upload failed.')
+        continue
+      }
+      next.push(file)
+    }
+    setFiles(next)
+  }
+
+  const removeFile = index => {
+    setFiles((files || []).filter((_, i) => i !== index))
+  }
+
+  const openPreview = url => {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  const addLinkRow = () => {
+    set('externalLinks', [...(form.externalLinks || []), ''])
+  }
+
+  const updateLink = (index, value) => {
+    const next = [...(form.externalLinks || [])]
+    next[index] = value
+    set('externalLinks', next)
+  }
+
+  const removeLink = index => {
+    const next = [...(form.externalLinks || [])]
+    next.splice(index, 1)
+    set('externalLinks', next)
+  }
+
+  const fileHint = allowedExt.length > 0 ? allowedExt.join(' / ') : '.docx / .pdf / .txt / .png / .jpg / .jpeg / .mov / .mp3'
+  const [tagError, setTagError] = useState('')
+  const [fileError, setFileError] = useState('')
+  const fileErrorTimerRef = useRef(null)
+
+  const showFileError = message => {
+    setFileError(message)
+    if (fileErrorTimerRef.current) clearTimeout(fileErrorTimerRef.current)
+    fileErrorTimerRef.current = setTimeout(() => setFileError(''), 2000)
+  }
+
+  const addTagSlot = () => {
+    const current = form.tags || ''
+    const parts = current.split(' ').filter(Boolean)
+    if (parts.length >= 5) {
+      setTagError('Up to 5 tags only.')
+      return
+    }
+    const next = current.trim()
+      ? `${current.trim()} #`
+      : '#'
+    set('tags', next)
+    setTagError('')
+  }
+
+  const addRecommendedTag = (tag) => {
+    const current = (form.tags || '').trim()
+    const parts = current.split(/\s+/).filter(Boolean)
+    const normalized = tag.startsWith('#') ? tag : `#${tag}`
+    if (parts.length >= 5) {
+      setTagError('Up to 5 tags only.')
+      return
+    }
+    if (parts.includes(normalized)) return
+    const next = current ? `${current} ${normalized}` : normalized
+    set('tags', next)
+    setTagError('')
+  }
 
   return (
     <div className={styles.form}>
       <div className={styles.field}>
         <div className={styles.labelRow}>
-          <label>标题 <span className={styles.req}>*</span></label>
+          <label>Title <span className={styles.req}>*</span></label>
           <span className={form.title.length >= titleMax ? styles.countWarn : styles.count}>
             {form.title.length}/{titleMax}
           </span>
@@ -17,31 +121,74 @@ export default function DraftForm({ form, setForm, options, file, setFile }) {
         <input
           value={form.title}
           onChange={e => set('title', e.target.value.slice(0, titleMax))}
-          placeholder="请输入标题（30字内）"
+          placeholder="Enter a title (max 30 chars)"
           className={styles.input}
         />
       </div>
 
       <div className={styles.row2}>
         <div className={styles.field}>
-          <label>分类 <span className={styles.req}>*</span></label>
-          <select value={form.category} onChange={e => set('category', e.target.value)} className={styles.input}>
-            <option value="">选择分类</option>
-            {options.categories?.map(c => <option key={c}>{c}</option>)}
+          <label>Category <span className={styles.req}>*</span></label>
+          <select
+            value={form.categoryId === '' || form.categoryId == null ? '' : String(form.categoryId)}
+            onChange={e => {
+              const v = e.target.value
+              setForm(prev => ({
+                ...prev,
+                categoryId: v === '' ? '' : Number(v),
+                staleCategoryName: null
+              }))
+            }}
+            className={styles.input}
+          >
+            <option value="">Select category</option>
+            {form.staleCategoryName ? (
+              <option value={String(form.categoryId)} disabled>
+                {translateCategoryName(form.staleCategoryName)} (inactive, choose another active category)
+              </option>
+            ) : null}
+            {(options.categories || []).map(c => (
+              <option key={c.id} value={String(c.id)}>{translateCategoryName(c.name)}</option>
+            ))}
           </select>
         </div>
         <div className={styles.field}>
-          <label>地点 <span className={styles.req}>*</span></label>
-          <select value={form.place} onChange={e => set('place', e.target.value)} className={styles.input}>
-            <option value="">选择地点</option>
-            {options.places?.map(p => <option key={p}>{p}</option>)}
-          </select>
+          <label>Location <span className={styles.req}>*</span></label>
+          {options.chinaCities ? (
+            <div className={styles.row2}>
+              <select
+                value={form.province || ''}
+                onChange={e => {
+                  set('province', e.target.value)
+                  set('place', '')
+                }}
+                className={styles.input}
+              >
+                <option value="">Select province</option>
+                {Object.keys(options.chinaCities).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <select
+                value={form.place}
+                onChange={e => set('place', e.target.value)}
+                className={styles.input}
+                disabled={!form.province}
+              >
+                <option value="">Select city</option>
+                {(options.chinaCities[form.province] || []).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          ) : (
+            <select value={form.place} onChange={e => set('place', e.target.value)} className={styles.input}>
+              <option value="">Select location</option>
+              {options.places?.map(p => <option key={p}>{p}</option>)}
+            </select>
+          )}
         </div>
       </div>
 
       <div className={styles.field}>
         <div className={styles.labelRow}>
-          <label>描述 <span className={styles.req}>*</span></label>
+          <label>Description <span className={styles.req}>*</span></label>
           <span className={form.description.length >= descMax ? styles.countWarn : styles.count}>
             {form.description.length}/{descMax}
           </span>
@@ -49,43 +196,113 @@ export default function DraftForm({ form, setForm, options, file, setFile }) {
         <textarea
           value={form.description}
           onChange={e => set('description', e.target.value.slice(0, descMax))}
-          placeholder="请输入描述（2000字内）"
+          placeholder="Enter a description (max 2000 chars)"
           className={styles.textarea}
         />
       </div>
 
       <div className={styles.field}>
-        <label>标签 <span className={styles.req}>*</span> <span className={styles.muted}>（推荐：{options.recommendedTags?.join('、')}）</span></label>
+        <div className={styles.labelRow}>
+          <label>Tags <span className={styles.req}>*</span> <span className={styles.muted}>(Recommended: {options.recommendedTags?.join(', ')})</span></label>
+          <button type="button" className={styles.tagAdd} onClick={addTagSlot}>Tag</button>
+        </div>
         <input
           value={form.tags}
-          onChange={e => set('tags', e.target.value)}
-          placeholder="以 # 开头，空格分隔，最多5个"
+          onChange={e => {
+            set('tags', e.target.value)
+            if (tagError) setTagError('')
+          }}
+          placeholder="#tag1 #tag2 (max 5)"
           className={styles.input}
         />
+        <div className={styles.tagRecommendList}>
+          {options.recommendedTags?.map(tag => (
+            <button
+              key={tag}
+              type="button"
+              className={styles.tagRecommend}
+              onClick={() => addRecommendedTag(tag)}
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+        {tagError && <div className={styles.tagError}>{tagError}</div>}
+        {tagSubmitError && <div className={styles.tagSubmitError}>{tagSubmitError}</div>}
       </div>
 
       <div className={styles.field}>
-        <label>版权声明 <span className={styles.req}>*</span></label>
+        <label>Copyright <span className={styles.req}>*</span></label>
         <select value={form.copyrightDeclaration} onChange={e => set('copyrightDeclaration', e.target.value)} className={styles.input}>
-          <option value="">选择版权声明</option>
+          <option value="">Select copyright</option>
           {options.copyrightOptions?.map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
       <div className={styles.field}>
-        <label>上传文件 <span className={styles.muted}>（.docx / .pdf / .txt，与外链二选一）</span></label>
-        <input type="file" accept=".docx,.pdf,.txt" onChange={e => setFile(e.target.files[0])} className={styles.fileInput} />
-        {file && <span className={styles.muted}>已选择：{file.name}</span>}
+        <label>Files <span className={styles.muted}>({fileHint}, up to {maxFiles} files, ≤50MB each, file or external link)</span></label>
+        {fileError && <div className={styles.fileError}>{fileError}</div>}
+        {serverMedia?.length > 0 && (
+          <div className={styles.fileList}>
+            <div className={styles.muted}>Files already uploaded</div>
+            {serverMedia.map((m, index) => (
+              <div key={`srv-${m.fileUrl}-${index}`} className={styles.fileItem}>
+                <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className={styles.fileName}>
+                  {m.fileName || m.fileUrl}
+                </a>
+                <span className={styles.fileMeta}>
+                  {m.fileSize != null ? `${(m.fileSize / 1024 / 1024).toFixed(1)} MB` : '—'}
+                </span>
+                <span className={styles.fileMeta}>Uploaded</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <input
+          type="file"
+          accept={allowedExt.join(',')}
+          multiple
+          onChange={e => addFiles(e.target.files)}
+          className={styles.fileInput}
+        />
+        {files?.length > 0 && (
+          <div className={styles.fileList}>
+            {previews.map(({ file, url }, index) => (
+              <div key={`${file.name}-${index}`} className={styles.fileItem}>
+                <button type="button" className={styles.fileName} onClick={() => openPreview(url)}>
+                  {file.name}
+                </button>
+                <span className={styles.fileMeta}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                <button type="button" className={styles.fileRemove} onClick={() => removeFile(index)}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className={styles.field}>
-        <label>外部链接 <span className={styles.muted}>（与文件上传二选一）</span></label>
-        <input
-          value={form.externalLink}
-          onChange={e => set('externalLink', e.target.value)}
-          placeholder="https://..."
-          className={styles.input}
-        />
+        <div className={styles.labelRow}>
+          <label>External links <span className={styles.muted}>(file or external link)</span></label>
+          <button type="button" className={styles.linkAdd} onClick={addLinkRow}>+ Add link</button>
+        </div>
+        {(form.externalLinks || []).length === 0 && (
+          <div className={styles.muted}>No links added yet</div>
+        )}
+        {(form.externalLinks || []).map((value, index) => (
+          <div key={`link-${index}`} className={styles.linkRow}>
+            <input
+              value={value}
+              onChange={e => updateLink(index, e.target.value)}
+              placeholder="https://..."
+              className={styles.input}
+            />
+            {!value || linkPattern.test(value) ? null : (
+              <span className={styles.linkWarn}>Link must start with http/https</span>
+            )}
+            <button type="button" className={styles.linkRemove} onClick={() => removeLink(index)}>Remove</button>
+          </div>
+        ))}
+        {externalLinkError && <div className={styles.linkError}>{externalLinkError}</div>}
       </div>
     </div>
   )

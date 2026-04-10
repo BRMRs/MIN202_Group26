@@ -4,17 +4,18 @@ export const resourceApi = {
   getOptions: () => axiosInstance.get('/resources/options'),
   createDraft: () => axiosInstance.post('/resources'),
   saveDraft: (id, payload) => axiosInstance.post(`/resources/${id}/save-draft`, payload),
-  uploadFile: (id, file) => {
+  uploadFiles: (id, files) => {
     const form = new FormData()
-    form.append('file', file)
+    files.forEach(file => form.append('files', file))
     return axiosInstance.post(`/resources/${id}/file`, form, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
-  updateExternalLink: (id, externalLink) =>
-    axiosInstance.patch(`/resources/${id}/external-link`, { externalLink }),
+  updateExternalLinks: (id, externalLinks) =>
+    axiosInstance.patch(`/resources/${id}/external-link`, { externalLinks }),
   submit: (id) => axiosInstance.post(`/resources/${id}/submit`),
   getDrafts: () => axiosInstance.get('/resources/drafts'),
+  getContributorRejectedCount: () => axiosInstance.get('/resources/contributor/rejected-count'),
   getMine: () => axiosInstance.get('/resources/mine'),
   deleteDraft: (id) => axiosInstance.delete(`/resources/${id}/draft`),
   getApproved: () => axiosInstance.get('/resources/approved'),

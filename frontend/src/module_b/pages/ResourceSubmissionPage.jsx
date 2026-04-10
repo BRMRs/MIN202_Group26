@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { resourceApi } from '../api/resourceApi'
 import DraftForm from '../components/DraftForm'
 import styles from './ResourceSubmissionPage.module.css'
@@ -11,44 +11,70 @@ export default function ResourceSubmissionPage() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [errors, setErrors] = useState([])
+  const [externalLinkError, setExternalLinkError] = useState('')
+  const externalLinkTimerRef = useRef(null)
+  const [tagSubmitError, setTagSubmitError] = useState('')
+  const tagErrorTimerRef = useRef(null)
   const [form, setForm] = useState({
-    title: '', category: '', place: '', description: '',
-    tags: '', copyrightDeclaration: '', externalLink: ''
+    title: '', categoryId: '', staleCategoryName: null, place: '', description: '',
+    tags: '', copyrightDeclaration: '', externalLinks: [], province: ''
   })
-  const [file, setFile] = useState(null)
+  const [files, setFiles] = useState([])
 
   useEffect(() => {
     if (!isAuthenticated) return
     resourceApi.getOptions()
       .then(r => setOptions(r.data))
-      .catch(() => setMsg('选项加载失败，请稍后重试'))
+            .catch(() => setMsg('Failed to load options. Please try again.'))
   }, [isAuthenticated])
 
   const validate = () => {
     const errs = []
     if (!form.title.trim()) errs.push('Title')
-    if (!form.category) errs.push('Category')
+    if (form.categoryId === '' || form.categoryId == null) errs.push('Category')
     if (!form.place) errs.push('Place')
     if (!form.description.trim()) errs.push('Description')
     if (!form.tags.trim()) errs.push('Tags')
     if (!form.copyrightDeclaration) errs.push('Copyright Declaration')
-    if (!file && !form.externalLink.trim()) errs.push('File or External Link')
+    const links = form.externalLinks || []
+    const invalidLinks = links.filter(link => link && !/^https?:\/\//i.test(link))
+    if (invalidLinks.length > 0) errs.push('External Link')
+    if (form.tags && !form.tags.trim().startsWith('#')) errs.push('Tag Prefix')
+    const validLinks = links.filter(link => link && /^https?:\/\//i.test(link))
+    if ((files?.length || 0) === 0 && validLinks.length === 0) errs.push('File or External Link')
     return errs
+  }
+
+  const showExternalLinkError = () => {
+    setExternalLinkError('External links must start with http or https')
+    if (externalLinkTimerRef.current) clearTimeout(externalLinkTimerRef.current)
+    externalLinkTimerRef.current = setTimeout(() => setExternalLinkError(''), 2000)
+  }
+
+  const showTagSubmitError = () => {
+    setTagSubmitError('Tags must start with #')
+    if (tagErrorTimerRef.current) clearTimeout(tagErrorTimerRef.current)
+    tagErrorTimerRef.current = setTimeout(() => setTagSubmitError(''), 2000)
   }
 
   const handleSaveAndSubmit = async () => {
     const errs = validate()
-    if (errs.length > 0) { setErrors(errs); return }
+    if (errs.length > 0) {
+      setErrors(errs)
+      if (errs.includes('External Link')) showExternalLinkError()
+      if (errs.includes('Tag Prefix')) showTagSubmitError()
+      return
+    }
     setErrors([])
     setSaving(true)
     try {
       const { data: draft } = await resourceApi.createDraft()
-      if (file) await resourceApi.uploadFile(draft.id, file)
+      if (files?.length) await resourceApi.uploadFiles(draft.id, files)
       await resourceApi.saveDraft(draft.id, form)
       await resourceApi.submit(draft.id)
-      setMsg('提交成功！资源已进入待审核状态，管理员可在「资源审核」页面（Module C）进行审核。')
-      setForm({ title: '', category: '', place: '', description: '', tags: '', copyrightDeclaration: '', externalLink: '' })
-      setFile(null)
+      setMsg('Submitted successfully! The resource is now in the review queue.')
+      setForm({ title: '', categoryId: '', staleCategoryName: null, place: '', description: '', tags: '', copyrightDeclaration: '', externalLinks: [], province: '' })
+      setFiles([])
     } catch (e) {
       setMsg(parseApiError(e))
     } finally {
@@ -57,12 +83,21 @@ export default function ResourceSubmissionPage() {
   }
 
   const handleSaveDraft = async () => {
+    const errs = validate()
+    if (errs.includes('External Link')) {
+      showExternalLinkError()
+      return
+    }
+    if (errs.includes('Tag Prefix')) {
+      showTagSubmitError()
+      return
+    }
     setSaving(true)
     try {
       const { data: draft } = await resourceApi.createDraft()
-      if (file) await resourceApi.uploadFile(draft.id, file)
+      if (files?.length) await resourceApi.uploadFiles(draft.id, files)
       await resourceApi.saveDraft(draft.id, form)
-      setMsg('草稿已保存')
+      setMsg('Draft saved')
       setTimeout(() => setMsg(''), 1500)
     } catch (e) {
       setMsg(parseApiError(e))
@@ -75,8 +110,7 @@ export default function ResourceSubmissionPage() {
     <div className={styles.page}>
       <main className={styles.main}>
         <div className={styles.card}>
-          <h2>提交文化遗产资源</h2>
-          <p className={styles.hint}>填写信息后点击「提交资源」将进入待审核队列；管理员在 Module C 的「资源审核」界面处理，不再使用旧版 Module B 审核页。</p>
+          <h2>Create Cultural Heritage Resource</h2>
 
           {!isAuthenticated && (
             <div style={{marginBottom:16,padding:12,border:'1px solid #d0d7e2',borderRadius:8,background:'#f8fafc'}}>
@@ -98,18 +132,20 @@ export default function ResourceSubmissionPage() {
               form={form}
               setForm={setForm}
               options={options}
-              file={file}
-              setFile={setFile}
+              files={files}
+              setFiles={setFiles}
+              externalLinkError={externalLinkError}
+              tagSubmitError={tagSubmitError}
             />
           )}
 
           {isAuthenticated && (
             <div className={styles.actions}>
               <button type="button" className={styles.btnSecondary} onClick={handleSaveDraft} disabled={saving}>
-                {saving ? '处理中…' : '保存草稿'}
+                {saving ? 'Processing…' : 'Save draft'}
               </button>
               <button type="button" className={styles.btnPrimary} onClick={handleSaveAndSubmit} disabled={saving}>
-                {saving ? '提交中…' : '提交资源'}
+                {saving ? 'Submitting…' : 'Submit'}
               </button>
             </div>
           )}
