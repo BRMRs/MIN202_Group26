@@ -1,6 +1,7 @@
 package com.group26.heritage.common.repository;
 
 import com.group26.heritage.entity.Category;
+import com.group26.heritage.entity.enums.CategoryStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -20,4 +21,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
     List<Category> findAllByOrderByNameAsc();
+
+    List<Category> findAllByStatusOrderByNameAsc(CategoryStatus status);
 }

@@ -44,6 +44,15 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
                      @Param("status") ResourceStatus status,
                      @Param("updatedAt") LocalDateTime updatedAt);
 
+    /** 与 Module C 审核拒绝时的反馈文案同步，供贡献者在草稿箱中查看 */
+    @Modifying
+    @Query("UPDATE Resource r SET r.reviewFeedback = :feedback, r.updatedAt = :updatedAt WHERE r.id = :id")
+    int updateReviewFeedback(@Param("id") Long id,
+                           @Param("feedback") String feedback,
+                           @Param("updatedAt") LocalDateTime updatedAt);
+
+    long countByContributorIdAndStatus(Long contributorId, ResourceStatus status);
+
     @Modifying
     @Query("UPDATE Resource r SET r.status = :status, r.archiveReason = :reason, r.updatedAt = :updatedAt WHERE r.id = :id")
     int updateStatusWithReason(@Param("id") Long id,

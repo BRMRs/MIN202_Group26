@@ -13,6 +13,7 @@ public record CategoryResponse(
     String name,
     String description,
     CategoryStatus status,
-    @JsonProperty("created_at") LocalDateTime createdAt
+    @JsonProperty("created_at") LocalDateTime createdAt,
+    @JsonProperty("is_default") boolean defaultFlag
 ) {
 }

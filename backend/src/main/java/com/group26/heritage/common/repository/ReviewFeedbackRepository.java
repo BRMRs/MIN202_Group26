@@ -19,4 +19,7 @@ public interface ReviewFeedbackRepository extends JpaRepository<ReviewFeedback, 
 
     // PBI 3.4 — Audit Trail: count how many times a resource has been rejected
     long countByResourceIdAndDecision(Long resourceId, ReviewDecision decision);
+
+    Optional<ReviewFeedback> findFirstByResourceIdAndDecisionOrderByReviewedAtDesc(
+            Long resourceId, ReviewDecision decision);
 }

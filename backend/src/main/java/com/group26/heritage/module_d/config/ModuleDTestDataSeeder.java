@@ -128,6 +128,7 @@ public class ModuleDTestDataSeeder implements ApplicationRunner {
                     category.setName(categoryName);
                     category.setDescription("Test category for Module D browse/search/filter demo");
                     category.setStatus(CategoryStatus.ACTIVE);
+                    category.setDefaultFlag(false);
                     category.setCreatedAt(now);
                     return categoryRepository.save(category);
                 });

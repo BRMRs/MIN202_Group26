@@ -47,6 +47,7 @@ public class CategoryService {
         category.setName(normalizedName);
         category.setDescription(normalizeDescription(request.description()));
         category.setStatus(request.status());
+        category.setDefaultFlag(false);
 
         Category savedCategory = categoryRepository.save(category);
         cascadeResourcesIfCategoryBecomesInactive(savedCategory.getId(), null, savedCategory.getStatus());
@@ -154,7 +155,8 @@ public class CategoryService {
             category.getName(),
             category.getDescription(),
             category.getStatus(),
-            category.getCreatedAt()
+            category.getCreatedAt(),
+            category.isDefaultFlag()
         );
     }
 }
