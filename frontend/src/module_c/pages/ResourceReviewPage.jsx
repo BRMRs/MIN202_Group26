@@ -837,11 +837,22 @@ function ResourceReviewPage() {
                 <audio controls src={previewMedia.fileUrl} />
               </div>
             ) : previewMedia.mimeType === 'application/pdf' || previewMedia.fileName?.toLowerCase().endsWith('.pdf') ? (
-              <iframe
-                src={previewMedia.fileUrl}
-                title={previewMedia.fileName}
-                style={{ width: '85vw', height: '85vh', borderRadius: 8, border: 'none', background: 'white' }}
-              />
+              <div style={{ background: 'white', borderRadius: 12, padding: '40px 48px',
+                textAlign: 'center', minWidth: 320 }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>📄</div>
+                <p style={{ margin: '0 0 8px', color: '#333', fontWeight: 600, fontSize: 15 }}>
+                  {previewMedia.fileName}
+                </p>
+                <p style={{ margin: '0 0 24px', color: '#999', fontSize: 13 }}>
+                  PDF · {previewMedia.fileSize ? `${(previewMedia.fileSize / 1024).toFixed(1)} KB` : 'unknown size'}
+                </p>
+                <a href={previewMedia.fileUrl} target="_blank" rel="noreferrer"
+                  style={{ display: 'inline-block', padding: '10px 28px', borderRadius: 8,
+                    background: '#2d6a4f', color: 'white', fontWeight: 700, fontSize: 14,
+                    textDecoration: 'none' }}>
+                  Open PDF in new tab ↗
+                </a>
+              </div>
             ) : (
               <img src={previewMedia.fileUrl} alt={previewMedia.fileName}
                 style={{ maxWidth: '88vw', maxHeight: '88vh', borderRadius: 8,
