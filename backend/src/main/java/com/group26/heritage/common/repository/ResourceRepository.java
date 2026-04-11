@@ -26,6 +26,10 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
     
     List<Resource> findByCategoryId(Long categoryId);
 
+    List<Resource> findByCategoryIdOrderByIdAsc(Long categoryId);
+
+    long countByCategoryId(Long categoryId);
+
     @Modifying
     @Query("""
         update Resource resource
@@ -37,6 +41,20 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
     int updateStatusByCategoryIdAndStatus(@Param("categoryId") Long categoryId,
                                           @Param("sourceStatus") ResourceStatus sourceStatus,
                                           @Param("targetStatus") ResourceStatus targetStatus);
+
+    @Modifying
+    @Query("""
+        update Resource resource
+           set resource.categoryId = :targetCategoryId,
+               resource.category = :targetCategoryName,
+               resource.updatedAt = CURRENT_TIMESTAMP
+         where resource.categoryId = :sourceCategoryId
+           and resource.id in :resourceIds
+        """)
+    int migrateCategoryByIds(@Param("sourceCategoryId") Long sourceCategoryId,
+                             @Param("targetCategoryId") Long targetCategoryId,
+                             @Param("targetCategoryName") String targetCategoryName,
+                             @Param("resourceIds") List<Long> resourceIds);
 
     @Modifying
     @Query("UPDATE Resource r SET r.status = :status, r.updatedAt = :updatedAt WHERE r.id = :id")
