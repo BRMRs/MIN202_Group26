@@ -1,6 +1,8 @@
 package com.group26.heritage.module_e.controller;
 
 import com.group26.heritage.common.dto.Result;
+import com.group26.heritage.module_e.dto.CategoryDeactivationCheckResponse;
+import com.group26.heritage.module_e.dto.CategoryMigrationRequest;
 import com.group26.heritage.module_e.dto.CategoryRequest;
 import com.group26.heritage.module_e.dto.CategoryResponse;
 import com.group26.heritage.module_e.service.CategoryService;
@@ -62,5 +64,19 @@ public class CategoryController {
     public Result<CategoryResponse> deleteCategory(@PathVariable Long id) {
         return Result.success("Category marked as inactive successfully",
             categoryService.updateStatus(id, "INACTIVE"));
+    }
+
+    // PBI 5.1 / Task 2: Create category list, create, edit, status switch, and delete APIs
+    @GetMapping("/{id}/deactivation-check")
+    public Result<CategoryDeactivationCheckResponse> checkDeactivation(@PathVariable Long id) {
+        return Result.success(categoryService.checkDeactivation(id));
+    }
+
+    // PBI 5.1 / Task 2: Create category list, create, edit, status switch, and delete APIs
+    @PostMapping("/{id}/migrate-and-deactivate")
+    public Result<CategoryResponse> migrateResourcesAndDeactivate(@PathVariable Long id,
+                                                                  @Valid @RequestBody CategoryMigrationRequest request) {
+        return Result.success("Resources migrated and category deactivated successfully",
+            categoryService.migrateResourcesAndDeactivate(id, request));
     }
 }
