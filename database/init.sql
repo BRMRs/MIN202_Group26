@@ -323,3 +323,14 @@ VALUES (
     NOW(),
     NOW()
 );
+
+
+
+USE heritage_db;
+
+CREATE TABLE china_cities (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    province VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
