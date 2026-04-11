@@ -9,11 +9,11 @@ import {
 } from "@/module_e/api/dashboardApi";
 
 const STATUS_COLORS = {
-  DRAFT: "#64748b",
+  DRAFT: "#2563eb",
   PENDING_REVIEW: "#b91c1c",
   APPROVED: "#166534",
   REJECTED: "#a16207",
-  UNPUBLISHED: "#6b7280",
+  UNPUBLISHED: "#7c3aed",
   ARCHIVED: "#374151",
 };
 
