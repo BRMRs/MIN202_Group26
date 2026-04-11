@@ -31,6 +31,7 @@ function CategoryManagementPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [deactivationCheck, setDeactivationCheck] = useState(null);
   const [migrationAssignments, setMigrationAssignments] = useState({});
+  const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [bulkTargetId, setBulkTargetId] = useState("");
   const [migrationError, setMigrationError] = useState("");
   const [form, setForm] = useState({
@@ -115,6 +116,7 @@ function CategoryManagementPage() {
     setPendingCategory(null);
     setDeactivationCheck(null);
     setMigrationAssignments({});
+    setSelectedResourceIds([]);
     setBulkTargetId("");
     setMigrationError("");
   }
@@ -214,6 +216,7 @@ function CategoryManagementPage() {
         setPendingCategory(category);
         setDeactivationCheck(check);
         setMigrationAssignments({});
+        setSelectedResourceIds([]);
         setBulkTargetId("");
         setShowConfirm(true);
       } catch (error) {
@@ -288,6 +291,45 @@ function CategoryManagementPage() {
     });
     setMigrationAssignments(nextAssignments);
     setMigrationError("");
+  }
+
+  function applyTargetToSelected() {
+    if (!bulkTargetId) {
+      setMigrationError("Choose a target category before applying to selected resources.");
+      return;
+    }
+    if (selectedResourceIds.length === 0) {
+      setMigrationError("Select at least one resource before applying a target category.");
+      return;
+    }
+
+    setMigrationAssignments((previous) => {
+      const nextAssignments = { ...previous };
+      selectedResourceIds.forEach((resourceId) => {
+        nextAssignments[resourceId] = bulkTargetId;
+      });
+      return nextAssignments;
+    });
+    setMigrationError("");
+  }
+
+  function toggleResourceSelection(resourceId) {
+    setMigrationError("");
+    setSelectedResourceIds((previous) => {
+      if (previous.includes(resourceId)) {
+        return previous.filter((id) => id !== resourceId);
+      }
+      return [...previous, resourceId];
+    });
+  }
+
+  function toggleSelectAllResources() {
+    const resources = deactivationCheck?.resources ?? [];
+    const allResourceIds = resources.map((resource) => resource.id);
+    const allSelected = allResourceIds.length > 0 && allResourceIds.every((id) => selectedResourceIds.includes(id));
+
+    setMigrationError("");
+    setSelectedResourceIds(allSelected ? [] : allResourceIds);
   }
 
   function buildMigrationGroups(resources) {
@@ -572,6 +614,18 @@ function CategoryManagementPage() {
                 ) : (
                   <>
                     <div style={styles.bulkRow}>
+                      <label style={styles.selectAllLabel}>
+                        <input
+                          type="checkbox"
+                          checked={
+                            (deactivationCheck.resources ?? []).length > 0
+                            && deactivationCheck.resources.every((resource) => selectedResourceIds.includes(resource.id))
+                          }
+                          onChange={toggleSelectAllResources}
+                          disabled={loading}
+                        />
+                        Select all
+                      </label>
                       <select
                         value={bulkTargetId}
                         onChange={(event) => setBulkTargetId(event.target.value)}
@@ -585,6 +639,9 @@ function CategoryManagementPage() {
                           </option>
                         ))}
                       </select>
+                      <button type="button" onClick={applyTargetToSelected} style={styles.ghostButton} disabled={loading}>
+                        Apply to selected
+                      </button>
                       <button type="button" onClick={applyBulkTarget} style={styles.ghostButton} disabled={loading}>
                         Apply to all
                       </button>
@@ -593,6 +650,14 @@ function CategoryManagementPage() {
                     <div style={styles.migrationList}>
                       {deactivationCheck.resources.map((resource) => (
                         <div key={resource.id} style={styles.migrationRow}>
+                          <input
+                            type="checkbox"
+                            checked={selectedResourceIds.includes(resource.id)}
+                            onChange={() => toggleResourceSelection(resource.id)}
+                            disabled={loading}
+                            aria-label={`Select ${resource.title}`}
+                            style={styles.resourceCheckbox}
+                          />
                           <div style={styles.resourceSummary}>
                             <span style={styles.resourceTitle}>{resource.title}</span>
                             <span style={styles.resourceMeta}>
@@ -1083,10 +1148,19 @@ const styles = {
   /* Migration modal */
   bulkRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gridTemplateColumns: "auto minmax(220px, 1fr) auto auto",
     gap: 10,
     alignItems: "center",
     marginBottom: 12,
+  },
+  selectAllLabel: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    color: "#6b7280",
+    fontSize: 13,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
   },
   migrationList: {
     display: "grid",
@@ -1098,13 +1172,18 @@ const styles = {
   },
   migrationRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 280px)",
+    gridTemplateColumns: "auto minmax(0, 1fr) minmax(220px, 280px)",
     gap: 12,
     alignItems: "center",
     padding: "10px 12px",
     border: "1px solid #f0ebe2",
     borderRadius: 8,
     background: "#fafaf8",
+  },
+  resourceCheckbox: {
+    width: 16,
+    height: 16,
+    margin: 0,
   },
   resourceSummary: {
     minWidth: 0,
