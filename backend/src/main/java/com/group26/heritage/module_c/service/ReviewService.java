@@ -12,6 +12,7 @@ import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.ResourceMedia;
 import com.group26.heritage.entity.ReviewFeedback;
 import com.group26.heritage.entity.User;
+import com.group26.heritage.entity.enums.CategoryStatus;
 import com.group26.heritage.entity.enums.MediaType;
 import com.group26.heritage.entity.enums.ResourceStatus;
 import com.group26.heritage.entity.enums.ReviewDecision;
@@ -133,6 +134,15 @@ public class ReviewService {
         if (resource.getStatus() != ResourceStatus.PENDING_REVIEW) {
             throw new IllegalArgumentException(
                     "Only PENDING_REVIEW resources can be approved. Current: " + resource.getStatus());
+        }
+
+        if (resource.getCategoryId() != null) {
+            categoryRepository.findById(resource.getCategoryId()).ifPresent(category -> {
+                if (category.getStatus() == CategoryStatus.INACTIVE) {
+                    throw new IllegalArgumentException(
+                            "Cannot approve: the category \"" + category.getName() + "\" has been deactivated. Please reassign the resource to an active category before approving.");
+                }
+            });
         }
 
         ResourceStatus previous = resource.getStatus();
@@ -366,7 +376,10 @@ public class ReviewService {
 
         if (r.getCategoryId() != null) {
             categoryRepository.findById(r.getCategoryId()).ifPresentOrElse(
-                    c -> dto.setCategoryName(c.getName()),
+                    c -> {
+                        dto.setCategoryName(c.getName());
+                        dto.setCategoryStatus(c.getStatus().name());
+                    },
                     () -> dto.setCategoryName("Not provided"));
         } else {
             dto.setCategoryName(ResourceReviewDetailResponse.orNotProvided(r.getCategory()));

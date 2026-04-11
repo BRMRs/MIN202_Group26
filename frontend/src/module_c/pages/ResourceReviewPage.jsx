@@ -240,6 +240,7 @@ function ResourceReviewPage() {
     : null;
   const coverMedia  = explicitCover || firstImage;
   const otherMedia  = r?.mediaFiles?.filter(m => m !== coverMedia) || [];
+  const categoryInactive = r?.categoryStatus === 'INACTIVE';
 
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7f5', fontFamily: 'system-ui, sans-serif' }}>
@@ -312,6 +313,21 @@ function ResourceReviewPage() {
           </div>
         )}
 
+        {/* Warning banner: category has been deactivated */}
+        {categoryInactive && (
+          <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 10,
+            padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <div>
+              <strong style={{ color: '#856404', fontSize: 14 }}>Category Deactivated</strong>
+              <div style={{ color: '#856404', fontSize: 13, marginTop: 2 }}>
+                The category <strong>"{r?.categoryName}"</strong> has been set to inactive.
+                This resource cannot be approved until it is reassigned to an active category.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action buttons — PBI 3.2: hidden for non-actionable statuses */}
         {(isPending || canArchive || canUnpublish || canRepublish || canResubmit) && !r?.status?.includes('ARCHIVED') && (
           <div style={{ background: 'white', borderRadius: 10, padding: '16px 20px',
@@ -320,10 +336,12 @@ function ResourceReviewPage() {
             <span style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>Actions:</span>
             {isPending && (
               <>
-                <button onClick={openApproveModal}
+                <button onClick={categoryInactive ? undefined : openApproveModal}
+                  disabled={categoryInactive}
+                  title={categoryInactive ? `Cannot approve: category "${r?.categoryName}" is deactivated` : undefined}
                   style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
-                    background: '#198754', color: 'white', fontWeight: 700,
-                    cursor: 'pointer', fontSize: 14 }}>
+                    background: categoryInactive ? '#adb5bd' : '#198754', color: 'white', fontWeight: 700,
+                    cursor: categoryInactive ? 'not-allowed' : 'pointer', fontSize: 14 }}>
                   ✅ Approve
                 </button>
                 <button onClick={() => setShowRejectModal(true)}
