@@ -20,9 +20,21 @@ export async function updateCategoryStatus(id, newStatus) {
   return response.data.data;
 }
 
+export async function checkCategoryDeactivation(id) {
+  const response = await axiosInstance.get(`/admin/categories/${id}/deactivation-check`);
+  return response.data.data;
+}
+
+export async function migrateAndDeactivateCategory(id, migrations) {
+  const response = await axiosInstance.post(`/admin/categories/${id}/migrate-and-deactivate`, { migrations });
+  return response.data.data;
+}
+
 export default {
   listCategories,
   createCategory,
   updateCategory,
   updateCategoryStatus,
+  checkCategoryDeactivation,
+  migrateAndDeactivateCategory,
 };

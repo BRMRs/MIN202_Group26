@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AdminSidebar } from "@/module_e/components";
 import {
+  checkCategoryDeactivation,
   createCategory,
   listCategories,
+  migrateAndDeactivateCategory,
   updateCategory,
   updateCategoryStatus,
 } from "@/module_e/api/categoryApi";
@@ -27,6 +29,10 @@ function CategoryManagementPage() {
   const [editingId, setEditingId] = useState(null);
   const [pendingCategory, setPendingCategory] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [deactivationCheck, setDeactivationCheck] = useState(null);
+  const [migrationAssignments, setMigrationAssignments] = useState({});
+  const [bulkTargetId, setBulkTargetId] = useState("");
+  const [migrationError, setMigrationError] = useState("");
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -107,6 +113,10 @@ function CategoryManagementPage() {
   function closeConfirmModal() {
     setShowConfirm(false);
     setPendingCategory(null);
+    setDeactivationCheck(null);
+    setMigrationAssignments({});
+    setBulkTargetId("");
+    setMigrationError("");
   }
 
   function showOperationSucceeded(message) {
@@ -191,13 +201,26 @@ function CategoryManagementPage() {
     }
   }
 
-  function handleToggleStatus(category) {
+  async function handleToggleStatus(category) {
     const currentStatus = category?.status === "INACTIVE" ? "INACTIVE" : "ACTIVE";
     const nextStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
     if (nextStatus === "INACTIVE") {
-      setPendingCategory(category);
-      setShowConfirm(true);
+      setErrorMessage("");
+      setMigrationError("");
+      setLoading(true);
+      try {
+        const check = await checkCategoryDeactivation(category.id);
+        setPendingCategory(category);
+        setDeactivationCheck(check);
+        setMigrationAssignments({});
+        setBulkTargetId("");
+        setShowConfirm(true);
+      } catch (error) {
+        showOperationFailed(error, "Failed to check category resources.");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -223,10 +246,17 @@ function CategoryManagementPage() {
     }
 
     setErrorMessage("");
+    setMigrationError("");
     setLoading(true);
 
     try {
-      await updateCategoryStatus(pendingCategory.id, "INACTIVE");
+      const resources = deactivationCheck?.resources ?? [];
+      if (resources.length > 0) {
+        const migrations = buildMigrationGroups(resources);
+        await migrateAndDeactivateCategory(pendingCategory.id, migrations);
+      } else {
+        await updateCategoryStatus(pendingCategory.id, "INACTIVE");
+      }
       await refreshCategories();
       closeConfirmModal();
       showOperationSucceeded("Category deactivated successfully.");
@@ -235,6 +265,51 @@ function CategoryManagementPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function setMigrationTarget(resourceId, targetCategoryId) {
+    setMigrationError("");
+    setMigrationAssignments((previous) => ({
+      ...previous,
+      [resourceId]: targetCategoryId,
+    }));
+  }
+
+  function applyBulkTarget() {
+    const resources = deactivationCheck?.resources ?? [];
+    if (!bulkTargetId) {
+      setMigrationError("Choose a target category before applying to all resources.");
+      return;
+    }
+
+    const nextAssignments = {};
+    resources.forEach((resource) => {
+      nextAssignments[resource.id] = bulkTargetId;
+    });
+    setMigrationAssignments(nextAssignments);
+    setMigrationError("");
+  }
+
+  function buildMigrationGroups(resources) {
+    const groupsByTarget = {};
+
+    for (const resource of resources) {
+      const targetCategoryId = migrationAssignments[resource.id];
+      if (!targetCategoryId) {
+        setMigrationError("Assign every resource to a target category before deactivation.");
+        throw new Error("Assign every resource to a target category before deactivation.");
+      }
+
+      if (!groupsByTarget[targetCategoryId]) {
+        groupsByTarget[targetCategoryId] = [];
+      }
+      groupsByTarget[targetCategoryId].push(resource.id);
+    }
+
+    return Object.entries(groupsByTarget).map(([targetCategoryId, resourceIds]) => ({
+      targetCategoryId: Number(targetCategoryId),
+      resourceIds,
+    }));
   }
 
   return (
@@ -257,8 +332,7 @@ function CategoryManagementPage() {
                 <h1 style={styles.title}>Category Management</h1>
                 <p style={styles.subtitle}>
                   Manage flat categories. Deactivate instead of deleting. Inactive categories stay listed for history;
-                  contributor pickers only show ACTIVE. Deactivating sets all APPROVED resources in that category to
-                  UNPUBLISHED.
+                  contributor pickers only show ACTIVE. Categories with resources must be migrated before deactivation.
                 </p>
               </div>
               <button type="button" onClick={openCreateModal} style={styles.primaryButton} disabled={loading}>
@@ -482,13 +556,76 @@ function CategoryManagementPage() {
       {/* Deactivate confirm modal */}
       {showConfirm ? (
         <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Deactivate category">
-          <div style={styles.confirmModal}>
+          <div style={(deactivationCheck?.resources ?? []).length > 0 ? styles.migrationModal : styles.confirmModal}>
             <div style={styles.confirmTitle}>Deactivate Category</div>
-            <p style={styles.confirmText}>
-              Are you sure you want to deactivate this category? It will be hidden from contributor submission
-              pickers, and all resources in <strong>APPROVED</strong> status under this category will become{" "}
-              <strong>UNPUBLISHED</strong>.
-            </p>
+            {(deactivationCheck?.resources ?? []).length > 0 ? (
+              <>
+                <p style={styles.confirmText}>
+                  This category contains <strong>{deactivationCheck.resources.length}</strong> resource(s). Assign every
+                  resource to another ACTIVE category before deactivation. Resource status will not change.
+                </p>
+
+                {deactivationCheck.targetCategories.length === 0 ? (
+                  <div role="alert" style={styles.errorBanner}>
+                    No other ACTIVE category is available. Create or reactivate another category before migration.
+                  </div>
+                ) : (
+                  <>
+                    <div style={styles.bulkRow}>
+                      <select
+                        value={bulkTargetId}
+                        onChange={(event) => setBulkTargetId(event.target.value)}
+                        style={styles.input}
+                        disabled={loading}
+                      >
+                        <option value="">Move all resources to...</option>
+                        {deactivationCheck.targetCategories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={applyBulkTarget} style={styles.ghostButton} disabled={loading}>
+                        Apply to all
+                      </button>
+                    </div>
+
+                    <div style={styles.migrationList}>
+                      {deactivationCheck.resources.map((resource) => (
+                        <div key={resource.id} style={styles.migrationRow}>
+                          <div style={styles.resourceSummary}>
+                            <span style={styles.resourceTitle}>{resource.title}</span>
+                            <span style={styles.resourceMeta}>
+                              #{resource.id} · {resource.status}
+                            </span>
+                          </div>
+                          <select
+                            value={migrationAssignments[resource.id] ?? ""}
+                            onChange={(event) => setMigrationTarget(resource.id, event.target.value)}
+                            style={styles.migrationSelect}
+                            disabled={loading}
+                          >
+                            <option value="">Choose target category</option>
+                            {deactivationCheck.targetCategories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    {migrationError ? <div style={styles.fieldError}>{migrationError}</div> : null}
+                  </>
+                )}
+              </>
+            ) : (
+              <p style={styles.confirmText}>
+                This category has no resources. It will be hidden from contributor submission pickers after
+                deactivation.
+              </p>
+            )}
             <div style={styles.modalFooter}>
               <button type="button" onClick={closeConfirmModal} style={styles.cancelButton} disabled={loading}>
                 Cancel
@@ -497,9 +634,9 @@ function CategoryManagementPage() {
                 type="button"
                 onClick={handleConfirmDeactivate}
                 style={{ ...styles.ghostButton, ...styles.ghostDanger }}
-                disabled={loading}
+                disabled={loading || ((deactivationCheck?.resources ?? []).length > 0 && deactivationCheck.targetCategories.length === 0)}
               >
-                Deactivate
+                {(deactivationCheck?.resources ?? []).length > 0 ? "Migrate and Deactivate" : "Deactivate"}
               </button>
             </div>
           </div>
@@ -824,6 +961,16 @@ const styles = {
     boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
     padding: "24px 24px 20px",
   },
+  migrationModal: {
+    width: "min(760px, 100%)",
+    maxHeight: "82vh",
+    borderRadius: 14,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+    padding: "24px 24px 20px",
+    overflowY: "auto",
+  },
   confirmTitle: {
     fontSize: 17,
     fontWeight: 700,
@@ -933,6 +1080,61 @@ const styles = {
   },
 
   /* ── Accessibility ── */
+  /* Migration modal */
+  bulkRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  migrationList: {
+    display: "grid",
+    gap: 8,
+    marginBottom: 10,
+    maxHeight: 320,
+    overflowY: "auto",
+    paddingRight: 4,
+  },
+  migrationRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 280px)",
+    gap: 12,
+    alignItems: "center",
+    padding: "10px 12px",
+    border: "1px solid #f0ebe2",
+    borderRadius: 8,
+    background: "#fafaf8",
+  },
+  resourceSummary: {
+    minWidth: 0,
+    display: "grid",
+    gap: 4,
+  },
+  resourceTitle: {
+    color: "#1a2e1f",
+    fontWeight: 600,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  resourceMeta: {
+    color: "#9ca3af",
+    fontSize: 12,
+  },
+  migrationSelect: {
+    width: "100%",
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#374151",
+    fontSize: 13,
+    outline: "none",
+    boxSizing: "border-box",
+  },
+
+  /* Accessibility */
   srOnly: {
     position: "absolute",
     width: 1,
