@@ -1,145 +1,632 @@
-/* ProfilePage.module.css — aligned with user-side design language (Browse / Submit / ContributorApply) */
+/* ProfilePage.module.css — Heritage Platform personal content centre
+   Palette: bg #f7f4ef | brand #2d6a4f | cards #fff | border #e8e3dc */
+
+/* ── Page shell ─────────────────────────────────────────────────────────── */
 
 .page {
   min-height: calc(100vh - 58px);
   background: #f7f4ef;
-  padding: 40px 16px 72px;
+  padding: 36px 16px 80px;
 }
 
 .container {
-  max-width: 680px;
+  max-width: 900px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-/* ── Page header ── */
-.pageHeader {
-  margin-bottom: 28px;
-}
+/* ── Profile Header ─────────────────────────────────────────────────────── */
 
-.pageEyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #2d6a4f;
-  margin-bottom: 8px;
-}
-
-.pageTitle {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1a2e1f;
-  letter-spacing: -0.01em;
-  margin-bottom: 8px;
-}
-
-.pageSubtitle {
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.55;
-}
-
-/* ── Card ── */
-.card {
+.profileHeader {
   background: #fff;
   border: 1px solid #e8e3dc;
-  border-radius: 14px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
 }
 
-/* ── Avatar row ── */
-.avatarRow {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #f0ebe2;
-}
+/* Avatar */
+.avatarWrap { flex-shrink: 0; }
 
 .avatar {
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: #2d6a4f;
+  background: linear-gradient(135deg, #2d6a4f, #3d8a65);
   color: #fff;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .avatarImg {
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   object-fit: cover;
-  flex-shrink: 0;
+  border: 2px solid #e8e3dc;
 }
 
-.avatarInfo {
+/* Identity block */
+.identityBlock {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.usernameDisplay {
-  font-size: 18px;
+.userName {
+  font-size: 22px;
   font-weight: 700;
   color: #1a2e1f;
-  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+  margin: 0;
 }
 
+.userEmail {
+  font-size: 13.5px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.badgesRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* Role badge */
 .roleBadge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
+  padding: 3px 11px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   border: 1px solid transparent;
 }
 
-.roleBadgeContributor {
+.roleBadgeContributor { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.roleBadgeAdmin       { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.roleBadgeViewer      { background: #f9fafb; color: #6b7280; border-color: #e5e7eb; }
+
+/* Contributor-status badge */
+.csBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: default;
+}
+
+.csBadgeApproved { background: #dcfce7; color: #15803d; border-color: #86efac; }
+.csBadgePending  { background: #fef9c3; color: #92400e; border-color: #fde68a; }
+.csBadgeRejected { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.csBadgeApply    { background: #f0fdf4; color: #2d6a4f; border-color: #bbf7d0; cursor: pointer; }
+.csBadgeApply:hover { background: #2d6a4f; color: #fff; }
+
+/* Bio */
+.userBio {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.55;
+  margin: 2px 0 0;
+}
+
+.userBioEmpty {
+  font-size: 13.5px;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 2px 0 0;
+}
+
+/* Header action buttons */
+.headerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  align-items: flex-end;
+}
+
+.btnEditProfile {
+  background: #fff;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btnEditProfile:hover {
+  border-color: #2d6a4f;
+  color: #2d6a4f;
+}
+
+.btnCreateResource {
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.btnCreateResource:hover { background: #1b4332; }
+
+/* ── Viewer guidance panel ──────────────────────────────────────────────── */
+
+.viewerPanel {
   background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.viewerPanelIcon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.viewerPanelBody {
+  flex: 1;
+}
+
+.viewerPanelBody strong {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #15803d;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.viewerPanelBody p {
+  font-size: 13.5px;
   color: #166534;
-  border-color: #bbf7d0;
+  line-height: 1.5;
+  margin: 0;
 }
 
-.roleBadgeAdmin {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
+.viewerPanelCta {
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.15s;
 }
 
-.roleBadgeViewer {
-  background: #f9fafb;
+.viewerPanelCta:hover { background: #1b4332; }
+
+/* ── Quick Stats ────────────────────────────────────────────────────────── */
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.statCard {
+  background: #fff;
+  border: 1px solid #e8e3dc;
+  border-radius: 12px;
+  padding: 18px 14px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.statCard:hover {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+  border-color: #2d6a4f;
+}
+
+.statValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a2e1f;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 600;
   color: #6b7280;
-  border-color: #e5e7eb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* ── Section label ── */
+/* Accent variants */
+.statAccent_approved { border-top: 3px solid #22c55e; }
+.statAccent_approved .statValue { color: #15803d; }
+
+.statAccent_rejected { border-top: 3px solid #ef4444; }
+.statAccent_rejected .statValue { color: #b91c1c; }
+
+/* ── Tabs section ───────────────────────────────────────────────────────── */
+
+.tabsSection {
+  background: #fff;
+  border: 1px solid #e8e3dc;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid #e8e3dc;
+  background: #faf9f7;
+  padding: 0 4px;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 14px 18px 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover { color: #2d6a4f; }
+
+.tabBtnActive {
+  color: #2d6a4f;
+  border-bottom-color: #2d6a4f;
+}
+
+.tabCount {
+  background: #2d6a4f;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.tabContent {
+  padding: 24px;
+}
+
+/* ── Resource list & cards ──────────────────────────────────────────────── */
+
+.resourceList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.resourceCard {
+  border: 1px solid #ede8e0;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.resourceCard:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.cardImageCol {
+  width: 160px;
+  min-width: 160px;
+  background: #f0ebe2;
+  overflow: hidden;
+}
+
+.cardCover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cardNoImage {
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #f0ebe2;
+}
+
+.cardNoImageIcon { font-size: 26px; opacity: 0.45; }
+.cardNoImageLabel { font-size: 11px; color: #b8a99a; }
+
+.cardBodyCol {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.cardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Resource status badges */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.statusDraft    { background: #dbeafe; color: #1e40af; }
+.statusPending  { background: #fef9c3; color: #92400e; }
+.statusApproved { background: #dcfce7; color: #15803d; }
+.statusRejected { background: #fee2e2; color: #991b1b; }
+.statusArchived { background: #f3f4f6; color: #6b7280; }
+
+.metaBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  white-space: nowrap;
+}
+
+.metaBadgePlace {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.cardTitle {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #1a2e1f;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.rejectionNote {
+  font-size: 12.5px;
+  color: #7f1d1d;
+  background: #fff1f2;
+  border: 1px solid #fecaca;
+  border-left: 3px solid #dc2626;
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+
+.cardFooter {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cardDate {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.cardActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 15px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.actionBtn:hover { background: #1b4332; }
+
+.actionBtnSecondary {
+  background: #fff;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.actionBtnSecondary:hover { border-color: #2d6a4f; color: #2d6a4f; }
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+
+.emptyPanel {
+  padding: 44px 24px;
+  text-align: center;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.emptyIcon {
+  font-size: 44px;
+  display: block;
+  margin-bottom: 14px;
+  opacity: 0.5;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 6px;
+}
+
+.emptySubtitle {
+  font-size: 13.5px;
+  color: #9ca3af;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.emptyActions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.emptyActionBtn {
+  padding: 9px 22px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #2d6a4f;
+  color: #2d6a4f;
+  background: #fff;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.emptyActionBtn:hover { background: #2d6a4f; color: #fff; }
+
+.emptyActionBtnSecondary {
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.emptyActionBtnSecondary:hover { background: #f3f4f6; color: #374151; }
+
+/* ── Loading ────────────────────────────────────────────────────────────── */
+
+.loadingMsg {
+  text-align: center;
+  padding: 40px 24px;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+/* ── Account card (bottom) ──────────────────────────────────────────────── */
+
+.accountCard {
+  background: #fff;
+  border: 1px solid #e8e3dc;
+  border-radius: 14px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
 .sectionLabel {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: #9ca3af;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   padding-bottom: 10px;
   border-bottom: 1px solid #f0ebe2;
 }
 
-/* ── Info rows (view mode) ── */
-.infoGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+.infoGrid { display: flex; flex-direction: column; gap: 12px; }
 
 .infoRow {
   display: flex;
@@ -151,33 +638,72 @@
   font-size: 13px;
   font-weight: 600;
   color: #6b7280;
-  min-width: 80px;
-  padding-top: 1px;
+  min-width: 90px;
   flex-shrink: 0;
+  padding-top: 1px;
 }
 
 .infoValue {
   font-size: 14px;
   color: #1f2937;
-  line-height: 1.55;
+  line-height: 1.5;
   flex: 1;
 }
 
-.infoEmpty {
-  font-size: 14px;
-  color: #9ca3af;
-  font-style: italic;
+/* ── Edit Profile Modal ─────────────────────────────────────────────────── */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
 }
 
-/* ── Divider ── */
-.divider {
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid #f0ebe2;
+}
+
+.modalTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a2e1f;
+  margin: 0;
+}
+
+.modalClose {
+  background: none;
   border: none;
-  border-top: 1px solid #f0ebe2;
-  margin: 24px 0;
+  font-size: 16px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.15s;
 }
 
-/* ── Actions ── */
-.actions {
+.modalClose:hover { background: #f3f4f6; color: #374151; }
+
+.modal form { padding: 24px 28px; }
+
+.modalActions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -186,7 +712,8 @@
   border-top: 1px solid #f0ebe2;
 }
 
-/* ── Form fields (edit mode) ── */
+/* ── Shared form elements ───────────────────────────────────────────────── */
+
 .fieldGroup {
   display: flex;
   flex-direction: column;
@@ -206,10 +733,7 @@
   color: #374151;
 }
 
-.counter {
-  font-size: 12px;
-  color: #9ca3af;
-}
+.counter { font-size: 12px; color: #9ca3af; }
 
 .input {
   padding: 11px 14px;
@@ -223,11 +747,7 @@
   width: 100%;
 }
 
-.input:focus {
-  outline: none;
-  border-color: #2d6a4f;
-  background: #fff;
-}
+.input:focus { outline: none; border-color: #2d6a4f; background: #fff; }
 
 .textarea {
   padding: 11px 14px;
@@ -237,26 +757,22 @@
   color: #1f2937;
   background: #f9fafb;
   resize: vertical;
-  min-height: 100px;
+  min-height: 90px;
   font-family: inherit;
   line-height: 1.55;
   transition: border-color 0.18s, background 0.18s;
   width: 100%;
 }
 
-.textarea:focus {
-  outline: none;
-  border-color: #2d6a4f;
-  background: #fff;
-}
+.textarea:focus { outline: none; border-color: #2d6a4f; background: #fff; }
 
-/* ── Alerts ── */
+/* ── Alerts ─────────────────────────────────────────────────────────────── */
+
 .successAlert {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   border-radius: 10px;
   padding: 12px 16px;
-  margin-bottom: 20px;
   color: #166534;
   font-size: 14px;
   line-height: 1.5;
@@ -267,13 +783,14 @@
   border: 1px solid #fca5a5;
   border-radius: 10px;
   padding: 12px 16px;
-  margin-bottom: 20px;
   color: #b91c1c;
   font-size: 14px;
   line-height: 1.5;
+  margin-bottom: 16px;
 }
 
-/* ── Buttons ── */
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
 .btnPrimary {
   background: #2d6a4f;
   color: #fff;
@@ -287,14 +804,8 @@
   white-space: nowrap;
 }
 
-.btnPrimary:hover:not(:disabled) {
-  background: #1b4332;
-}
-
-.btnPrimary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.btnPrimary:hover:not(:disabled) { background: #1b4332; }
+.btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btnSecondary {
   background: #fff;
@@ -309,7 +820,49 @@
   white-space: nowrap;
 }
 
-.btnSecondary:hover {
-  border-color: #2d6a4f;
-  color: #2d6a4f;
+.btnSecondary:hover { border-color: #2d6a4f; color: #2d6a4f; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 680px) {
+  .profileHeader {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .headerActions {
+    flex-direction: row;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cardImageCol {
+    width: 110px;
+    min-width: 110px;
+  }
+
+  .tabBtn {
+    padding: 12px 12px 10px;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .resourceCard {
+    flex-direction: column;
+  }
+
+  .cardImageCol {
+    width: 100%;
+    min-width: 0;
+    height: 160px;
+  }
 }
