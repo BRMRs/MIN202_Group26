@@ -113,11 +113,14 @@ public class ResourceService {
         if (files.size() > MAX_FILES) {
             throw new IllegalArgumentException("最多可上传" + MAX_FILES + "个文件");
         }
-        int sortOrderStart = mediaRepository.findByResourceIdOrderBySortOrderAsc(resourceId)
-                .stream()
+        List<ResourceMedia> existing = mediaRepository.findByResourceIdOrderBySortOrderAsc(resourceId);
+        int sortOrderStart = existing.stream()
                 .map(ResourceMedia::getSortOrder)
                 .max(Integer::compareTo)
                 .orElse(0) + 1;
+
+        boolean hasCover = existing.stream()
+                .anyMatch(m -> m.getMediaType() == MediaType.COVER);
 
         int index = 0;
         for (MultipartFile file : files) {
@@ -131,9 +134,15 @@ public class ResourceService {
             Path target = uploadDir.resolve(safeName);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
+            MediaType mediaType = resolveMediaType(originalName);
+            if (mediaType == MediaType.DETAIL && !hasCover) {
+                mediaType = MediaType.COVER;
+                hasCover = true;
+            }
+
             ResourceMedia media = new ResourceMedia();
             media.setResourceId(resourceId);
-            media.setMediaType(resolveMediaType(originalName));
+            media.setMediaType(mediaType);
             media.setFileUrl("/uploads/" + safeName);
             media.setFileName(originalName);
             media.setFileSize(file.getSize());

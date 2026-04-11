@@ -233,8 +233,13 @@ function ResourceReviewPage() {
   // PBI 3.4 — Detect resubmission: PENDING_REVIEW item that has prior REJECTED decisions in its history
   const priorRejections = history.filter(fb => fb.decision === 'REJECTED');
   const isResubmission  = isPending && priorRejections.length > 0;
-  const coverMedia   = r?.mediaFiles?.find(m => m.mediaType === 'COVER');
-  const otherMedia   = r?.mediaFiles?.filter(m => m.mediaType !== 'COVER') || [];
+  const explicitCover = r?.mediaFiles?.find(m => m.mediaType === 'COVER');
+  const firstImage    = !explicitCover
+    ? r?.mediaFiles?.find(m => m.mediaType === 'DETAIL' &&
+        (m.mimeType?.startsWith('image/') || /\.(png|jpe?g)$/i.test(m.fileName || '')))
+    : null;
+  const coverMedia  = explicitCover || firstImage;
+  const otherMedia  = r?.mediaFiles?.filter(m => m !== coverMedia) || [];
 
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7f5', fontFamily: 'system-ui, sans-serif' }}>
@@ -831,6 +836,12 @@ function ResourceReviewPage() {
                 <p style={{ margin: '0 0 16px', color: '#333' }}>{previewMedia.fileName}</p>
                 <audio controls src={previewMedia.fileUrl} />
               </div>
+            ) : previewMedia.mimeType === 'application/pdf' || previewMedia.fileName?.toLowerCase().endsWith('.pdf') ? (
+              <iframe
+                src={previewMedia.fileUrl}
+                title={previewMedia.fileName}
+                style={{ width: '85vw', height: '85vh', borderRadius: 8, border: 'none', background: 'white' }}
+              />
             ) : (
               <img src={previewMedia.fileUrl} alt={previewMedia.fileName}
                 style={{ maxWidth: '88vw', maxHeight: '88vh', borderRadius: 8,
