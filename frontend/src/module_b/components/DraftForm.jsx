@@ -166,7 +166,7 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
           <label className={styles.label}>
             Location <span className={styles.req}>*</span>
           </label>
-          {options.chinaCities ? (
+          {options.chinaCities && Object.keys(options.chinaCities).length > 0 ? (
             <div className={styles.row2}>
               <select
                 value={form.province || ''}
