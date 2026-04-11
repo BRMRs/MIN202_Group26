@@ -256,8 +256,9 @@ function CategoryManagementPage() {
               <div>
                 <h1 style={styles.title}>Category Management</h1>
                 <p style={styles.subtitle}>
-                  Manage flat categories. Deactivate instead of deleting. Inactive categories remain visible for
-                  historical queries.
+                  Manage flat categories. Deactivate instead of deleting. Inactive categories stay listed for history;
+                  contributor pickers only show ACTIVE. Deactivating sets all APPROVED resources in that category to
+                  UNPUBLISHED.
                 </p>
               </div>
               <button type="button" onClick={openCreateModal} style={styles.primaryButton} disabled={loading}>
@@ -310,6 +311,7 @@ function CategoryManagementPage() {
                   <tr>
                     <th style={{ ...styles.th, width: 110 }}>Category ID</th>
                     <th style={styles.th}>Name</th>
+                    <th style={{ ...styles.th, width: 100 }}>Default</th>
                     <th style={styles.th}>Description</th>
                     <th style={{ ...styles.th, width: 120 }}>Status</th>
                     <th style={{ ...styles.th, width: 220 }}>Actions</th>
@@ -318,13 +320,14 @@ function CategoryManagementPage() {
                 <tbody>
                   {!loading && filteredCategories.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={styles.emptyCell}>
+                      <td colSpan={6} style={styles.emptyCell}>
                         No categories found.
                       </td>
                     </tr>
                   ) : (
                     filteredCategories.map((category) => {
                       const status = category?.status === "INACTIVE" ? "INACTIVE" : "ACTIVE";
+                      const isPreset = category?.is_default === true;
                       return (
                         <tr
                           key={category.id}
@@ -337,6 +340,15 @@ function CategoryManagementPage() {
                             <div style={styles.nameCell}>
                               <span style={styles.nameText}>{category.name}</span>
                             </div>
+                          </td>
+                          <td style={styles.td}>
+                            {isPreset ? (
+                              <span style={{ ...styles.badge, ...styles.badgePreset }} title="系统预置分类">
+                                DEFAULT
+                              </span>
+                            ) : (
+                              <span style={styles.muted}>—</span>
+                            )}
                           </td>
                           <td style={styles.td}>
                             <span title={category.description || ""} style={styles.descText}>
@@ -473,7 +485,9 @@ function CategoryManagementPage() {
           <div style={styles.confirmModal}>
             <div style={styles.confirmTitle}>Deactivate Category</div>
             <p style={styles.confirmText}>
-              Are you sure you want to deactivate this category? This will hide it from the resource selection.
+              Are you sure you want to deactivate this category? It will be hidden from contributor submission
+              pickers, and all resources in <strong>APPROVED</strong> status under this category will become{" "}
+              <strong>UNPUBLISHED</strong>.
             </p>
             <div style={styles.modalFooter}>
               <button type="button" onClick={closeConfirmModal} style={styles.cancelButton} disabled={loading}>
@@ -722,9 +736,14 @@ const styles = {
     color: "#92400e",
     borderColor: "#fde68a",
   },
+  badgePreset: {
+    background: "rgba(120, 200, 255, 0.14)",
+    color: "rgba(200, 235, 255, 0.98)",
+    borderColor: "rgba(120, 200, 255, 0.28)",
+  },
 
   /* ── Action buttons ── */
-  actions: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
+  actions: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" },
   primaryButton: {
     padding: "9px 16px",
     borderRadius: 9,

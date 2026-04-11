@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { resourceApi } from '../api/resourceApi'
 import DraftForm from '../components/DraftForm'
 import styles from './ResourceSubmissionPage.module.css'
@@ -11,44 +11,70 @@ export default function ResourceSubmissionPage() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [errors, setErrors] = useState([])
+  const [externalLinkError, setExternalLinkError] = useState('')
+  const externalLinkTimerRef = useRef(null)
+  const [tagSubmitError, setTagSubmitError] = useState('')
+  const tagErrorTimerRef = useRef(null)
   const [form, setForm] = useState({
-    title: '', category: '', place: '', description: '',
-    tags: '', copyrightDeclaration: '', externalLink: ''
+    title: '', categoryId: '', staleCategoryName: null, place: '', description: '',
+    tags: '', copyrightDeclaration: '', externalLinks: [], province: ''
   })
-  const [file, setFile] = useState(null)
+  const [files, setFiles] = useState([])
 
   useEffect(() => {
     if (!isAuthenticated) return
     resourceApi.getOptions()
       .then(r => setOptions(r.data))
-      .catch(() => setMsg('Failed to load options. Please refresh and try again.'))
+      .catch(() => setMsg('Failed to load options. Please try again.'))
   }, [isAuthenticated])
 
   const validate = () => {
     const errs = []
     if (!form.title.trim()) errs.push('Title')
-    if (!form.category) errs.push('Category')
+    if (form.categoryId === '' || form.categoryId == null) errs.push('Category')
     if (!form.place) errs.push('Place')
     if (!form.description.trim()) errs.push('Description')
     if (!form.tags.trim()) errs.push('Tags')
     if (!form.copyrightDeclaration) errs.push('Copyright Declaration')
-    if (!file && !form.externalLink.trim()) errs.push('File or External Link')
+    const links = form.externalLinks || []
+    const invalidLinks = links.filter(link => link && !/^https?:\/\//i.test(link))
+    if (invalidLinks.length > 0) errs.push('External Link')
+    if (form.tags && !form.tags.trim().startsWith('#')) errs.push('Tag Prefix')
+    const validLinks = links.filter(link => link && /^https?:\/\//i.test(link))
+    if ((files?.length || 0) === 0 && validLinks.length === 0) errs.push('File or External Link')
     return errs
+  }
+
+  const showExternalLinkError = () => {
+    setExternalLinkError('External links must start with http or https')
+    if (externalLinkTimerRef.current) clearTimeout(externalLinkTimerRef.current)
+    externalLinkTimerRef.current = setTimeout(() => setExternalLinkError(''), 2000)
+  }
+
+  const showTagSubmitError = () => {
+    setTagSubmitError('Tags must start with #')
+    if (tagErrorTimerRef.current) clearTimeout(tagErrorTimerRef.current)
+    tagErrorTimerRef.current = setTimeout(() => setTagSubmitError(''), 2000)
   }
 
   const handleSaveAndSubmit = async () => {
     const errs = validate()
-    if (errs.length > 0) { setErrors(errs); return }
+    if (errs.length > 0) {
+      setErrors(errs)
+      if (errs.includes('External Link')) showExternalLinkError()
+      if (errs.includes('Tag Prefix')) showTagSubmitError()
+      return
+    }
     setErrors([])
     setSaving(true)
     try {
       const { data: draft } = await resourceApi.createDraft()
-      if (file) await resourceApi.uploadFile(draft.id, file)
+      if (files?.length) await resourceApi.uploadFiles(draft.id, files)
       await resourceApi.saveDraft(draft.id, form)
       await resourceApi.submit(draft.id)
-      setMsg('Resource submitted successfully! It is now pending review by an administrator.')
-      setForm({ title: '', category: '', place: '', description: '', tags: '', copyrightDeclaration: '', externalLink: '' })
-      setFile(null)
+      setMsg('Submitted successfully! The resource is now in the review queue.')
+      setForm({ title: '', categoryId: '', staleCategoryName: null, place: '', description: '', tags: '', copyrightDeclaration: '', externalLinks: [], province: '' })
+      setFiles([])
     } catch (e) {
       setMsg(parseApiError(e))
     } finally {
@@ -57,13 +83,22 @@ export default function ResourceSubmissionPage() {
   }
 
   const handleSaveDraft = async () => {
+    const errs = validate()
+    if (errs.includes('External Link')) {
+      showExternalLinkError()
+      return
+    }
+    if (errs.includes('Tag Prefix')) {
+      showTagSubmitError()
+      return
+    }
     setSaving(true)
     try {
       const { data: draft } = await resourceApi.createDraft()
-      if (file) await resourceApi.uploadFile(draft.id, file)
+      if (files?.length) await resourceApi.uploadFiles(draft.id, files)
       await resourceApi.saveDraft(draft.id, form)
-      setMsg('Draft saved.')
-      setTimeout(() => setMsg(''), 2000)
+      setMsg('Draft saved')
+      setTimeout(() => setMsg(''), 1500)
     } catch (e) {
       setMsg(parseApiError(e))
     } finally {
@@ -104,18 +139,20 @@ export default function ResourceSubmissionPage() {
               form={form}
               setForm={setForm}
               options={options}
-              file={file}
-              setFile={setFile}
+              files={files}
+              setFiles={setFiles}
+              externalLinkError={externalLinkError}
+              tagSubmitError={tagSubmitError}
             />
           )}
 
           {isAuthenticated && (
             <div className={styles.actions}>
               <button type="button" className={styles.btnSecondary} onClick={handleSaveDraft} disabled={saving}>
-                {saving ? 'Saving…' : 'Save Draft'}
+                {saving ? 'Processing…' : 'Save draft'}
               </button>
               <button type="button" className={styles.btnPrimary} onClick={handleSaveAndSubmit} disabled={saving}>
-                {saving ? 'Submitting…' : 'Submit Resource'}
+                {saving ? 'Submitting…' : 'Submit'}
               </button>
             </div>
           )}

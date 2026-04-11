@@ -11,54 +11,54 @@ export default function AdminReviewPage() {
   useEffect(() => {
     resourceApi.getPending()
       .then(r => setPending(r.data))
-      .catch(() => setMsg('加载失败，请确认已登录（ADMIN角色）'))
+      .catch(() => setMsg('Failed to load. Please confirm you are logged in as ADMIN.'))
       .finally(() => setLoading(false))
   }, [])
 
   const handleReview = async (id, approved) => {
     if (!feedback[id]?.trim()) {
-      setMsg('请填写审核反馈后再操作')
+      setMsg('Please enter review feedback first')
       return
     }
     try {
       await resourceApi.review(id, approved, feedback[id])
-      setMsg(approved ? `#${id} 审核通过` : `#${id} 已拒绝`)
+      setMsg(approved ? `#${id} approved` : `#${id} rejected`)
       resourceApi.getPending().then(r => setPending(r.data))
     } catch (e) {
-      setMsg(e.response?.data?.error || '操作失败')
+      setMsg(e.response?.data?.error || 'Operation failed')
     }
   }
 
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <h2>审核台 <span className={styles.badge}>{pending.length}</span></h2>
+        <h2>Review Desk <span className={styles.badge}>{pending.length}</span></h2>
         {msg && <div className={styles.msg}>{msg}</div>}
-        {loading && <p className={styles.muted}>加载中...</p>}
-        {!loading && pending.length === 0 && <p className={styles.muted}>暂无待审核资源</p>}
+        {loading && <p className={styles.muted}>Loading...</p>}
+        {!loading && pending.length === 0 && <p className={styles.muted}>No pending resources</p>}
         {pending.map(r => (
           <div key={r.id} className={styles.card}>
             <div className={styles.cardTop}>
               <span className={styles.id}>#{r.id}</span>
-              <h3>{r.title || '(未命名)'}</h3>
-              <span className={styles.contributor}>投稿人 ID: {r.contributorId}</span>
+              <h3>{r.title || '(Untitled)'}</h3>
+              <span className={styles.contributor}>Contributor ID: {r.contributorId}</span>
             </div>
             <div className={styles.meta}>
-              <span>分类：{r.category || '-'}</span>
-              <span>地点：{r.place || '-'}</span>
-              <span>标签：{r.tags || '-'}</span>
+              <span>Category: {r.category || '-'}</span>
+              <span>Location: {r.place || '-'}</span>
+              <span>Tags: {r.tags || '-'}</span>
             </div>
             <p className={styles.desc}>{r.description}</p>
-            {r.externalLink && <a href={r.externalLink} target="_blank" rel="noreferrer" className={styles.link}>外部链接</a>}
+            {r.externalLink && <a href={r.externalLink} target="_blank" rel="noreferrer" className={styles.link}>External link</a>}
             <textarea
               className={styles.textarea}
-              placeholder="审核反馈（通过或拒绝都必须填写）"
+              placeholder="Review feedback (required for approve/reject)"
               value={feedback[r.id] || ''}
               onChange={e => setFeedback(prev => ({ ...prev, [r.id]: e.target.value }))}
             />
             <div className={styles.actions}>
-              <button className={styles.btnApprove} onClick={() => handleReview(r.id, true)}>审核通过</button>
-              <button className={styles.btnReject} onClick={() => handleReview(r.id, false)}>审核拒绝</button>
+              <button className={styles.btnApprove} onClick={() => handleReview(r.id, true)}>Approve</button>
+              <button className={styles.btnReject} onClick={() => handleReview(r.id, false)}>Reject</button>
             </div>
           </div>
         ))}

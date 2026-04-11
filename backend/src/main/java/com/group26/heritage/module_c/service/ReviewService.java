@@ -163,10 +163,15 @@ public class ReviewService {
         }
 
         ResourceStatus previous = resource.getStatus();
-        resourceRepository.updateStatus(resourceId, ResourceStatus.REJECTED, LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        resourceRepository.updateStatus(resourceId, ResourceStatus.REJECTED, now);
         resourceRepository.flush();
 
         saveReviewFeedback(resourceId, reviewer.getId(), ReviewDecision.REJECTED, previous, feedbackText);
+        // 同步到 resources.review_feedback，Module B 草稿箱等贡献者界面可直接展示
+        resourceRepository.updateReviewFeedback(resourceId, feedbackText.trim(), now);
+        resourceRepository.flush();
+
         return toDetailResponse(findResourceOrThrow(resourceId));
     }
 

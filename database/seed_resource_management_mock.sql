@@ -14,13 +14,13 @@ WHERE NOT EXISTS (
 );
 
 -- 2) Mock categories (mixed ACTIVE/INACTIVE for linkage tests)
-INSERT INTO categories (name, description, status, created_at)
+INSERT INTO categories (name, description, status, is_default, created_at)
 VALUES
-  ('Textile', 'Traditional textile resources', 'ACTIVE', NOW()),
-  ('Music', 'Traditional music resources', 'INACTIVE', NOW()),
-  ('Craft', 'Traditional craft resources', 'ACTIVE', NOW()),
-  ('Oral History', 'Oral history resources', 'ACTIVE', NOW()),
-  ('Architecture', 'Traditional architecture resources', 'ACTIVE', NOW())
+  ('Textile', 'Traditional textile resources', 'ACTIVE', FALSE, NOW()),
+  ('Music', 'Traditional music resources', 'INACTIVE', FALSE, NOW()),
+  ('Craft', 'Traditional craft resources', 'ACTIVE', FALSE, NOW()),
+  ('Oral History', 'Oral history resources', 'ACTIVE', FALSE, NOW()),
+  ('Architecture', 'Traditional architecture resources', 'ACTIVE', FALSE, NOW())
 ON DUPLICATE KEY UPDATE
   description = VALUES(description),
   status = VALUES(status);

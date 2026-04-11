@@ -29,6 +29,10 @@ public class Category {
     @Column(nullable = false)
     private CategoryStatus status = CategoryStatus.ACTIVE;
 
+    /** 系统预置的非遗分类；管理员新建的分类为 false */
+    @Column(name = "is_default", nullable = false)
+    private boolean defaultFlag = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

@@ -78,10 +78,23 @@ CREATE TABLE categories (
     name        VARCHAR(100) NOT NULL,
     description TEXT         NULL,
     status      ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    is_default  BOOLEAN      NOT NULL DEFAULT FALSE
+                             COMMENT '系统预置分类；管理员新建为 FALSE',
     created_at  DATETIME     NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uq_categories_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Default heritage categories (aligned with DefaultCategoryBootstrap)
+INSERT INTO categories (name, description, status, is_default, created_at) VALUES
+('Traditional Craftsmanship', 'Handmade techniques, traditional crafts, and related artifacts', 'ACTIVE', TRUE, NOW()),
+('Folk Customs', 'Festivals, rituals, temple fairs, and life customs', 'ACTIVE', TRUE, NOW()),
+('Folk Literature & Oral History', 'Myths, legends, epics, ballads, and oral traditions', 'ACTIVE', TRUE, NOW()),
+('Traditional Performing Arts', 'Local opera, folk arts, traditional music and dance', 'ACTIVE', TRUE, NOW()),
+('Historic Architecture & Settlements', 'Historic buildings, vernacular architecture, traditional villages, and cultural landscapes', 'ACTIVE', TRUE, NOW()),
+('Traditional Fine Arts', 'Painting, paper-cutting, embroidery, carving, and visual arts', 'ACTIVE', TRUE, NOW()),
+('Traditional Sports & Games', 'Martial arts, dragon boat, traditional board games, and folk games', 'ACTIVE', TRUE, NOW()),
+('Intangible Heritage Cuisine & Foodways', 'Food-making techniques and related customs', 'ACTIVE', TRUE, NOW());
 
 -- ============================================================
 -- 3. resources

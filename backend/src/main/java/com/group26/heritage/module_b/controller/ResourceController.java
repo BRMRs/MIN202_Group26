@@ -3,6 +3,7 @@ package com.group26.heritage.module_b.controller;
 import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.User;
 import com.group26.heritage.entity.enums.UserRole;
+import com.group26.heritage.module_b.dto.ResourceDraftListItem;
 import com.group26.heritage.module_b.dto.ResourceRequest;
 import com.group26.heritage.module_b.service.ResourceService;
 import org.springframework.http.HttpStatus;
@@ -40,19 +41,20 @@ public class ResourceController {
     }
 
     @PostMapping("/{id}/file")
-    public Resource uploadFile(@PathVariable Long id,
-                               @AuthenticationPrincipal User user,
-                               @RequestParam("file") MultipartFile file) throws IOException {
+    public Resource uploadFiles(@PathVariable Long id,
+                                @AuthenticationPrincipal User user,
+                                @RequestParam("files") List<MultipartFile> files) throws IOException {
         requireRole(user, UserRole.CONTRIBUTOR);
-        return service.uploadFile(id, user.getId(), file);
+        return service.uploadFiles(id, user.getId(), files);
     }
 
     @PatchMapping("/{id}/external-link")
     public Resource externalLink(@PathVariable Long id,
                                  @AuthenticationPrincipal User user,
-                                 @RequestBody Map<String, String> body) {
+                                 @RequestBody Map<String, List<String>> body) {
         requireRole(user, UserRole.CONTRIBUTOR);
-        return service.updateExternalLink(id, user.getId(), body.get("externalLink"));
+        List<String> links = body.get("externalLinks");
+        return service.updateExternalLinks(id, user.getId(), links);
     }
 
     @PostMapping("/{id}/submit")
@@ -69,9 +71,16 @@ public class ResourceController {
     }
 
     @GetMapping("/drafts")
-    public List<Resource> drafts(@AuthenticationPrincipal User user) {
+    public List<ResourceDraftListItem> drafts(@AuthenticationPrincipal User user) {
         requireRole(user, UserRole.CONTRIBUTOR);
         return service.listDrafts(user.getId());
+    }
+
+    /** 贡献者导航栏：有被拒绝待处理的资源时显示红点 */
+    @GetMapping("/contributor/rejected-count")
+    public Map<String, Long> contributorRejectedCount(@AuthenticationPrincipal User user) {
+        requireRole(user, UserRole.CONTRIBUTOR);
+        return Map.of("rejectedCount", service.countRejectedForContributor(user.getId()));
     }
 
     @DeleteMapping("/{id}/draft")

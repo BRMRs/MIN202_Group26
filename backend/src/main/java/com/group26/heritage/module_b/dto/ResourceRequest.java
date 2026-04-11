@@ -1,18 +1,21 @@
 package com.group26.heritage.module_b.dto;
 
+import java.util.List;
+
 public class ResourceRequest {
     private String title;
-    private String category;
+    /** 对应 categories 表主键；贡献者从 /api/resources/options 中启用中的分类选择 */
+    private Long categoryId;
     private String place;
     private String description;
     private String tags;
     private String copyrightDeclaration;
-    private String externalLink;
+    private List<String> externalLinks;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public String getPlace() { return place; }
     public void setPlace(String place) { this.place = place; }
     public String getDescription() { return description; }
@@ -21,6 +24,6 @@ public class ResourceRequest {
     public void setTags(String tags) { this.tags = tags; }
     public String getCopyrightDeclaration() { return copyrightDeclaration; }
     public void setCopyrightDeclaration(String copyrightDeclaration) { this.copyrightDeclaration = copyrightDeclaration; }
-    public String getExternalLink() { return externalLink; }
-    public void setExternalLink(String externalLink) { this.externalLink = externalLink; }
+    public List<String> getExternalLinks() { return externalLinks; }
+    public void setExternalLinks(List<String> externalLinks) { this.externalLinks = externalLinks; }
 }
