@@ -1,6 +1,7 @@
 package com.group26.heritage.module_e.service;
 
 import com.group26.heritage.common.repository.ResourceRepository;
+import com.group26.heritage.common.repository.TagRepository;
 import com.group26.heritage.entity.User;
 import com.group26.heritage.entity.enums.ResourceStatus;
 import com.group26.heritage.module_e.dto.CategoryDashboardItem;
@@ -9,6 +10,9 @@ import com.group26.heritage.module_e.dto.ReportFileResponse;
 import com.group26.heritage.module_e.dto.StatusDashboardItem;
 import com.group26.heritage.module_e.dto.StatusDashboardResponse;
 import com.group26.heritage.module_e.dto.StatusDashboardRow;
+import com.group26.heritage.module_e.dto.TagDashboardItem;
+import com.group26.heritage.module_e.dto.TagDashboardResponse;
+import com.group26.heritage.module_e.dto.TagUsageRow;
 import com.group26.heritage.module_e.dto.WorkflowStageItem;
 import com.group26.heritage.module_e.dto.WorkflowSummary;
 import org.springframework.stereotype.Service;
@@ -37,9 +41,11 @@ public class ReportService {
     );
 
     private final ResourceRepository resourceRepository;
+    private final TagRepository tagRepository;
 
-    public ReportService(ResourceRepository resourceRepository) {
+    public ReportService(ResourceRepository resourceRepository, TagRepository tagRepository) {
         this.resourceRepository = resourceRepository;
+        this.tagRepository = tagRepository;
     }
 
     // PBI 5.5 / Task 1: Build resource status distribution and workflow bottleneck data.
@@ -100,6 +106,29 @@ public class ReportService {
                 .toList();
 
         return new CategoryDashboardResponse(total, items, LocalDateTime.now());
+    }
+
+    // PBI 5.5 / Task 1: Build approved-resource tag popularity data for the reports summary.
+    @Transactional(readOnly = true)
+    public TagDashboardResponse getTagDashboard() {
+        List<TagUsageRow> rows = tagRepository.findActiveTagsByApprovedResourceCountForDashboard();
+        long totalApprovedTaggedResources = rows.stream()
+                .mapToLong(row -> safeCount(row.getApprovedResourceCount()))
+                .sum();
+
+        List<TagDashboardItem> items = rows.stream()
+                .map(row -> {
+                    long count = safeCount(row.getApprovedResourceCount());
+                    return new TagDashboardItem(
+                            row.getId(),
+                            row.getName(),
+                            count,
+                            calculateRatio(count, totalApprovedTaggedResources)
+                    );
+                })
+                .toList();
+
+        return new TagDashboardResponse(totalApprovedTaggedResources, items, LocalDateTime.now());
     }
 
     // PBI 5.5 / Task 2: Generate a downloadable CSV report for resource status and workflow bottlenecks.
@@ -180,20 +209,9 @@ public class ReportService {
                 .mapToLong(status -> countsByStatus.getOrDefault(status, 0L))
                 .sum();
 
-        ResourceStatus bottleneckStatus = WORKFLOW_STATUSES.stream()
-                .max((left, right) -> Long.compare(
-                        countsByStatus.getOrDefault(left, 0L),
-                        countsByStatus.getOrDefault(right, 0L)
-                ))
-                .orElse(null);
-
-        long bottleneckCount = bottleneckStatus == null
-                ? 0L
-                : countsByStatus.getOrDefault(bottleneckStatus, 0L);
-
-        if (bottleneckCount == 0L) {
-            bottleneckStatus = null;
-        }
+        long pendingReviewCount = countsByStatus.getOrDefault(ResourceStatus.PENDING_REVIEW, 0L);
+        ResourceStatus bottleneckStatus = pendingReviewCount > 0L ? ResourceStatus.PENDING_REVIEW : null;
+        long bottleneckCount = pendingReviewCount;
 
         ResourceStatus finalBottleneckStatus = bottleneckStatus;
         List<WorkflowStageItem> stages = WORKFLOW_STATUSES.stream()

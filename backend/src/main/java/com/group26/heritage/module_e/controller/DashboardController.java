@@ -5,6 +5,7 @@ import com.group26.heritage.entity.User;
 import com.group26.heritage.module_e.dto.CategoryDashboardResponse;
 import com.group26.heritage.module_e.dto.ReportFileResponse;
 import com.group26.heritage.module_e.dto.StatusDashboardResponse;
+import com.group26.heritage.module_e.dto.TagDashboardResponse;
 import com.group26.heritage.module_e.service.ReportService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,12 @@ public class DashboardController {
     @GetMapping("/category-overview")
     public Result<CategoryDashboardResponse> getCategoryDashboard() {
         return Result.success(reportService.getCategoryDashboard());
+    }
+
+    // PBI 5.5 / Task 1: Create approved-resource tag popularity dashboard API.
+    @GetMapping("/tag-overview")
+    public Result<TagDashboardResponse> getTagDashboard() {
+        return Result.success(reportService.getTagDashboard());
     }
 
     // PBI 5.5 / Task 2: Download the resource status and workflow bottleneck CSV report.

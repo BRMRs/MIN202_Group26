@@ -102,6 +102,7 @@ function Navbar() {
                   {navLink('/admin/categories', 'Categories')}
                   {navLink('/admin/tags', 'Tags')}
                   {navLink('/admin/resources', 'Resources')}
+                  {navLink('/admin/dashboard', 'Reports')}
                 </>
               )}
             </>

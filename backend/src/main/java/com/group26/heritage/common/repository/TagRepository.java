@@ -78,4 +78,22 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
          where rt.tag_id = :tagId
         """, nativeQuery = true)
     long countApprovedResourcesByTagId(@Param("tagId") Long tagId);
+
+    @Query(value = """
+        select t.id as id,
+               t.name as name,
+               t.is_deleted as isDeleted,
+               t.created_at as createdAt,
+               count(distinct r.id) as approvedResourceCount
+          from tags t
+          left join resource_tags rt
+                 on rt.tag_id = t.id
+          left join resources r
+                 on r.id = rt.resource_id
+                and r.status = 'APPROVED'
+         where t.is_deleted = false
+         group by t.id, t.name, t.is_deleted, t.created_at
+         order by approvedResourceCount desc, t.name asc
+        """, nativeQuery = true)
+    List<TagUsageRow> findActiveTagsByApprovedResourceCountForDashboard();
 }

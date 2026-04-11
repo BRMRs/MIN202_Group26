@@ -27,6 +27,11 @@ const navigationItems = [
     label: "Resource Admin",
     icon: ResourceIcon,
   },
+  {
+    to: "/admin/dashboard",
+    label: "Reports",
+    icon: DashboardIcon,
+  },
 ];
 
 function ApplicationsIcon() {
@@ -85,6 +90,18 @@ function ResourceIcon() {
     <svg viewBox="0 0 24 24" fill="none" style={styles.icon} aria-hidden="true">
       <rect x="4" y="5" width="16" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M8 10h8M8 14h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DashboardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" style={styles.icon} aria-hidden="true">
+      <path d="M4 19V5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M4 19h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8 15v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 15V8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16 15v-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
