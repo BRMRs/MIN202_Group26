@@ -5,7 +5,10 @@ import com.group26.heritage.module_d.dto.CategoryOptionDto;
 import com.group26.heritage.module_d.dto.ResourceDetailDto;
 import com.group26.heritage.module_d.dto.ResourceSummaryDto;
 import com.group26.heritage.module_d.dto.TagOptionDto;
+import com.group26.heritage.module_d.service.DiscoverMediaService;
 import com.group26.heritage.module_d.service.SearchService;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,9 +25,11 @@ import java.util.List;
 @RequestMapping("/api/discover")
 public class DiscoverController {
     private final SearchService searchService;
+    private final DiscoverMediaService discoverMediaService;
 
-    public DiscoverController(SearchService searchService) {
+    public DiscoverController(SearchService searchService, DiscoverMediaService discoverMediaService) {
         this.searchService = searchService;
+        this.discoverMediaService = discoverMediaService;
     }
 
     @GetMapping("/resources")
@@ -67,6 +72,12 @@ public class DiscoverController {
     @GetMapping("/resources/{id}")
     public ResourceDetailDto getResourceDetail(@PathVariable("id") Long id) {
         return searchService.getResourceDetail(id);
+    }
+
+    /** Public binary for a media row (parent resource must be APPROVED or ARCHIVED). */
+    @GetMapping("/media/{mediaId}")
+    public ResponseEntity<Resource> getPublicMedia(@PathVariable("mediaId") Long mediaId) {
+        return discoverMediaService.servePublicMedia(mediaId);
     }
 
     @GetMapping("/categories")

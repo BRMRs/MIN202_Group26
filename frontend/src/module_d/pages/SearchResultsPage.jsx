@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import {
   DISCOVER_LOAD_ERROR_MESSAGE,
   listCategories,
@@ -15,19 +15,20 @@ import '../styles/discovery.css';
  * one-line search hint + unified filters (category + place + tags + sort).
  */
 function SearchResultsPage() {
-  const [params, setParams] = useSearchParams();
+  const [, setParams] = useSearchParams();
+  const { search } = useLocation();
 
-  const query = useMemo(
-    () => ({
-      keyword: params.get('keyword') || '',
-      categoryId: params.get('categoryId') || '',
-      tagIds: params.getAll('tagIds').map(Number).filter(Number.isFinite),
-      place: params.get('place') || '',
-      page: Number(params.get('page') || 0),
-      sort: params.get('sort') || 'latest',
-    }),
-    [params],
-  );
+  const query = useMemo(() => {
+    const p = new URLSearchParams(search);
+    return {
+      keyword: p.get('keyword') || '',
+      categoryId: p.get('categoryId') || '',
+      tagIds: p.getAll('tagIds').map(Number).filter(Number.isFinite),
+      place: p.get('place') || '',
+      page: Number(p.get('page') || 0),
+      sort: p.get('sort') || 'latest',
+    };
+  }, [search]);
 
   const [resources, setResources] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -104,7 +105,7 @@ function SearchResultsPage() {
   useEffect(() => {
     fetchData(query.page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query.keyword, query.categoryId, query.sort, query.page, query.place, query.tagIds.join(','), params]);
+  }, [query.keyword, query.categoryId, query.sort, query.page, query.place, query.tagIds.join(','), search]);
 
   const applyFilters = () => {
     sync({

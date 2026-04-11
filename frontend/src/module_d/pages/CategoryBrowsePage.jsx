@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   DISCOVER_LOAD_ERROR_MESSAGE,
   listCategories,
@@ -17,20 +17,22 @@ const MAX_FACET_SCAN_PAGES = 20;
 function CategoryBrowsePage() {
   const { categoryId: categoryIdParam } = useParams();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
+  const [, setParams] = useSearchParams();
+  const { search } = useLocation();
 
   const categoryId = categoryIdParam != null ? String(categoryIdParam).trim() : '';
   const numericCategoryId = Number.parseInt(categoryId, 10);
 
-  const query = useMemo(
-    () => ({
-      tagIds: params.getAll('tagIds').map(Number).filter(Number.isFinite),
-      place: params.get('place') || '',
-      page: Number(params.get('page') || 0),
-      sort: params.get('sort') || 'latest',
-    }),
-    [params],
-  );
+  // Depend on search string, not the URLSearchParams object reference (can be stable while ?sort= changes).
+  const query = useMemo(() => {
+    const p = new URLSearchParams(search);
+    return {
+      tagIds: p.getAll('tagIds').map(Number).filter(Number.isFinite),
+      place: p.get('place') || '',
+      page: Number(p.get('page') || 0),
+      sort: p.get('sort') || 'latest',
+    };
+  }, [search]);
 
   const [categoryName, setCategoryName] = useState('');
   const [tags, setTags] = useState([]);
@@ -143,7 +145,7 @@ function CategoryBrowsePage() {
     if (!Number.isFinite(numericCategoryId)) return;
     fetchData(query.page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryId, query.tagIds.join(','), query.place, query.sort, query.page, params]);
+  }, [categoryId, query.tagIds.join(','), query.place, query.sort, query.page, search]);
 
   const syncUrl = ({ tagIds, place, pageNo = 0, sort = 'latest' }) => {
     const next = new URLSearchParams();
@@ -267,6 +269,16 @@ function CategoryBrowsePage() {
                 <Link to={`/resources/${r.id}`}>{r.title || 'Untitled'}</Link>
               </h3>
               {r.place && <p className="d-explore-tile-meta">{r.place}</p>}
+              <div className="d-explore-tile-stats" aria-label="Engagement">
+                <span className="d-explore-tile-stat" title="Likes">
+                  <span aria-hidden="true">{'\u2764\uFE0F'}</span>{' '}
+                  {Number(r.likeCount ?? 0)}
+                </span>
+                <span className="d-explore-tile-stat" title="Comments">
+                  <span aria-hidden="true">{'\uD83D\uDCAC'}</span>{' '}
+                  {Number(r.commentCount ?? 0)}
+                </span>
+              </div>
             </div>
           </article>
         ))}

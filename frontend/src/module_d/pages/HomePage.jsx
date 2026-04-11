@@ -157,15 +157,23 @@ function HomePage() {
                       {r.fileUrl ? (
                         <img className="d-story-cover" src={r.fileUrl} alt={r.title || 'Resource'} />
                       ) : (
-                        <div className="d-story-no-img" aria-hidden="true">
-                          🏛️
-                        </div>
+                        <div className="d-story-no-img">no image</div>
                       )}
                     </div>
                     <p className="d-story-label">{r.place || 'PLACE NOT SET'}</p>
                     <Link className="d-story-title" to={`/resources/${r.id}`}>
                       {r.title || 'Untitled'}
                     </Link>
+                    <div className="d-story-stats" aria-label="Engagement">
+                      <span className="d-story-stat" title="Likes">
+                        <span aria-hidden="true">{'\u2764\uFE0F'}</span>{' '}
+                        {Number(r.likeCount ?? 0)}
+                      </span>
+                      <span className="d-story-stat" title="Comments">
+                        <span aria-hidden="true">{'\uD83D\uDCAC'}</span>{' '}
+                        {Number(r.commentCount ?? 0)}
+                      </span>
+                    </div>
                   </article>
                 ))}
                 {resources.length === 0 && (
