@@ -46,7 +46,7 @@ public class DiscoverMediaService {
         Resource resource = resourceRepository.findById(media.getResourceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found"));
         ResourceStatus st = resource.getStatus();
-        if (st != ResourceStatus.APPROVED && st != ResourceStatus.ARCHIVED) {
+        if (st != ResourceStatus.APPROVED) {
             throw new ResourceNotFoundException("Media not available");
         }
 

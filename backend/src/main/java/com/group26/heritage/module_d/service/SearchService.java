@@ -130,7 +130,7 @@ public class SearchService {
 
     public ResourceDetailDto getResourceDetail(Long resourceId) {
         Resource resource = resourceRepository.findById(resourceId)
-                .filter(r -> r.getStatus() == ResourceStatus.APPROVED || r.getStatus() == ResourceStatus.ARCHIVED)
+                .filter(r -> r.getStatus() == ResourceStatus.APPROVED)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found: " + resourceId));
 
         String categoryName = categoryRepository.findById(resource.getCategoryId())

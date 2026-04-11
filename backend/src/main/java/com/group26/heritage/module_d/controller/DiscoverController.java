@@ -74,7 +74,7 @@ public class DiscoverController {
         return searchService.getResourceDetail(id);
     }
 
-    /** Public binary for a media row (parent resource must be APPROVED or ARCHIVED). */
+    /** Public binary for a media row (parent resource must be APPROVED). */
     @GetMapping("/media/{mediaId}")
     public ResponseEntity<Resource> getPublicMedia(@PathVariable("mediaId") Long mediaId) {
         return discoverMediaService.servePublicMedia(mediaId);
