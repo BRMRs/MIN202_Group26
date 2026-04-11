@@ -11,6 +11,7 @@ public record TagResponse(
     Long id,
     String name,
     @JsonProperty("is_deleted") Boolean isDeleted,
-    @JsonProperty("created_at") LocalDateTime createdAt
+    @JsonProperty("created_at") LocalDateTime createdAt,
+    @JsonProperty("approved_resource_count") long approvedResourceCount
 ) {
 }

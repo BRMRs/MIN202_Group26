@@ -8,6 +8,7 @@ import com.group26.heritage.entity.Tag;
 import com.group26.heritage.module_e.dto.TagCreateResponse;
 import com.group26.heritage.module_e.dto.TagRequest;
 import com.group26.heritage.module_e.dto.TagResponse;
+import com.group26.heritage.module_e.dto.TagUsageRow;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,9 +30,9 @@ public class TagService {
     public List<TagResponse> getAllTags(String search) {
         String normalizedSearch = search == null ? "" : search.trim();
 
-        List<Tag> tags = normalizedSearch.isEmpty()
-            ? tagRepository.findAllByIsDeletedFalseOrderByNameAsc()
-            : tagRepository.findByIsDeletedFalseAndNameContainingIgnoreCaseOrderByNameAsc(normalizedSearch);
+        List<TagUsageRow> tags = normalizedSearch.isEmpty()
+            ? tagRepository.findActiveTagsWithApprovedResourceCount()
+            : tagRepository.searchActiveTagsWithApprovedResourceCount(normalizedSearch);
 
         return tags
             .stream()
@@ -126,7 +127,18 @@ public class TagService {
             tag.getId(),
             tag.getName(),
             tag.getIsDeleted(),
-            tag.getCreatedAt()
+            tag.getCreatedAt(),
+            tagRepository.countApprovedResourcesByTagId(tag.getId())
+        );
+    }
+
+    private TagResponse toResponse(TagUsageRow tag) {
+        return new TagResponse(
+            tag.getId(),
+            tag.getName(),
+            tag.getIsDeleted(),
+            tag.getCreatedAt(),
+            tag.getApprovedResourceCount() == null ? 0 : tag.getApprovedResourceCount()
         );
     }
 }

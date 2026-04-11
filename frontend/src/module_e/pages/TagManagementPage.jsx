@@ -3,9 +3,9 @@ import { AdminSidebar } from "@/module_e/components";
 import { createTag, deleteTag, getTags, restoreTag, updateTag } from "@/module_e/api/tagApi";
 
 const INITIAL_MOCK_TAGS = [
-  { id: 2001, name: "Architecture" },
-  { id: 2002, name: "Accessibility" },
-  { id: 2003, name: "Performance" },
+  { id: 2001, name: "Architecture", approved_resource_count: 0 },
+  { id: 2002, name: "Accessibility", approved_resource_count: 0 },
+  { id: 2003, name: "Performance", approved_resource_count: 0 },
 ];
 
 function normalizeTagName(name) {
@@ -347,13 +347,14 @@ function TagManagementPage() {
                   <tr>
                     <th style={{ ...styles.th, width: 110 }}>Tag ID</th>
                     <th style={styles.th}>Name</th>
+                    <th style={{ ...styles.th, width: 180 }}>Approved Resource Count</th>
                     <th style={{ ...styles.th, width: 200 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {!loading && filteredTags.length === 0 ? (
                     <tr>
-                      <td colSpan={3} style={styles.emptyCell}>
+                      <td colSpan={4} style={styles.emptyCell}>
                         No tags found.
                       </td>
                     </tr>
@@ -371,6 +372,7 @@ function TagManagementPage() {
                             <span style={styles.nameText}>{tag.name}</span>
                           </div>
                         </td>
+                        <td style={styles.tdMono}>{tag.approved_resource_count ?? 0}</td>
                         <td style={styles.td}>
                           <div style={styles.actions}>
                             <button
