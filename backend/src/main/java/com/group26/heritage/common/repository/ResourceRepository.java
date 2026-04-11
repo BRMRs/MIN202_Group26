@@ -4,6 +4,8 @@ import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.enums.ResourceStatus;
 import com.group26.heritage.module_e.dto.AdminResourceMediaRow;
 import com.group26.heritage.module_e.dto.AdminResourceRow;
+import com.group26.heritage.module_e.dto.CategoryDashboardRow;
+import com.group26.heritage.module_e.dto.StatusDashboardRow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -200,4 +202,25 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
                rm.id asc
         """, nativeQuery = true)
     List<AdminResourceMediaRow> findAdminMediaRowsByResourceId(@Param("resourceId") Long resourceId);
+
+    @Query(value = """
+        select r.status as status,
+               count(*) as count
+          from resources r
+         group by r.status
+        """, nativeQuery = true)
+    List<StatusDashboardRow> countResourcesByStatusForDashboard();
+
+    @Query(value = """
+        select c.id as categoryId,
+               coalesce(c.name, 'Unassigned') as categoryName,
+               coalesce(c.status, 'INACTIVE') as categoryStatus,
+               count(r.id) as count
+          from resources r
+          left join categories c
+                 on c.id = r.category_id
+         group by c.id, c.name, c.status
+         order by count(r.id) desc, categoryName asc
+        """, nativeQuery = true)
+    List<CategoryDashboardRow> countResourcesByCategoryForDashboard();
 }

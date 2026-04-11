@@ -1,20 +1,34 @@
 package com.group26.heritage.module_e.controller;
 
+import com.group26.heritage.common.dto.Result;
+import com.group26.heritage.module_e.dto.CategoryDashboardResponse;
+import com.group26.heritage.module_e.dto.StatusDashboardResponse;
+import com.group26.heritage.module_e.service.ReportService;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Dashboard Controller — Module E
- * Summary E-PBI 3 (Content Status), E-PBI 4 (Dashboard), E-PBI 5 (Reporting)
- *
- * TODO: GET /api/admin/dashboard/stats — resource counts by status (E-PBI 4)
- * TODO: GET /api/admin/dashboard/reports?from=&to= — distribution report (E-PBI 5)
- * TODO: GET /api/admin/dashboard/reports/export — export CSV/Excel (E-PBI 5)
- * TODO: PUT /api/admin/dashboard/resources/{id}/status — override resource status (E-PBI 3)
- */
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/admin/dashboard")
 public class DashboardController {
-    // TODO: inject ReportService, CategoryService
-    // TODO: implement endpoints
+
+    private final ReportService reportService;
+
+    public DashboardController(ReportService reportService) {
+        this.reportService = reportService;
+    }
+
+    // PBI 5.5 / Task 1: Create resource status and workflow bottleneck dashboard API.
+    @GetMapping("/status-overview")
+    public Result<StatusDashboardResponse> getStatusDashboard() {
+        return Result.success(reportService.getStatusDashboard());
+    }
+
+    // PBI 5.5 / Task 1: Create category distribution dashboard API.
+    @GetMapping("/category-overview")
+    public Result<CategoryDashboardResponse> getCategoryDashboard() {
+        return Result.success(reportService.getCategoryDashboard());
+    }
 }
