@@ -70,8 +70,9 @@ CREATE TABLE users (
 -- Flat (non-hierarchical) resource categories.
 -- Deletion policy: LOGICAL DELETE ONLY — never physically deleted.
 --   Set status = 'INACTIVE' to deactivate a category.
---   INACTIVE categories: cannot be used for new/edited resources,
---   and all their APPROVED resources become UNPUBLISHED.
+--   INACTIVE categories cannot be used for new/edited resources.
+--   A category can be deactivated only after all resources are migrated
+--   to other ACTIVE categories. Deactivation does not change resource status.
 -- ============================================================
 CREATE TABLE categories (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
