@@ -3,33 +3,43 @@ import { useEffect, useState, useCallback } from 'react';
 import useAuth from '../hooks/useAuth';
 import { resourceApi } from '../../module_b/api/resourceApi';
 
+const statusNoticeSeenKey = (user) =>
+  `heritage-status-notice-seen:${user?.id ?? user?.username ?? 'anonymous'}`;
+
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [draftAttentionCount, setDraftAttentionCount] = useState(0);
-  const [statusNoticeCount, setStatusNoticeCount] = useState(0);
+  const [statusNoticeTotal, setStatusNoticeTotal] = useState(0);
+  const [unseenStatusNoticeCount, setUnseenStatusNoticeCount] = useState(0);
 
   const loadRejectedCount = useCallback(() => {
     resourceApi.getContributorRejectedCount()
       .then(res => {
         const draftCount = res.data?.draftAttentionCount ?? res.data?.rejectedCount;
         const noticeCount = res.data?.statusNoticeCount ?? draftCount;
+        const total = Number(noticeCount) || 0;
+        const seenRaw = localStorage.getItem(statusNoticeSeenKey(user));
+        const seen = Number(seenRaw) || 0;
         setDraftAttentionCount(Number(draftCount) || 0);
-        setStatusNoticeCount(Number(noticeCount) || 0);
+        setStatusNoticeTotal(total);
+        setUnseenStatusNoticeCount(Math.max(total - seen, 0));
       })
       .catch(() => {
         setDraftAttentionCount(0);
-        setStatusNoticeCount(0);
+        setStatusNoticeTotal(0);
+        setUnseenStatusNoticeCount(0);
       });
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'CONTRIBUTOR') {
       loadRejectedCount();
     } else {
       setDraftAttentionCount(0);
-      setStatusNoticeCount(0);
+      setStatusNoticeTotal(0);
+      setUnseenStatusNoticeCount(0);
     }
   }, [isAuthenticated, user?.role, location.pathname, loadRejectedCount]);
 
@@ -44,6 +54,13 @@ function Navbar() {
       window.removeEventListener('heritage-contributor-drafts-changed', onDraftsChanged);
     };
   }, [isAuthenticated, user?.role, loadRejectedCount]);
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'CONTRIBUTOR') return;
+    if (!location.pathname.startsWith('/profile')) return;
+    localStorage.setItem(statusNoticeSeenKey(user), String(statusNoticeTotal));
+    setUnseenStatusNoticeCount(0);
+  }, [isAuthenticated, user, location.pathname, statusNoticeTotal]);
 
   const handleLogout = () => {
     logout();
@@ -127,7 +144,7 @@ function Navbar() {
                   <span className="hn-avatar">
                     {user?.username?.[0]?.toUpperCase() || 'U'}
                   </span>
-                  {user?.role === 'CONTRIBUTOR' && statusNoticeCount > 0 && (
+                  {user?.role === 'CONTRIBUTOR' && unseenStatusNoticeCount > 0 && (
                     <span
                       title="You have status updates in Profile."
                       style={{
