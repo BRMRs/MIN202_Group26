@@ -242,6 +242,13 @@ function ResourceReviewPage() {
   const otherMedia  = r?.mediaFiles?.filter(m => m !== coverMedia) || [];
   const categoryInactive = r?.categoryStatus === 'INACTIVE';
 
+  const isPdfMedia = (m) =>
+    m?.mimeType === 'application/pdf' || m?.fileName?.toLowerCase().endsWith('.pdf');
+  const isImageMedia = (m) =>
+    m?.mimeType?.startsWith('image/') || /\.(png|jpe?g)$/i.test(m?.fileName || '');
+  const isTextMedia = (m) =>
+    m?.mimeType?.startsWith('text/') || /\.txt$/i.test(m?.fileName || '');
+
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7f5', fontFamily: 'system-ui, sans-serif' }}>
 
@@ -408,7 +415,7 @@ function ResourceReviewPage() {
                         </div>
                       </div>
                       <span style={{ marginLeft: 'auto', fontSize: 11, color: '#2d6a4f', fontWeight: 600 }}>
-                        View →
+                        View / Download →
                       </span>
                     </div>
                   ))}
@@ -842,7 +849,7 @@ function ResourceReviewPage() {
                 <p style={{ margin: '0 0 16px', color: '#333' }}>{previewMedia.fileName}</p>
                 <audio controls src={previewMedia.fileUrl} />
               </div>
-            ) : previewMedia.mimeType === 'application/pdf' || previewMedia.fileName?.toLowerCase().endsWith('.pdf') ? (
+            ) : isPdfMedia(previewMedia) ? (
               <div style={{ background: 'white', borderRadius: 12, padding: '40px 48px',
                 textAlign: 'center', minWidth: 320 }}>
                 <div style={{ fontSize: 56, marginBottom: 16 }}>📄</div>
@@ -852,18 +859,51 @@ function ResourceReviewPage() {
                 <p style={{ margin: '0 0 24px', color: '#999', fontSize: 13 }}>
                   PDF · {previewMedia.fileSize ? `${(previewMedia.fileSize / 1024).toFixed(1)} KB` : 'unknown size'}
                 </p>
-                <a href={previewMedia.fileUrl} target="_blank" rel="noreferrer"
-                  style={{ display: 'inline-block', padding: '10px 28px', borderRadius: 8,
-                    background: '#2d6a4f', color: 'white', fontWeight: 700, fontSize: 14,
-                    textDecoration: 'none' }}>
-                  Open PDF in new tab ↗
-                </a>
               </div>
-            ) : (
+            ) : isTextMedia(previewMedia) ? (
+              <iframe
+                src={previewMedia.fileUrl}
+                title={previewMedia.fileName || 'Text preview'}
+                style={{ width: '80vw', height: '75vh', borderRadius: 8, background: '#fff', border: 'none' }}
+              />
+            ) : isImageMedia(previewMedia) ? (
               <img src={previewMedia.fileUrl} alt={previewMedia.fileName}
                 style={{ maxWidth: '88vw', maxHeight: '88vh', borderRadius: 8,
                   objectFit: 'contain', display: 'block' }} />
+            ) : (
+              <div style={{ background: 'white', borderRadius: 12, padding: '32px 36px',
+                textAlign: 'center', minWidth: 340 }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>📎</div>
+                <p style={{ margin: '0 0 8px', color: '#333', fontWeight: 600, fontSize: 15 }}>
+                  {previewMedia.fileName || 'Attachment'}
+                </p>
+                <p style={{ margin: 0, color: '#777', fontSize: 13, lineHeight: 1.5 }}>
+                  Preview is not supported in browser for this file type.
+                  Please open in a new tab or download it.
+                </p>
+              </div>
             )}
+            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <a
+                href={previewMedia.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 8,
+                  background: '#2d6a4f', color: 'white', fontWeight: 700, fontSize: 13,
+                  textDecoration: 'none' }}
+              >
+                Open in new tab ↗
+              </a>
+              <a
+                href={previewMedia.fileUrl}
+                download={previewMedia.fileName || true}
+                style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 8,
+                  background: '#0d6efd', color: 'white', fontWeight: 700, fontSize: 13,
+                  textDecoration: 'none' }}
+              >
+                Download
+              </a>
+            </div>
             <div style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center',
               marginTop: 8, fontSize: 12 }}>
               {previewMedia.fileName} · {previewMedia.mimeType} · Click outside to close
