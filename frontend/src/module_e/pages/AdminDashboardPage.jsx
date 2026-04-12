@@ -58,6 +58,7 @@ function AdminDashboardPage() {
     [tagItems]
   );
   const visibleTagItems = showAllTags ? approvedTagItems : approvedTagItems.slice(0, 10);
+  const canExpandTags = approvedTagItems.length > 10;
 
   const reviewAttention = statusDashboard?.workflow?.bottleneck_stage === "PENDING_REVIEW"
     ? `Pending Review (${statusDashboard.workflow.bottleneck_count})`
@@ -277,16 +278,17 @@ function AdminDashboardPage() {
                   <div>
                     <span style={styles.cardTitle}>Top Approved Tags</span>
                     <p style={styles.cardSubtitle}>
-                      Popularity based only on approved resources. Showing {visibleTagItems.length} / {approvedTagItems.length}.
+                      Popularity based only on approved resources. Showing {visibleTagItems.length} / {approvedTagItems.length} (Top 10 by default).
                     </p>
                   </div>
-                  {approvedTagItems.length > 10 ? (
+                  {approvedTagItems.length > 0 ? (
                     <button
                       type="button"
                       onClick={() => setShowAllTags((previous) => !previous)}
                       style={styles.secondaryButton}
+                      disabled={!canExpandTags}
                     >
-                      {showAllTags ? "Collapse" : "Show all"}
+                      {showAllTags ? "Show top 10" : "Show all"}
                     </button>
                   ) : null}
                 </div>
