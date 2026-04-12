@@ -4,7 +4,7 @@ import useAuth from '../../common/hooks/useAuth';
 import { updateProfile } from '../api/userApi';
 import { resourceApi } from '../../module_b/api/resourceApi';
 import { getReviewHistory } from '../../module_c/api/reviewApi';
-import { pickLatestRejectionText } from '../../module_b/utils/reviewFeedback';
+import { pickLatestDecisionText } from '../../module_b/utils/reviewFeedback';
 import { VALIDATION, USER_ROLES } from '../../common/utils/constants';
 import styles from './ProfilePage.module.css';
 
@@ -23,8 +23,25 @@ const STATUS_CONFIG = {
   PENDING_REVIEW: { label: 'Pending Review', cls: 'statusPending' },
   APPROVED:       { label: 'Approved',       cls: 'statusApproved' },
   REJECTED:       { label: 'Rejected',       cls: 'statusRejected' },
+  UNPUBLISHED:    { label: 'Unpublished',    cls: 'statusUnpublished' },
   ARCHIVED:       { label: 'Archived',       cls: 'statusArchived' },
 };
+
+const REASON_FALLBACK = 'Not available';
+
+function decisionForStatus(status) {
+  if (status === 'REJECTED') return 'REJECTED';
+  if (status === 'UNPUBLISHED') return 'UNPUBLISHED';
+  if (status === 'ARCHIVED') return 'ARCHIVED';
+  return null;
+}
+
+function reasonLabelForStatus(status) {
+  if (status === 'REJECTED') return 'Reviewer note';
+  if (status === 'UNPUBLISHED') return 'Unpublish reason';
+  if (status === 'ARCHIVED') return 'Archive reason';
+  return 'Review note';
+}
 
 function statusBadge(status, stylesMod) {
   const cfg = STATUS_CONFIG[status] || { label: status, cls: 'statusDraft' };
@@ -56,10 +73,11 @@ function CoverOrPlaceholder({ url, title, stylesMod }) {
 
 // ── Resource card shared by all tabs ─────────────────────────────────────────
 
-function ResourceCard({ resource, rejectionNote, stylesMod }) {
+function ResourceCard({ resource, reviewNote, stylesMod }) {
   const navigate = useNavigate();
   const status = resource.status;
   const cover  = resource.mediaFiles?.[0]?.url ?? null;
+  const showReviewNote = decisionForStatus(status) !== null;
 
   return (
     <div className={stylesMod.resourceCard}>
@@ -89,10 +107,10 @@ function ResourceCard({ resource, rejectionNote, stylesMod }) {
           <p className={stylesMod.cardDesc}>{resource.description}</p>
         )}
 
-        {/* Rejection note */}
-        {status === 'REJECTED' && rejectionNote && (
+        {/* Review note */}
+        {showReviewNote && (
           <div className={stylesMod.rejectionNote}>
-            <strong>Reviewer note:</strong> {rejectionNote}
+            <strong>{reasonLabelForStatus(status)}:</strong> {reviewNote || REASON_FALLBACK}
           </div>
         )}
 
@@ -150,11 +168,18 @@ function ResourceCard({ resource, rejectionNote, stylesMod }) {
               </>
             )}
 
+            {/* UNPUBLISHED */}
+            {status === 'UNPUBLISHED' && (
+              <span className={stylesMod.actionHint}>
+                Awaiting admin republish
+              </span>
+            )}
+
             {/* ARCHIVED */}
             {status === 'ARCHIVED' && (
-              <Link to={`/resources/${resource.id}`} className={stylesMod.actionBtnSecondary}>
-                View Only
-              </Link>
+              <span className={stylesMod.actionHint}>
+                No further action available
+              </span>
             )}
           </div>
         </div>
@@ -192,9 +217,9 @@ const EMPTY_CONFIG = {
   },
   rejected: {
     icon: '🔄',
-    title: 'No rejected resources',
-    sub: "Resources that need revisions will appear here with reviewer feedback.",
-    action: { label: 'Go to Drafts', to: '/module-b/drafts' },
+    title: 'No resources requiring attention',
+    sub: "Rejected, unpublished, or archived resources with admin notes will appear here.",
+    action: { label: 'View All Resources', to: '/profile' },
   },
 };
 
@@ -396,7 +421,7 @@ function ProfilePage() {
   const [allResources, setAllResources]   = useState([]);
   const [contentLoading, setContentLoading] = useState(false);
   const [contentError, setContentError]   = useState('');
-  const [rejectionNotes, setRejectionNotes] = useState({});
+  const [reviewNotes, setReviewNotes] = useState({});
   const [activeTab, setActiveTab] = useState('all');
 
   const isContributor = user?.role === USER_ROLES.CONTRIBUTOR;
@@ -418,24 +443,41 @@ function ProfilePage() {
       .finally(() => setContentLoading(false));
   }, [isContributor]);
 
-  // Fetch rejection notes for rejected resources
+  // Fetch review notes for rejected/unpublished/archived resources
   useEffect(() => {
-    const rejected = allResources.filter((r) => r.status === 'REJECTED');
-    if (!rejected.length) return;
+    const targets = allResources.filter((r) => decisionForStatus(r.status) !== null);
+    if (!targets.length) return;
     Promise.all(
-      rejected.map((r) =>
+      targets.map((r) =>
         getReviewHistory(r.id)
           .then((res) => {
             const list = res.data?.data;
-            const text = pickLatestRejectionText(Array.isArray(list) ? list : []);
-            return { id: r.id, text };
+            const decision = decisionForStatus(r.status);
+            const fromHistory = decision
+              ? pickLatestDecisionText(Array.isArray(list) ? list : [], decision)
+              : null;
+            const fromArchiveField = r.archiveReason && String(r.archiveReason).trim()
+              ? String(r.archiveReason).trim()
+              : null;
+            const fromResource = r.reviewFeedback && String(r.reviewFeedback).trim()
+              ? String(r.reviewFeedback).trim()
+              : null;
+            return { id: r.id, text: fromHistory || fromArchiveField || fromResource || REASON_FALLBACK };
           })
-          .catch(() => ({ id: r.id, text: null }))
+          .catch(() => {
+            const fromArchiveField = r.archiveReason && String(r.archiveReason).trim()
+              ? String(r.archiveReason).trim()
+              : null;
+            const fromResource = r.reviewFeedback && String(r.reviewFeedback).trim()
+              ? String(r.reviewFeedback).trim()
+              : null;
+            return { id: r.id, text: fromArchiveField || fromResource || REASON_FALLBACK };
+          })
       )
     ).then((rows) => {
       const map = {};
-      rows.forEach(({ id, text }) => { if (text) map[id] = text; });
-      setRejectionNotes(map);
+      rows.forEach(({ id, text }) => { map[id] = text; });
+      setReviewNotes(map);
     });
   }, [allResources]);
 
@@ -445,7 +487,10 @@ function ProfilePage() {
     if (activeTab === 'draft')    return allResources.filter((r) => r.status === 'DRAFT');
     if (activeTab === 'pending')  return allResources.filter((r) => r.status === 'PENDING_REVIEW');
     if (activeTab === 'approved') return allResources.filter((r) => r.status === 'APPROVED');
-    if (activeTab === 'rejected') return allResources.filter((r) => r.status === 'REJECTED' || r.status === 'ARCHIVED');
+    if (activeTab === 'rejected') {
+      return allResources.filter((r) =>
+        r.status === 'REJECTED' || r.status === 'UNPUBLISHED' || r.status === 'ARCHIVED');
+    }
     return [];
   })();
 
@@ -454,7 +499,8 @@ function ProfilePage() {
     drafts:   allResources.filter((r) => r.status === 'DRAFT').length,
     pending:  allResources.filter((r) => r.status === 'PENDING_REVIEW').length,
     approved: allResources.filter((r) => r.status === 'APPROVED').length,
-    rejected: allResources.filter((r) => r.status === 'REJECTED' || r.status === 'ARCHIVED').length,
+    rejected: allResources.filter((r) =>
+      r.status === 'REJECTED' || r.status === 'UNPUBLISHED' || r.status === 'ARCHIVED').length,
     total:    allResources.length,
   };
 
@@ -612,7 +658,7 @@ function ProfilePage() {
                     <ResourceCard
                       key={r.id}
                       resource={r}
-                      rejectionNote={rejectionNotes[r.id]}
+                      reviewNote={reviewNotes[r.id]}
                       stylesMod={styles}
                     />
                   ))}
