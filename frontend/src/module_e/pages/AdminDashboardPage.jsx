@@ -24,6 +24,7 @@ function AdminDashboardPage() {
   const [downloading, setDownloading] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [activeSection, setActiveSection] = useState("summary");
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const summaryRef = useRef(null);
   const statusRef = useRef(null);
@@ -58,6 +59,11 @@ function AdminDashboardPage() {
   const statusItems = statusDashboard?.items ?? [];
   const categoryItems = categoryDashboard?.items ?? [];
   const tagItems = tagDashboard?.items ?? [];
+  const approvedTagItems = useMemo(
+    () => tagItems.filter((item) => Number(item.approvedResourceCount ?? 0) > 0),
+    [tagItems]
+  );
+  const visibleTagItems = showAllTags ? approvedTagItems : approvedTagItems.slice(0, 10);
 
   const reviewAttention = statusDashboard?.workflow?.bottleneck_stage === "PENDING_REVIEW"
     ? `Pending Review (${statusDashboard.workflow.bottleneck_count})`
@@ -71,12 +77,15 @@ function AdminDashboardPage() {
   }, [categoryItems]);
 
   const topTag = useMemo(() => {
-    const usedTags = tagItems.filter((item) => Number(item.approvedResourceCount ?? 0) > 0);
-    if (usedTags.length === 0) {
+    if (approvedTagItems.length === 0) {
       return null;
     }
-    return usedTags[0];
-  }, [tagItems]);
+    return approvedTagItems[0];
+  }, [approvedTagItems]);
+
+  useEffect(() => {
+    setShowAllTags(false);
+  }, [approvedTagItems.length]);
 
   async function handleDownload(type) {
     setErrorMessage("");
@@ -280,27 +289,35 @@ function AdminDashboardPage() {
               <div style={styles.cardHeader}>
                 <div>
                   <span style={styles.cardTitle}>Top Approved Tags</span>
-                  <p style={styles.cardSubtitle}>Popularity based only on approved resources.</p>
+                  <p style={styles.cardSubtitle}>
+                    Popularity based only on approved resources. Showing {visibleTagItems.length} / {approvedTagItems.length}.
+                  </p>
                 </div>
+                {approvedTagItems.length > 10 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags((previous) => !previous)}
+                    style={styles.secondaryButton}
+                  >
+                    {showAllTags ? "Collapse" : "Show all"}
+                  </button>
+                ) : null}
               </div>
 
               <div style={styles.chartListCompact}>
-                {tagItems.filter((item) => Number(item.approvedResourceCount ?? 0) > 0).length === 0 ? (
+                {approvedTagItems.length === 0 ? (
                   <div style={styles.emptyPanel}>{loading ? "Loading..." : "No approved tag data."}</div>
                 ) : (
-                  tagItems
-                    .filter((item) => Number(item.approvedResourceCount ?? 0) > 0)
-                    .slice(0, 5)
-                    .map((item) => (
-                      <MetricBar
-                        key={item.tagId}
-                        label={item.tagName}
-                        count={item.approvedResourceCount}
-                        ratio={item.ratio}
-                        color="#2d6a4f"
-                        marker="Approved resources"
-                      />
-                    ))
+                  visibleTagItems.map((item) => (
+                    <MetricBar
+                      key={item.tagId}
+                      label={item.tagName}
+                      count={item.approvedResourceCount}
+                      ratio={item.ratio}
+                      color="#2d6a4f"
+                      marker="Approved resources"
+                    />
+                  ))
                 )}
               </div>
             </div>
