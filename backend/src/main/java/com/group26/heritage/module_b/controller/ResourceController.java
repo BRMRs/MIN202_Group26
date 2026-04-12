@@ -76,11 +76,15 @@ public class ResourceController {
         return service.listDrafts(user.getId());
     }
 
-    /** 贡献者导航栏：有被拒绝待处理的资源时显示红点 */
+    /** 贡献者导航栏：有状态变更待关注时显示红点 */
     @GetMapping("/contributor/rejected-count")
     public Map<String, Long> contributorRejectedCount(@AuthenticationPrincipal User user) {
         requireRole(user, UserRole.CONTRIBUTOR);
-        return Map.of("rejectedCount", service.countRejectedForContributor(user.getId()));
+        long count = service.countRejectedForContributor(user.getId());
+        return Map.of(
+                "rejectedCount", count,      // backward compatibility
+                "statusNoticeCount", count
+        );
     }
 
     @DeleteMapping("/{id}/draft")

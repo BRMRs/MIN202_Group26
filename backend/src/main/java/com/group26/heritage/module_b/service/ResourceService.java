@@ -251,9 +251,11 @@ public class ResourceService {
         return result;
     }
 
-    /** 当前贡献者处于 REJECTED 状态的资源数（用于导航栏红点提示） */
+    /** 当前贡献者处于需关注状态的资源数（用于导航栏红点提示） */
     public long countRejectedForContributor(Long contributorId) {
-        return repository.countByContributorIdAndStatus(contributorId, ResourceStatus.REJECTED);
+        return repository.countByContributorIdAndStatus(contributorId, ResourceStatus.REJECTED)
+                + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.UNPUBLISHED)
+                + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.ARCHIVED);
     }
 
     /**

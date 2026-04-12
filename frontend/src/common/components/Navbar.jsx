@@ -11,7 +11,10 @@ function Navbar() {
 
   const loadRejectedCount = useCallback(() => {
     resourceApi.getContributorRejectedCount()
-      .then(res => setRejectedCount(Number(res.data?.rejectedCount) || 0))
+      .then(res => {
+        const count = res.data?.statusNoticeCount ?? res.data?.rejectedCount;
+        setRejectedCount(Number(count) || 0);
+      })
       .catch(() => setRejectedCount(0));
   }, []);
 
@@ -77,7 +80,7 @@ function Navbar() {
                     </Link>
                     {rejectedCount > 0 && (
                       <span
-                        title="有资源未通过审核，请查看管理员反馈"
+                        title="Resources have status updates. Please check the latest feedback."
                         style={{
                           position: 'absolute',
                           top: -4,
