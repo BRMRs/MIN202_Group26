@@ -48,7 +48,6 @@ function AdminDashboardPage() {
     refreshDashboard();
   }, []);
 
-  const workflowStages = statusDashboard?.workflow?.stages ?? [];
   const statusItems = useMemo(() => {
     const items = (statusDashboard?.items ?? []).filter((item) => item?.key !== "DRAFT");
     const total = items.reduce((sum, item) => sum + Number(item.count ?? 0), 0);
@@ -164,7 +163,7 @@ function AdminDashboardPage() {
                 <SummaryCard label="Top Tag" value={topTag ? `${topTag.tagName} (${topTag.approvedResourceCount})` : "No approved tag data"} />
               </section>
 
-              <section style={styles.grid}>
+              <section style={styles.singleSection}>
                 <div style={styles.card}>
                   <div style={styles.cardHeader}>
                     <div>
@@ -218,24 +217,6 @@ function AdminDashboardPage() {
                       <span style={styles.cardTitle}>Workflow Status</span>
                       <p style={styles.cardSubtitle}>Resource review and management stages, separate from contributor applications.</p>
                     </div>
-                  </div>
-
-                  <div style={styles.chartListCompact}>
-                    {workflowStages.length === 0 ? (
-                      <div style={styles.emptyPanel}>{loading ? "Loading..." : "No workflow data."}</div>
-                    ) : (
-                      workflowStages.map((stage) => (
-                        <MetricBar
-                          key={stage.key}
-                          label={stage.label}
-                          count={stage.count}
-                          ratio={stage.ratio}
-                          color={stage.bottleneck ? "#b91c1c" : "#2d6a4f"}
-                          marker={stage.bottleneck ? "Review Bottleneck" : "Workflow"}
-                          highlight={stage.bottleneck}
-                        />
-                      ))
-                    )}
                   </div>
                 </div>
               </section>
