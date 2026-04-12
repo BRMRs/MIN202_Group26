@@ -80,10 +80,12 @@ public class ResourceController {
     @GetMapping("/contributor/rejected-count")
     public Map<String, Long> contributorRejectedCount(@AuthenticationPrincipal User user) {
         requireRole(user, UserRole.CONTRIBUTOR);
-        long count = service.countRejectedForContributor(user.getId());
+        long draftAttentionCount = service.countDraftAttentionForContributor(user.getId());
+        long statusNoticeCount = service.countStatusNoticesForContributor(user.getId());
         return Map.of(
-                "rejectedCount", count,      // backward compatibility
-                "statusNoticeCount", count
+                "rejectedCount", draftAttentionCount,      // backward compatibility
+                "draftAttentionCount", draftAttentionCount,
+                "statusNoticeCount", statusNoticeCount
         );
     }
 

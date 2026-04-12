@@ -251,11 +251,17 @@ public class ResourceService {
         return result;
     }
 
-    /** 当前贡献者处于需关注状态的资源数（用于导航栏红点提示） */
-    public long countRejectedForContributor(Long contributorId) {
+    /** 草稿/打回相关入口需要关注的数量（Drafts 红点） */
+    public long countDraftAttentionForContributor(Long contributorId) {
         return repository.countByContributorIdAndStatus(contributorId, ResourceStatus.REJECTED)
                 + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.UNPUBLISHED)
                 + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.ARCHIVED);
+    }
+
+    /** 个人状态更新数量（Profile/头像红点） */
+    public long countStatusNoticesForContributor(Long contributorId) {
+        return repository.countByContributorIdAndStatus(contributorId, ResourceStatus.APPROVED)
+                + countDraftAttentionForContributor(contributorId);
     }
 
     /**
