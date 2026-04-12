@@ -34,9 +34,6 @@ const STATUS_UPDATE_STATUSES = ['APPROVED', 'REJECTED', 'UNPUBLISHED', 'ARCHIVED
 const statusUpdateReadStoreKey = (user) =>
   `heritage-status-update-read-map:${user?.id ?? user?.username ?? 'anonymous'}`;
 
-const statusNoticeSeenCountKey = (user) =>
-  `heritage-status-notice-seen-count:${user?.id ?? user?.username ?? 'anonymous'}`;
-
 function decisionForStatus(status) {
   if (status === 'APPROVED') return ['REPUBLISHED', 'APPROVED'];
   if (status === 'REJECTED') return ['REJECTED'];
@@ -580,9 +577,6 @@ function ProfilePage() {
       localStorage.setItem(statusUpdateReadStoreKey(user), JSON.stringify(next));
       return next;
     });
-
-    const seenCount = Number(localStorage.getItem(statusNoticeSeenCountKey(user))) || 0;
-    localStorage.setItem(statusNoticeSeenCountKey(user), String(seenCount + 1));
     window.dispatchEvent(new CustomEvent('heritage-status-update-read'));
   };
 

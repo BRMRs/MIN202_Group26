@@ -3,69 +3,81 @@ import { useEffect, useState, useCallback } from 'react';
 import useAuth from '../hooks/useAuth';
 import { resourceApi } from '../../module_b/api/resourceApi';
 
-const statusNoticeSeenCountKey = (user) =>
-  `heritage-status-notice-seen-count:${user?.id ?? user?.username ?? 'anonymous'}`;
+const STATUS_UPDATE_STATUSES = new Set(['APPROVED', 'REJECTED', 'UNPUBLISHED', 'ARCHIVED']);
+const statusUpdateReadStoreKey = (user) =>
+  `heritage-status-update-read-map:${user?.id ?? user?.username ?? 'anonymous'}`;
+
+const statusUpdateItemKey = (resource) =>
+  `${resource?.id}:${resource?.status}:${resource?.updatedAt || resource?.createdAt || ''}`;
+
+const isStatusUpdateResource = (resource) => STATUS_UPDATE_STATUSES.has(resource?.status);
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [draftAttentionCount, setDraftAttentionCount] = useState(0);
-  const [statusNoticeTotal, setStatusNoticeTotal] = useState(0);
   const [unseenStatusNoticeCount, setUnseenStatusNoticeCount] = useState(0);
 
-  const loadRejectedCount = useCallback(() => {
-    resourceApi.getContributorRejectedCount()
-      .then(res => {
+  const loadContributorNotices = useCallback(() => {
+    Promise.all([resourceApi.getContributorRejectedCount(), resourceApi.getMine()])
+      .then(([countRes, mineRes]) => {
+        const res = countRes;
         const draftCount = res.data?.draftAttentionCount ?? res.data?.rejectedCount;
-        const noticeCount = res.data?.statusNoticeCount ?? draftCount;
-        const total = Number(noticeCount) || 0;
-        let seen = Number(localStorage.getItem(statusNoticeSeenCountKey(user))) || 0;
-        if (seen > total) {
-          seen = total;
-          localStorage.setItem(statusNoticeSeenCountKey(user), String(total));
+        const rawMine = mineRes.data?.data ?? mineRes.data;
+        const mine = Array.isArray(rawMine) ? rawMine : [];
+        let readMap = {};
+        try {
+          const raw = localStorage.getItem(statusUpdateReadStoreKey(user));
+          const parsed = raw ? JSON.parse(raw) : {};
+          readMap = parsed && typeof parsed === 'object' ? parsed : {};
+        } catch {
+          readMap = {};
         }
+        const unread = mine
+          .filter(isStatusUpdateResource)
+          .filter((r) => !readMap[statusUpdateItemKey(r)])
+          .length;
+
         setDraftAttentionCount(Number(draftCount) || 0);
-        setStatusNoticeTotal(total);
-        setUnseenStatusNoticeCount(Math.max(total - seen, 0));
+        setUnseenStatusNoticeCount(unread);
       })
       .catch(() => {
         setDraftAttentionCount(0);
-        setStatusNoticeTotal(0);
         setUnseenStatusNoticeCount(0);
       });
   }, [user]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'CONTRIBUTOR') {
-      loadRejectedCount();
+      loadContributorNotices();
     } else {
       setDraftAttentionCount(0);
-      setStatusNoticeTotal(0);
       setUnseenStatusNoticeCount(0);
     }
-  }, [isAuthenticated, user?.role, location.pathname, loadRejectedCount]);
+  }, [isAuthenticated, user?.role, location.pathname, loadContributorNotices]);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'CONTRIBUTOR') return undefined;
-    const onFocus = () => loadRejectedCount();
+    const onFocus = () => loadContributorNotices();
     window.addEventListener('focus', onFocus);
-    const onDraftsChanged = () => loadRejectedCount();
+    const onDraftsChanged = () => loadContributorNotices();
     window.addEventListener('heritage-contributor-drafts-changed', onDraftsChanged);
-    const onStatusUpdatesViewed = () => {
-      localStorage.setItem(statusNoticeSeenCountKey(user), String(statusNoticeTotal));
-      setUnseenStatusNoticeCount(0);
-    };
-    const onStatusUpdateRead = () => loadRejectedCount();
-    window.addEventListener('heritage-status-updates-viewed', onStatusUpdatesViewed);
+    const onStatusUpdateRead = () => loadContributorNotices();
     window.addEventListener('heritage-status-update-read', onStatusUpdateRead);
+    const onStorage = (e) => {
+      if (e.key === statusUpdateReadStoreKey(user)) {
+        loadContributorNotices();
+      }
+    };
+    window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('heritage-contributor-drafts-changed', onDraftsChanged);
-      window.removeEventListener('heritage-status-updates-viewed', onStatusUpdatesViewed);
       window.removeEventListener('heritage-status-update-read', onStatusUpdateRead);
+      window.removeEventListener('storage', onStorage);
     };
-  }, [isAuthenticated, user, user?.role, loadRejectedCount, statusNoticeTotal]);
+  }, [isAuthenticated, user, user?.role, loadContributorNotices]);
 
   const handleLogout = () => {
     logout();
