@@ -5,6 +5,18 @@ import styles from './ResourceSubmissionPage.module.css'
 import { useAuthContext } from '../../common/context/AuthContext'
 import { parseApiError } from '../../common/utils/apiError'
 
+const emptyForm = () => ({
+  title: '',
+  categoryId: '',
+  staleCategoryName: null,
+  place: '',
+  description: '',
+  tags: '',
+  copyrightDeclaration: '',
+  externalLinks: [],
+  province: ''
+})
+
 export default function ResourceSubmissionPage() {
   const { isAuthenticated } = useAuthContext()
   const [options, setOptions] = useState(null)
@@ -15,10 +27,7 @@ export default function ResourceSubmissionPage() {
   const externalLinkTimerRef = useRef(null)
   const [tagSubmitError, setTagSubmitError] = useState('')
   const tagErrorTimerRef = useRef(null)
-  const [form, setForm] = useState({
-    title: '', categoryId: '', staleCategoryName: null, place: '', description: '',
-    tags: '', copyrightDeclaration: '', externalLinks: [], province: ''
-  })
+  const [form, setForm] = useState(emptyForm)
   const [files, setFiles] = useState([])
 
   useEffect(() => {
@@ -57,7 +66,15 @@ export default function ResourceSubmissionPage() {
     tagErrorTimerRef.current = setTimeout(() => setTagSubmitError(''), 2000)
   }
 
-  const handleSaveAndSubmit = async () => {
+  const resetComposer = () => {
+    setForm(emptyForm())
+    setFiles([])
+    setErrors([])
+    setExternalLinkError('')
+    setTagSubmitError('')
+  }
+
+  const handleSubmitForReview = async () => {
     const errs = validate()
     if (errs.length > 0) {
       setErrors(errs)
@@ -73,8 +90,7 @@ export default function ResourceSubmissionPage() {
       await resourceApi.saveDraft(draft.id, form)
       await resourceApi.submit(draft.id)
       setMsg('Submitted successfully! The resource is now in the review queue.')
-      setForm({ title: '', categoryId: '', staleCategoryName: null, place: '', description: '', tags: '', copyrightDeclaration: '', externalLinks: [], province: '' })
-      setFiles([])
+      resetComposer()
     } catch (e) {
       setMsg(parseApiError(e))
     } finally {
@@ -82,7 +98,7 @@ export default function ResourceSubmissionPage() {
     }
   }
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraftAndStartNew = async () => {
     const errs = validate()
     if (errs.includes('External Link')) {
       showExternalLinkError()
@@ -97,7 +113,9 @@ export default function ResourceSubmissionPage() {
       const { data: draft } = await resourceApi.createDraft()
       if (files?.length) await resourceApi.uploadFiles(draft.id, files)
       await resourceApi.saveDraft(draft.id, form)
-      setMsg('Draft saved')
+      setMsg('Draft saved. Continue it from Drafts. Started a new blank form.')
+      resetComposer()
+      window.dispatchEvent(new CustomEvent('heritage-contributor-drafts-changed'))
       setTimeout(() => setMsg(''), 1500)
     } catch (e) {
       setMsg(parseApiError(e))
@@ -148,10 +166,10 @@ export default function ResourceSubmissionPage() {
 
           {isAuthenticated && (
             <div className={styles.actions}>
-              <button type="button" className={styles.btnSecondary} onClick={handleSaveDraft} disabled={saving}>
-                {saving ? 'Processing…' : 'Save draft'}
+              <button type="button" className={styles.btnSecondary} onClick={handleSaveDraftAndStartNew} disabled={saving}>
+                {saving ? 'Processing…' : 'Save draft and start new'}
               </button>
-              <button type="button" className={styles.btnPrimary} onClick={handleSaveAndSubmit} disabled={saving}>
+              <button type="button" className={styles.btnPrimary} onClick={handleSubmitForReview} disabled={saving}>
                 {saving ? 'Submitting…' : 'Submit'}
               </button>
             </div>
