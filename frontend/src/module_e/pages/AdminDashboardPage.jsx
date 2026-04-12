@@ -211,14 +211,6 @@ function AdminDashboardPage() {
                   </div>
                 </div>
 
-                <div style={styles.card}>
-                  <div style={styles.cardHeader}>
-                    <div>
-                      <span style={styles.cardTitle}>Workflow Status</span>
-                      <p style={styles.cardSubtitle}>Resource review and management stages, separate from contributor applications.</p>
-                    </div>
-                  </div>
-                </div>
               </section>
             </>
           ) : null}
