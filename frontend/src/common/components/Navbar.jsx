@@ -7,22 +7,29 @@ function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [rejectedCount, setRejectedCount] = useState(0);
+  const [draftAttentionCount, setDraftAttentionCount] = useState(0);
+  const [statusNoticeCount, setStatusNoticeCount] = useState(0);
 
   const loadRejectedCount = useCallback(() => {
     resourceApi.getContributorRejectedCount()
       .then(res => {
-        const count = res.data?.statusNoticeCount ?? res.data?.rejectedCount;
-        setRejectedCount(Number(count) || 0);
+        const draftCount = res.data?.draftAttentionCount ?? res.data?.rejectedCount;
+        const noticeCount = res.data?.statusNoticeCount ?? draftCount;
+        setDraftAttentionCount(Number(draftCount) || 0);
+        setStatusNoticeCount(Number(noticeCount) || 0);
       })
-      .catch(() => setRejectedCount(0));
+      .catch(() => {
+        setDraftAttentionCount(0);
+        setStatusNoticeCount(0);
+      });
   }, []);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'CONTRIBUTOR') {
       loadRejectedCount();
     } else {
-      setRejectedCount(0);
+      setDraftAttentionCount(0);
+      setStatusNoticeCount(0);
     }
   }, [isAuthenticated, user?.role, location.pathname, loadRejectedCount]);
 
@@ -78,7 +85,7 @@ function Navbar() {
                     >
                       Drafts
                     </Link>
-                    {rejectedCount > 0 && (
+                    {draftAttentionCount > 0 && (
                       <span
                         title="Resources have status updates. Please check the latest feedback."
                         style={{
@@ -116,8 +123,26 @@ function Navbar() {
           {isAuthenticated ? (
             <>
               <Link to="/profile" className="hn-profile-link" title="View profile">
-                <span className="hn-avatar">
-                  {user?.username?.[0]?.toUpperCase() || 'U'}
+                <span style={{ position: 'relative', display: 'inline-flex' }}>
+                  <span className="hn-avatar">
+                    {user?.username?.[0]?.toUpperCase() || 'U'}
+                  </span>
+                  {user?.role === 'CONTRIBUTOR' && statusNoticeCount > 0 && (
+                    <span
+                      title="You have status updates in Profile."
+                      style={{
+                        position: 'absolute',
+                        top: -1,
+                        right: -1,
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: '#e53935',
+                        boxShadow: '0 0 0 2px #fff',
+                      }}
+                      aria-hidden
+                    />
+                  )}
                 </span>
                 <span className="hn-username">{user?.username}</span>
               </Link>
