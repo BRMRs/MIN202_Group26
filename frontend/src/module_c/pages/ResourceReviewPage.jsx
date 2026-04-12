@@ -239,7 +239,7 @@ function ResourceReviewPage() {
         (m.mimeType?.startsWith('image/') || /\.(png|jpe?g)$/i.test(m.fileName || '')))
     : null;
   const coverMedia  = explicitCover || firstImage;
-  const otherMedia  = r?.mediaFiles?.filter(m => m !== coverMedia) || [];
+  const mediaFiles  = r?.mediaFiles || [];
   const categoryInactive = r?.categoryStatus === 'INACTIVE';
 
   const isPdfMedia = (m) =>
@@ -387,15 +387,15 @@ function ResourceReviewPage() {
               )}
             </div>
 
-            {/* Other media files */}
-            {otherMedia.length > 0 && (
+            {/* Media files (including cover) */}
+            {mediaFiles.length > 0 && (
               <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20 }}>
                 <h2 style={{ margin: '0 0 14px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
                   📎 Media Files
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {otherMedia.map(m => (
+                  {mediaFiles.map(m => (
                     <div key={m.id} onClick={() => setPreviewMedia(m)}
                       style={{ display: 'flex', alignItems: 'center', gap: 10,
                         padding: 10, borderRadius: 8, border: '1px solid #eee',
@@ -408,6 +408,12 @@ function ResourceReviewPage() {
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>
                           {m.fileName || 'Unnamed file'}
+                          {coverMedia?.id === m.id && (
+                            <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#2d6a4f',
+                              background: '#e8f4ee', border: '1px solid #b7d9c7', borderRadius: 999, padding: '1px 6px' }}>
+                              COVER
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: 11, color: '#999' }}>
                           {m.mediaType} · {m.mimeType || 'unknown type'}
