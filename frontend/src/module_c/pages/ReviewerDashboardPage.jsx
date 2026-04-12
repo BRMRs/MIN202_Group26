@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getResources } from '../api/reviewApi';
 
@@ -15,7 +15,6 @@ const STATUS_OPTIONS = [
   { value: 'REJECTED', label: 'Rejected' },
   { value: 'UNPUBLISHED', label: 'Unpublished' },
   { value: 'ARCHIVED', label: 'Archived' },
-  { value: 'DRAFT', label: 'Draft' },
 ];
 
 const STATUS_COLORS = {
@@ -108,6 +107,11 @@ function ReviewerDashboardPage() {
 
   useEffect(() => { fetchResources(); }, [fetchResources]);
 
+  const visibleResources = useMemo(
+    () => resources.filter((resource) => resource?.status !== 'DRAFT'),
+    [resources]
+  );
+
   const handleStatusChange = (val) => {
     setActiveStatus(val);
     setPage(0);
@@ -159,7 +163,11 @@ function ReviewerDashboardPage() {
             </div>
 
             <div style={styles.counts}>
-              {loading ? 'Loading…' : `${totalItems} resource(s) found`}
+              {loading
+                ? 'Loading…'
+                : activeStatus === ''
+                  ? `${totalItems} resource(s) found (draft hidden)`
+                  : `${totalItems} resource(s) found`}
             </div>
 
             {error && (
@@ -190,14 +198,14 @@ function ReviewerDashboardPage() {
                     <tr>
                       <td colSpan={8} style={styles.emptyCell}>Loading resources…</td>
                     </tr>
-                  ) : resources.length === 0 ? (
+                  ) : visibleResources.length === 0 ? (
                     <tr>
                       <td colSpan={8} style={styles.emptyCell}>
                         No resources found for this filter.
                       </td>
                     </tr>
                   ) : (
-                    resources.map((r, idx) => (
+                    visibleResources.map((r, idx) => (
                       <tr
                         key={r.id}
                         style={styles.tr}
