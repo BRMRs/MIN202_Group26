@@ -8,7 +8,6 @@ import {
 } from "@/module_e/api/dashboardApi";
 
 const STATUS_COLORS = {
-  DRAFT: "#2563eb",
   PENDING_REVIEW: "#b91c1c",
   APPROVED: "#166534",
   REJECTED: "#a16207",
@@ -50,7 +49,17 @@ function AdminDashboardPage() {
   }, []);
 
   const workflowStages = statusDashboard?.workflow?.stages ?? [];
-  const statusItems = statusDashboard?.items ?? [];
+  const statusItems = useMemo(() => {
+    const items = (statusDashboard?.items ?? []).filter((item) => item?.key !== "DRAFT");
+    const total = items.reduce((sum, item) => sum + Number(item.count ?? 0), 0);
+    if (total <= 0) {
+      return items;
+    }
+    return items.map((item) => ({
+      ...item,
+      ratio: (Number(item.count ?? 0) / total) * 100,
+    }));
+  }, [statusDashboard]);
   const categoryItems = categoryDashboard?.items ?? [];
   const tagItems = tagDashboard?.items ?? [];
   const approvedTagItems = useMemo(
