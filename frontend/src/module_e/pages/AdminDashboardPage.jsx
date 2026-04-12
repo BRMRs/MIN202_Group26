@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   downloadCategoryDashboardReport,
   downloadStatusDashboardReport,
@@ -38,9 +38,17 @@ function AdminDashboardPage() {
   const [activePanel, setActivePanel] = useState("overview");
   const [showAllTags, setShowAllTags] = useState(false);
   const [showAllContributors, setShowAllContributors] = useState(false);
+  const refreshingRef = useRef(false);
 
-  async function refreshDashboard() {
-    setLoading(true);
+  async function refreshDashboard(options = {}) {
+    const silent = options.silent === true;
+    if (refreshingRef.current) {
+      return;
+    }
+    refreshingRef.current = true;
+    if (!silent) {
+      setLoading(true);
+    }
     setErrorMessage("");
     try {
       const [statusData, categoryData, tagData, contributorData] = await Promise.all([
@@ -56,12 +64,19 @@ function AdminDashboardPage() {
     } catch (error) {
       setErrorMessage(error?.message || "Failed to load report data.");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
+      refreshingRef.current = false;
     }
   }
 
   useEffect(() => {
     refreshDashboard();
+    const timer = setInterval(() => {
+      refreshDashboard({ silent: true });
+    }, 10000);
+    return () => clearInterval(timer);
   }, []);
 
   const statusItems = useMemo(() => {
@@ -827,4 +842,3 @@ const styles = {
 };
 
 export default AdminDashboardPage;
-
