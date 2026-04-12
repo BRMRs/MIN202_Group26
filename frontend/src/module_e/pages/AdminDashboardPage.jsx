@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   downloadCategoryDashboardReport,
   downloadStatusDashboardReport,
@@ -23,6 +23,13 @@ function AdminDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [activeSection, setActiveSection] = useState("summary");
+
+  const summaryRef = useRef(null);
+  const statusRef = useRef(null);
+  const workflowRef = useRef(null);
+  const categoryRef = useRef(null);
+  const tagsRef = useRef(null);
 
   async function refreshDashboard() {
     setLoading(true);
@@ -87,8 +94,49 @@ function AdminDashboardPage() {
     }
   }
 
+  useEffect(() => {
+    const sections = [
+      { id: "summary", ref: summaryRef },
+      { id: "status", ref: statusRef },
+      { id: "workflow", ref: workflowRef },
+      { id: "category", ref: categoryRef },
+      { id: "tags", ref: tagsRef },
+    ];
+
+    const updateActiveSection = () => {
+      let nextActive = "summary";
+      for (const section of sections) {
+        const element = section.ref.current;
+        if (!element) continue;
+        if (element.getBoundingClientRect().top <= 140) {
+          nextActive = section.id;
+        }
+      }
+      setActiveSection(nextActive);
+    };
+
+    updateActiveSection();
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    return () => window.removeEventListener("scroll", updateActiveSection);
+  }, []);
+
+  function jumpToSection(sectionId) {
+    const targetBySection = {
+      summary: summaryRef,
+      status: statusRef,
+      workflow: workflowRef,
+      category: categoryRef,
+      tags: tagsRef,
+    };
+    const target = targetBySection[sectionId]?.current;
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <div style={styles.page}>
+      <div style={styles.pageLayout}>
+        <div style={styles.mainColumn}>
           <div style={styles.pageHeader}>
             <div style={styles.headerRow}>
               <div>
@@ -110,7 +158,7 @@ function AdminDashboardPage() {
             ) : null}
           </div>
 
-          <section style={styles.summaryGrid} aria-label="Reports summary">
+          <section ref={summaryRef} style={styles.summaryGrid} aria-label="Reports summary">
             <SummaryCard label="Total Resources" value={statusDashboard?.total ?? 0} />
             <SummaryCard label="Review Attention" value={reviewAttention} highlight={statusDashboard?.workflow?.bottleneck_stage === "PENDING_REVIEW"} />
             <SummaryCard label="Top Category" value={topCategory ? `${topCategory.categoryName} (${topCategory.count})` : "No category data"} />
@@ -118,7 +166,7 @@ function AdminDashboardPage() {
           </section>
 
           <section style={styles.grid}>
-            <div style={styles.card}>
+            <div ref={statusRef} style={styles.card}>
               <div style={styles.cardHeader}>
                 <div>
                   <span style={styles.cardTitle}>Status Dashboard</span>
@@ -165,7 +213,7 @@ function AdminDashboardPage() {
               </div>
             </div>
 
-            <div style={styles.card}>
+            <div ref={workflowRef} style={styles.card}>
               <div style={styles.cardHeader}>
                 <div>
                   <span style={styles.cardTitle}>Workflow Status</span>
@@ -194,7 +242,7 @@ function AdminDashboardPage() {
           </section>
 
           <section style={styles.grid}>
-            <div style={styles.card}>
+            <div ref={categoryRef} style={styles.card}>
               <div style={styles.cardHeader}>
                 <div>
                   <span style={styles.cardTitle}>Category Dashboard</span>
@@ -228,7 +276,7 @@ function AdminDashboardPage() {
               </div>
             </div>
 
-            <div style={styles.card}>
+            <div ref={tagsRef} style={styles.card}>
               <div style={styles.cardHeader}>
                 <div>
                   <span style={styles.cardTitle}>Top Approved Tags</span>
@@ -258,6 +306,33 @@ function AdminDashboardPage() {
             </div>
           </section>
         </div>
+
+        <aside style={styles.sectionNav}>
+          <div style={styles.sectionNavTitle}>Quick Jump</div>
+          <div style={styles.sectionNavList}>
+            {[
+              { id: "summary", label: "Summary" },
+              { id: "status", label: "Status" },
+              { id: "workflow", label: "Workflow" },
+              { id: "category", label: "Category" },
+              { id: "tags", label: "Tags" },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => jumpToSection(item.id)}
+                style={{
+                  ...styles.sectionNavBtn,
+                  ...(activeSection === item.id ? styles.sectionNavBtnActive : null),
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </aside>
+      </div>
+    </div>
   );
 }
 
@@ -321,6 +396,52 @@ const styles = {
     background: "#f4f7f5",
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif',
     color: "#374151",
+  },
+  pageLayout: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 170px",
+    gap: 16,
+    alignItems: "start",
+  },
+  mainColumn: {
+    minWidth: 0,
+  },
+  sectionNav: {
+    position: "sticky",
+    top: 74,
+    background: "#fff",
+    border: "1px solid #e8e3dc",
+    borderRadius: 8,
+    padding: "12px 10px",
+  },
+  sectionNavTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "#6b7280",
+    marginBottom: 8,
+    padding: "0 4px",
+  },
+  sectionNavList: {
+    display: "grid",
+    gap: 6,
+  },
+  sectionNavBtn: {
+    border: "1px solid #e8e3dc",
+    background: "#fff",
+    color: "#4b5563",
+    borderRadius: 8,
+    padding: "7px 10px",
+    fontSize: 13,
+    fontWeight: 600,
+    textAlign: "left",
+    cursor: "pointer",
+  },
+  sectionNavBtnActive: {
+    background: "#f0fdf4",
+    borderColor: "#bbf7d0",
+    color: "#166534",
   },
   pageHeader: {
     marginBottom: 20,
