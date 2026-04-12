@@ -23,6 +23,7 @@ public class ResourceReviewDetailResponse {
     // Category
     private Long categoryId;
     private String categoryName;
+    private String categoryStatus;
     private String requestedCategoryName;
     private String categoryRequestReason;
 

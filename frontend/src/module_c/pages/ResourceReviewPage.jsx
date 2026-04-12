@@ -233,8 +233,14 @@ function ResourceReviewPage() {
   // PBI 3.4 — Detect resubmission: PENDING_REVIEW item that has prior REJECTED decisions in its history
   const priorRejections = history.filter(fb => fb.decision === 'REJECTED');
   const isResubmission  = isPending && priorRejections.length > 0;
-  const coverMedia   = r?.mediaFiles?.find(m => m.mediaType === 'COVER');
-  const otherMedia   = r?.mediaFiles?.filter(m => m.mediaType !== 'COVER') || [];
+  const explicitCover = r?.mediaFiles?.find(m => m.mediaType === 'COVER');
+  const firstImage    = !explicitCover
+    ? r?.mediaFiles?.find(m => m.mediaType === 'DETAIL' &&
+        (m.mimeType?.startsWith('image/') || /\.(png|jpe?g)$/i.test(m.fileName || '')))
+    : null;
+  const coverMedia  = explicitCover || firstImage;
+  const otherMedia  = r?.mediaFiles?.filter(m => m !== coverMedia) || [];
+  const categoryInactive = r?.categoryStatus === 'INACTIVE';
 
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7f5', fontFamily: 'system-ui, sans-serif' }}>
@@ -307,65 +313,6 @@ function ResourceReviewPage() {
           </div>
         )}
 
-        {/* Action buttons — PBI 3.2: hidden for non-actionable statuses */}
-        {(isPending || canArchive || canUnpublish || canRepublish || canResubmit) && !r?.status?.includes('ARCHIVED') && (
-          <div style={{ background: 'white', borderRadius: 10, padding: '16px 20px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20,
-            display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <span style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>Actions:</span>
-            {isPending && (
-              <>
-                <button onClick={openApproveModal}
-                  style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
-                    background: '#198754', color: 'white', fontWeight: 700,
-                    cursor: 'pointer', fontSize: 14 }}>
-                  ✅ Approve
-                </button>
-                <button onClick={() => setShowRejectModal(true)}
-                  style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
-                    background: '#dc3545', color: 'white', fontWeight: 700,
-                    cursor: 'pointer', fontSize: 14 }}>
-                  ❌ Reject
-                </button>
-              </>
-            )}
-            {canUnpublish && (
-              <button onClick={() => setShowUnpublishModal(true)}
-                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
-                  background: '#0d6efd', color: 'white', fontWeight: 700,
-                  cursor: 'pointer', fontSize: 14 }}>
-                📥 Unpublish
-              </button>
-            )}
-            {canRepublish && (
-              <button onClick={() => setShowRepublishModal(true)}
-                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
-                  background: '#198754', color: 'white', fontWeight: 700,
-                  cursor: 'pointer', fontSize: 14 }}>
-                🔄 Republish
-              </button>
-            )}
-            {canArchive && (
-              <button onClick={() => setShowArchiveModal(true)}
-                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
-                  background: '#6c757d', color: 'white', fontWeight: 700,
-                  cursor: 'pointer', fontSize: 14 }}>
-                📦 Archive
-              </button>
-            )}
-            {/* PBI 3.4 — Resubmit: contributor action; uses resource's contributorId (testing) */}
-            {canResubmit && (
-              <button onClick={handleResubmit}
-                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
-                  background: '#fd7e14', color: 'white', fontWeight: 700,
-                  cursor: 'pointer', fontSize: 14 }}
-                title="Resubmit this resource for review">
-                ↩ Resubmit (Contributor)
-              </button>
-            )}
-          </div>
-        )}
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20 }}>
 
           {/* Left: Metadata */}
@@ -408,17 +355,6 @@ function ResourceReviewPage() {
               <MetaRow label="Archive Reason"  value={r?.archiveReason} />
             </div>
 
-            {/* New category request section */}
-            {(r?.requestedCategoryName && r.requestedCategoryName !== 'Not provided') && (
-              <div style={{ background: '#fff8e1', border: '1px solid #f0c040', borderRadius: 10,
-                padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20 }}>
-                <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#7a5800', fontWeight: 700 }}>
-                  🆕 New Category Request
-                </h2>
-                <MetaRow label="Requested Name"  value={r?.requestedCategoryName} />
-                <MetaRow label="Reason"          value={r?.categoryRequestReason} />
-              </div>
-            )}
           </div>
 
           {/* Right: Media */}
@@ -552,6 +488,81 @@ function ResourceReviewPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Warning banner: category has been deactivated */}
+        {categoryInactive && (
+          <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 10,
+            padding: '14px 20px', marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <div>
+              <strong style={{ color: '#856404', fontSize: 14 }}>Category Deactivated</strong>
+              <div style={{ color: '#856404', fontSize: 13, marginTop: 2 }}>
+                The category <strong>"{r?.categoryName}"</strong> has been set to inactive.
+                This resource cannot be approved until it is reassigned to an active category.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons — PBI 3.2: hidden for non-actionable statuses */}
+        {(isPending || canArchive || canUnpublish || canRepublish || canResubmit) && !r?.status?.includes('ARCHIVED') && (
+          <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginTop: 20,
+            display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <span style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>Actions:</span>
+            {isPending && (
+              <>
+                <button onClick={categoryInactive ? undefined : openApproveModal}
+                  disabled={categoryInactive}
+                  title={categoryInactive ? `Cannot approve: category "${r?.categoryName}" is deactivated` : undefined}
+                  style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
+                    background: categoryInactive ? '#adb5bd' : '#198754', color: 'white', fontWeight: 700,
+                    cursor: categoryInactive ? 'not-allowed' : 'pointer', fontSize: 14 }}>
+                  {categoryInactive ? 'Cannot approve' : '✅ Approve'}
+                </button>
+                <button onClick={() => setShowRejectModal(true)}
+                  style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
+                    background: '#dc3545', color: 'white', fontWeight: 700,
+                    cursor: 'pointer', fontSize: 14 }}>
+                  ❌ Reject
+                </button>
+              </>
+            )}
+            {canUnpublish && (
+              <button onClick={() => setShowUnpublishModal(true)}
+                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
+                  background: '#0d6efd', color: 'white', fontWeight: 700,
+                  cursor: 'pointer', fontSize: 14 }}>
+                📥 Unpublish
+              </button>
+            )}
+            {canRepublish && (
+              <button onClick={() => setShowRepublishModal(true)}
+                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
+                  background: '#198754', color: 'white', fontWeight: 700,
+                  cursor: 'pointer', fontSize: 14 }}>
+                🔄 Republish
+              </button>
+            )}
+            {canArchive && (
+              <button onClick={() => setShowArchiveModal(true)}
+                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
+                  background: '#6c757d', color: 'white', fontWeight: 700,
+                  cursor: 'pointer', fontSize: 14 }}>
+                📦 Archive
+              </button>
+            )}
+            {canResubmit && (
+              <button onClick={handleResubmit}
+                style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
+                  background: '#fd7e14', color: 'white', fontWeight: 700,
+                  cursor: 'pointer', fontSize: 14 }}
+                title="Resubmit this resource for review">
+                ↩ Resubmit (Contributor)
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -830,6 +841,23 @@ function ResourceReviewPage() {
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🎵</div>
                 <p style={{ margin: '0 0 16px', color: '#333' }}>{previewMedia.fileName}</p>
                 <audio controls src={previewMedia.fileUrl} />
+              </div>
+            ) : previewMedia.mimeType === 'application/pdf' || previewMedia.fileName?.toLowerCase().endsWith('.pdf') ? (
+              <div style={{ background: 'white', borderRadius: 12, padding: '40px 48px',
+                textAlign: 'center', minWidth: 320 }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>📄</div>
+                <p style={{ margin: '0 0 8px', color: '#333', fontWeight: 600, fontSize: 15 }}>
+                  {previewMedia.fileName}
+                </p>
+                <p style={{ margin: '0 0 24px', color: '#999', fontSize: 13 }}>
+                  PDF · {previewMedia.fileSize ? `${(previewMedia.fileSize / 1024).toFixed(1)} KB` : 'unknown size'}
+                </p>
+                <a href={previewMedia.fileUrl} target="_blank" rel="noreferrer"
+                  style={{ display: 'inline-block', padding: '10px 28px', borderRadius: 8,
+                    background: '#2d6a4f', color: 'white', fontWeight: 700, fontSize: 14,
+                    textDecoration: 'none' }}>
+                  Open PDF in new tab ↗
+                </a>
               </div>
             ) : (
               <img src={previewMedia.fileUrl} alt={previewMedia.fileName}
