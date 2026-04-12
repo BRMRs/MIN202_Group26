@@ -3,6 +3,7 @@ package com.group26.heritage.module_e.controller;
 import com.group26.heritage.common.dto.Result;
 import com.group26.heritage.entity.User;
 import com.group26.heritage.module_e.dto.CategoryDashboardResponse;
+import com.group26.heritage.module_e.dto.ContributorDashboardResponse;
 import com.group26.heritage.module_e.dto.ReportFileResponse;
 import com.group26.heritage.module_e.dto.StatusDashboardResponse;
 import com.group26.heritage.module_e.dto.TagDashboardResponse;
@@ -42,6 +43,11 @@ public class DashboardController {
     @GetMapping("/tag-overview")
     public Result<TagDashboardResponse> getTagDashboard() {
         return Result.success(reportService.getTagDashboard());
+    }
+
+    @GetMapping("/contributor-overview")
+    public Result<ContributorDashboardResponse> getContributorDashboard() {
+        return Result.success(reportService.getContributorDashboard());
     }
 
     // PBI 5.5 / Task 2: Download the resource status and workflow bottleneck CSV report.

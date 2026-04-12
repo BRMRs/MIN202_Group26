@@ -6,6 +6,8 @@ import com.group26.heritage.entity.User;
 import com.group26.heritage.entity.enums.ResourceStatus;
 import com.group26.heritage.module_e.dto.CategoryDashboardItem;
 import com.group26.heritage.module_e.dto.CategoryDashboardResponse;
+import com.group26.heritage.module_e.dto.ContributorDashboardItem;
+import com.group26.heritage.module_e.dto.ContributorDashboardResponse;
 import com.group26.heritage.module_e.dto.ReportFileResponse;
 import com.group26.heritage.module_e.dto.StatusDashboardItem;
 import com.group26.heritage.module_e.dto.StatusDashboardResponse;
@@ -129,6 +131,29 @@ public class ReportService {
                 .toList();
 
         return new TagDashboardResponse(totalApprovedTaggedResources, items, LocalDateTime.now());
+    }
+
+    // Build contributor activity data using submitted resources (all non-draft resources).
+    @Transactional(readOnly = true)
+    public ContributorDashboardResponse getContributorDashboard() {
+        var rows = resourceRepository.countSubmittedResourcesByContributorForDashboard();
+        long total = rows.stream()
+                .mapToLong(row -> safeCount(row.getCount()))
+                .sum();
+
+        List<ContributorDashboardItem> items = rows.stream()
+                .map(row -> {
+                    long count = safeCount(row.getCount());
+                    return new ContributorDashboardItem(
+                            row.getContributorId(),
+                            row.getContributorName(),
+                            count,
+                            calculateRatio(count, total)
+                    );
+                })
+                .toList();
+
+        return new ContributorDashboardResponse(total, items, LocalDateTime.now());
     }
 
     // PBI 5.5 / Task 2: Generate a downloadable CSV report for resource status and workflow bottlenecks.

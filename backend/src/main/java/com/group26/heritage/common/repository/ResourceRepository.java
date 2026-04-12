@@ -3,6 +3,7 @@ package com.group26.heritage.common.repository;
 import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.enums.ResourceStatus;
 import com.group26.heritage.module_e.dto.CategoryDashboardRow;
+import com.group26.heritage.module_e.dto.ContributorDashboardRow;
 import com.group26.heritage.module_e.dto.StatusDashboardRow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -107,4 +108,18 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
          order by count(r.id) desc, categoryName asc
         """, nativeQuery = true)
     List<CategoryDashboardRow> countResourcesByCategoryForDashboard();
+
+    @Query(value = """
+        select u.id as contributorId,
+               u.username as contributorName,
+               count(r.id) as count
+          from resources r
+          join users u
+            on u.id = r.contributor_id
+         where u.role = 'CONTRIBUTOR'
+           and r.status <> 'DRAFT'
+         group by u.id, u.username
+         order by count(r.id) desc, u.username asc
+        """, nativeQuery = true)
+    List<ContributorDashboardRow> countSubmittedResourcesByContributorForDashboard();
 }
