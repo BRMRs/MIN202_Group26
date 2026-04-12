@@ -397,7 +397,7 @@ function ResourceReviewPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {mediaFiles.map(m => (
                     <div key={m.id} onClick={() => setPreviewMedia(m)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10,
+                      style={{ display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr) auto', alignItems: 'center', columnGap: 10,
                         padding: 10, borderRadius: 8, border: '1px solid #eee',
                         cursor: 'pointer', background: '#fafafa' }}>
                       <span style={{ fontSize: 22 }}>
@@ -405,12 +405,14 @@ function ResourceReviewPage() {
                          m.mediaType === 'AUDIO' ? '🎵' :
                          m.mediaType === 'DOCUMENT' ? '📄' : '🖼️'}
                       </span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>
-                          {m.fileName || 'Unnamed file'}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {m.fileName || 'Unnamed file'}
+                          </span>
                           {coverMedia?.id === m.id && (
                             <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#2d6a4f',
-                              background: '#e8f4ee', border: '1px solid #b7d9c7', borderRadius: 999, padding: '1px 6px' }}>
+                              background: '#e8f4ee', border: '1px solid #b7d9c7', borderRadius: 999, padding: '1px 6px', flexShrink: 0 }}>
                               COVER
                             </span>
                           )}
@@ -420,7 +422,7 @@ function ResourceReviewPage() {
                           {m.fileSize ? ` · ${(m.fileSize / 1024).toFixed(1)} KB` : ''}
                         </div>
                       </div>
-                      <span style={{ marginLeft: 'auto', fontSize: 11, color: '#2d6a4f', fontWeight: 600 }}>
+                      <span style={{ fontSize: 11, color: '#2d6a4f', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
                         Open File →
                       </span>
                     </div>
