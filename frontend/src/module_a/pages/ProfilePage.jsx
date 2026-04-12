@@ -488,6 +488,12 @@ function ProfilePage() {
     });
   }, [allResources]);
 
+  useEffect(() => {
+    if (!isContributor) return;
+    if (activeTab !== 'statusUpdates') return;
+    window.dispatchEvent(new CustomEvent('heritage-status-updates-viewed'));
+  }, [isContributor, activeTab]);
+
   // Filter resources per tab
   const tabResources = (() => {
     if (activeTab === 'all')      return allResources;

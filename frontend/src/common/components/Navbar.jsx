@@ -49,18 +49,17 @@ function Navbar() {
     window.addEventListener('focus', onFocus);
     const onDraftsChanged = () => loadRejectedCount();
     window.addEventListener('heritage-contributor-drafts-changed', onDraftsChanged);
+    const onStatusUpdatesViewed = () => {
+      localStorage.setItem(statusNoticeSeenKey(user), String(statusNoticeTotal));
+      setUnseenStatusNoticeCount(0);
+    };
+    window.addEventListener('heritage-status-updates-viewed', onStatusUpdatesViewed);
     return () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('heritage-contributor-drafts-changed', onDraftsChanged);
+      window.removeEventListener('heritage-status-updates-viewed', onStatusUpdatesViewed);
     };
-  }, [isAuthenticated, user?.role, loadRejectedCount]);
-
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'CONTRIBUTOR') return;
-    if (!location.pathname.startsWith('/profile')) return;
-    localStorage.setItem(statusNoticeSeenKey(user), String(statusNoticeTotal));
-    setUnseenStatusNoticeCount(0);
-  }, [isAuthenticated, user, location.pathname, statusNoticeTotal]);
+  }, [isAuthenticated, user, user?.role, loadRejectedCount, statusNoticeTotal]);
 
   const handleLogout = () => {
     logout();
