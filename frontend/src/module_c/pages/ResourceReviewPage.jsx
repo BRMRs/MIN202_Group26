@@ -415,7 +415,7 @@ function ResourceReviewPage() {
                         </div>
                       </div>
                       <span style={{ marginLeft: 'auto', fontSize: 11, color: '#2d6a4f', fontWeight: 600 }}>
-                        View / Download →
+                        Open File →
                       </span>
                     </div>
                   ))}
@@ -879,7 +879,7 @@ function ResourceReviewPage() {
                 </p>
                 <p style={{ margin: 0, color: '#777', fontSize: 13, lineHeight: 1.5 }}>
                   Preview is not supported in browser for this file type.
-                  Please open in a new tab or download it.
+                  Open the file and your browser will handle preview/download automatically.
                 </p>
               </div>
             )}
@@ -892,16 +892,7 @@ function ResourceReviewPage() {
                   background: '#2d6a4f', color: 'white', fontWeight: 700, fontSize: 13,
                   textDecoration: 'none' }}
               >
-                Open in new tab ↗
-              </a>
-              <a
-                href={previewMedia.fileUrl}
-                download={previewMedia.fileName || true}
-                style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 8,
-                  background: '#0d6efd', color: 'white', fontWeight: 700, fontSize: 13,
-                  textDecoration: 'none' }}
-              >
-                Download
+                Open File ↗
               </a>
             </div>
             <div style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center',
