@@ -101,7 +101,6 @@ function Navbar() {
                   {navLink('/reviews', 'Review Queue')}
                   {navLink('/admin/categories', 'Categories')}
                   {navLink('/admin/tags', 'Tags')}
-                  {navLink('/admin/resources', 'Resources')}
                   {navLink('/admin/dashboard', 'Reports')}
                 </>
               )}

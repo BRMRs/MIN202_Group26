@@ -11,7 +11,6 @@ import ResourceReviewPage from './module_c/pages/ResourceReviewPage';
 import { HomePage, ResourceDetailPage, SearchResultsPage } from './module_d/pages';
 import CategoryManagementPage from './module_e/pages/CategoryManagementPage';
 import AdminDashboardPage from './module_e/pages/AdminDashboardPage';
-import ResourceManagementPage from './module_e/pages/ResourceManagementPage';
 import TagManagementPage from './module_e/pages/TagManagementPage';
 
 function App() {
@@ -38,7 +37,7 @@ function App() {
 
         <Route path="/admin/categories" element={<ProtectedRoute roles={['ADMIN']}><CategoryManagementPage /></ProtectedRoute>} />
         <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><TagManagementPage /></ProtectedRoute>} />
-        <Route path="/admin/resources" element={<ProtectedRoute roles={['ADMIN']}><ResourceManagementPage /></ProtectedRoute>} />
+        <Route path="/admin/resources" element={<ProtectedRoute roles={['ADMIN']}><Navigate to="/reviews" replace /></ProtectedRoute>} />
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} />
 
         <Route path="*" element={<div style={{ padding: '2rem' }}><h2>Heritage Platform</h2><p>CPT202 Group 26</p></div>} />

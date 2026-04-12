@@ -23,11 +23,6 @@ const navigationItems = [
     icon: TagIcon,
   },
   {
-    to: "/admin/resources",
-    label: "Resource Admin",
-    icon: ResourceIcon,
-  },
-  {
     to: "/admin/dashboard",
     label: "Reports",
     icon: DashboardIcon,
@@ -81,15 +76,6 @@ function TagIcon() {
         strokeLinejoin="round"
       />
       <circle cx="8" cy="8" r="1.2" fill="currentColor" />
-    </svg>
-  );
-}
-
-function ResourceIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" style={styles.icon} aria-hidden="true">
-      <rect x="4" y="5" width="16" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M8 10h8M8 14h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
