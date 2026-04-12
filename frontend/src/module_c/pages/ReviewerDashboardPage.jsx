@@ -283,8 +283,9 @@ function ReviewerDashboardPage() {
 
 const styles = {
   page: {
-    maxWidth: 1280,
-    margin: '0 auto',
+    width: '100%',
+    maxWidth: 'none',
+    margin: 0,
     padding: '36px 40px',
     minHeight: 'calc(100vh - 58px)',
     background: '#f4f7f5',

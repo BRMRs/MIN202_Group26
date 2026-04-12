@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AdminSidebar } from "@/module_e/components";
 import {
   checkCategoryDeactivation,
   createCategory,
@@ -355,10 +354,7 @@ function CategoryManagementPage() {
   }
 
   return (
-    <div style={styles.layout}>
-      <AdminSidebar />
-      <main style={styles.main}>
-        <div style={styles.page}>
+    <div style={styles.page}>
 
           {/* Success toast */}
           {successMessage ? (
@@ -512,8 +508,6 @@ function CategoryManagementPage() {
               </table>
             </div>
           </div>
-        </div>
-      </main>
 
       {/* Create / Edit modal */}
       {isModalOpen ? (
@@ -712,21 +706,11 @@ function CategoryManagementPage() {
 }
 
 const styles = {
-  /* ── Layout shell ── */
-  layout: {
-    minHeight: "100vh",
-    background: "#f4f7f5",
-    display: "flex",
-  },
-  main: {
-    marginLeft: 260,
-    flex: 1,
-    padding: "36px 40px",
-    minHeight: "100vh",
-  },
   page: {
-    maxWidth: 1080,
-    margin: "0 auto",
+    width: "100%",
+    padding: "36px 40px",
+    minHeight: "calc(100vh - 58px)",
+    background: "#f4f7f5",
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif',
     color: "#374151",
     position: "relative",

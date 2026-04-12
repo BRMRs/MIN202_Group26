@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { getApplications, approveApplication, rejectApplication } from '../api/userApi';
-import { AdminSidebar } from '../../module_e/components';
 
 function AdminApprovalPage() {
   const [applications, setApplications] = useState([]);
@@ -64,11 +63,7 @@ function AdminApprovalPage() {
   ];
 
   return (
-    <div style={styles.layout}>
-      <AdminSidebar />
-
-      <main style={styles.main}>
-        <div style={styles.page}>
+    <div style={styles.page}>
 
           {/* Page header */}
           <div style={styles.pageHeader}>
@@ -201,28 +196,16 @@ function AdminApprovalPage() {
             </div>
           </div>
 
-        </div>
-      </main>
     </div>
   );
 }
 
 const styles = {
-  /* ── Layout shell ── */
-  layout: {
-    minHeight: '100vh',
-    background: '#f4f7f5',
-    display: 'flex',
-  },
-  main: {
-    marginLeft: 260,
-    flex: 1,
-    padding: '36px 40px',
-    minHeight: '100vh',
-  },
   page: {
-    maxWidth: 1020,
-    margin: '0 auto',
+    width: '100%',
+    padding: '36px 40px',
+    minHeight: 'calc(100vh - 58px)',
+    background: '#f4f7f5',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif',
   },
 
