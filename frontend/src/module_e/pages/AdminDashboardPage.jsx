@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   downloadCategoryDashboardReport,
   downloadStatusDashboardReport,
@@ -23,14 +23,8 @@ function AdminDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [activeSection, setActiveSection] = useState("summary");
+  const [activePanel, setActivePanel] = useState("overview");
   const [showAllTags, setShowAllTags] = useState(false);
-
-  const summaryRef = useRef(null);
-  const statusRef = useRef(null);
-  const workflowRef = useRef(null);
-  const categoryRef = useRef(null);
-  const tagsRef = useRef(null);
 
   async function refreshDashboard() {
     setLoading(true);
@@ -103,48 +97,32 @@ function AdminDashboardPage() {
     }
   }
 
-  useEffect(() => {
-    const sections = [
-      { id: "summary", ref: summaryRef },
-      { id: "status", ref: statusRef },
-      { id: "workflow", ref: workflowRef },
-      { id: "category", ref: categoryRef },
-      { id: "tags", ref: tagsRef },
-    ];
-
-    const updateActiveSection = () => {
-      let nextActive = "summary";
-      for (const section of sections) {
-        const element = section.ref.current;
-        if (!element) continue;
-        if (element.getBoundingClientRect().top <= 140) {
-          nextActive = section.id;
-        }
-      }
-      setActiveSection(nextActive);
-    };
-
-    updateActiveSection();
-    window.addEventListener("scroll", updateActiveSection, { passive: true });
-    return () => window.removeEventListener("scroll", updateActiveSection);
-  }, []);
-
-  function jumpToSection(sectionId) {
-    const targetBySection = {
-      summary: summaryRef,
-      status: statusRef,
-      workflow: workflowRef,
-      category: categoryRef,
-      tags: tagsRef,
-    };
-    const target = targetBySection[sectionId]?.current;
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   return (
     <div style={styles.page}>
       <div style={styles.pageLayout}>
+        <aside style={styles.sectionNav}>
+          <div style={styles.sectionNavTitle}>Reports Menu</div>
+          <div style={styles.sectionNavList}>
+            {[
+              { id: "overview", label: "Overview" },
+              { id: "category", label: "Category" },
+              { id: "tags", label: "Tags" },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActivePanel(item.id)}
+                style={{
+                  ...styles.sectionNavBtn,
+                  ...(activePanel === item.id ? styles.sectionNavBtnActive : null),
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </aside>
+
         <div style={styles.mainColumn}>
           <div style={styles.pageHeader}>
             <div style={styles.headerRow}>
@@ -167,187 +145,172 @@ function AdminDashboardPage() {
             ) : null}
           </div>
 
-          <section ref={summaryRef} style={styles.summaryGrid} aria-label="Reports summary">
-            <SummaryCard label="Total Resources" value={statusDashboard?.total ?? 0} />
-            <SummaryCard label="Review Attention" value={reviewAttention} highlight={statusDashboard?.workflow?.bottleneck_stage === "PENDING_REVIEW"} />
-            <SummaryCard label="Top Category" value={topCategory ? `${topCategory.categoryName} (${topCategory.count})` : "No category data"} />
-            <SummaryCard label="Top Tag" value={topTag ? `${topTag.tagName} (${topTag.approvedResourceCount})` : "No approved tag data"} />
-          </section>
+          {activePanel === "overview" ? (
+            <>
+              <section style={styles.summaryGrid} aria-label="Reports summary">
+                <SummaryCard label="Total Resources" value={statusDashboard?.total ?? 0} />
+                <SummaryCard label="Review Attention" value={reviewAttention} highlight={statusDashboard?.workflow?.bottleneck_stage === "PENDING_REVIEW"} />
+                <SummaryCard label="Top Category" value={topCategory ? `${topCategory.categoryName} (${topCategory.count})` : "No category data"} />
+                <SummaryCard label="Top Tag" value={topTag ? `${topTag.tagName} (${topTag.approvedResourceCount})` : "No approved tag data"} />
+              </section>
 
-          <section style={styles.grid}>
-            <div ref={statusRef} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div>
-                  <span style={styles.cardTitle}>Status Dashboard</span>
-                  <p style={styles.cardSubtitle}>
-                    Distribution across all resource statuses. Pending Review is the review bottleneck when it has items.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleDownload("status")}
-                  style={styles.secondaryButton}
-                  disabled={loading || downloading === "status"}
-                >
-                  {downloading === "status" ? "Downloading..." : "Download CSV"}
-                </button>
-              </div>
+              <section style={styles.grid}>
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <div>
+                      <span style={styles.cardTitle}>Status Dashboard</span>
+                      <p style={styles.cardSubtitle}>
+                        Distribution across all resource statuses. Pending Review is the review bottleneck when it has items.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDownload("status")}
+                      style={styles.secondaryButton}
+                      disabled={loading || downloading === "status"}
+                    >
+                      {downloading === "status" ? "Downloading..." : "Download CSV"}
+                    </button>
+                  </div>
 
-              <div style={styles.chartArea}>
-                <div style={styles.donutWrap}>
-                  <div style={{ ...styles.donut, background: buildStatusDonut(statusItems) }}>
-                    <div style={styles.donutCenter}>
-                      <strong style={styles.donutValue}>{statusDashboard?.total ?? 0}</strong>
-                      <span style={styles.donutLabel}>Resources</span>
+                  <div style={styles.chartArea}>
+                    <div style={styles.donutWrap}>
+                      <div style={{ ...styles.donut, background: buildStatusDonut(statusItems) }}>
+                        <div style={styles.donutCenter}>
+                          <strong style={styles.donutValue}>{statusDashboard?.total ?? 0}</strong>
+                          <span style={styles.donutLabel}>Resources</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={styles.chartList}>
+                      {statusItems.length === 0 ? (
+                        <div style={styles.emptyPanel}>{loading ? "Loading..." : "No status data."}</div>
+                      ) : (
+                        statusItems.map((item) => (
+                          <MetricBar
+                            key={item.key}
+                            label={item.label}
+                            count={item.count}
+                            ratio={item.ratio}
+                            color={STATUS_COLORS[item.key] || "#4b5563"}
+                            marker={item.bottleneck ? "Review Bottleneck" : item.workflow_stage ? "Workflow" : "Standard"}
+                            highlight={item.bottleneck}
+                          />
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
+
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <div>
+                      <span style={styles.cardTitle}>Workflow Status</span>
+                      <p style={styles.cardSubtitle}>Resource review and management stages, separate from contributor applications.</p>
+                    </div>
+                  </div>
+
+                  <div style={styles.chartListCompact}>
+                    {workflowStages.length === 0 ? (
+                      <div style={styles.emptyPanel}>{loading ? "Loading..." : "No workflow data."}</div>
+                    ) : (
+                      workflowStages.map((stage) => (
+                        <MetricBar
+                          key={stage.key}
+                          label={stage.label}
+                          count={stage.count}
+                          ratio={stage.ratio}
+                          color={stage.bottleneck ? "#b91c1c" : "#2d6a4f"}
+                          marker={stage.bottleneck ? "Review Bottleneck" : "Workflow"}
+                          highlight={stage.bottleneck}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              </section>
+            </>
+          ) : null}
+
+          {activePanel === "category" ? (
+            <section style={styles.singleSection}>
+              <div style={styles.card}>
+                <div style={styles.cardHeader}>
+                  <div>
+                    <span style={styles.cardTitle}>Category Dashboard</span>
+                    <p style={styles.cardSubtitle}>Resource distribution across heritage categories.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload("category")}
+                    style={styles.secondaryButton}
+                    disabled={loading || downloading === "category"}
+                  >
+                    {downloading === "category" ? "Downloading..." : "Download CSV"}
+                  </button>
+                </div>
+
                 <div style={styles.chartList}>
-                  {statusItems.length === 0 ? (
-                    <div style={styles.emptyPanel}>{loading ? "Loading..." : "No status data."}</div>
+                  {categoryItems.length === 0 ? (
+                    <div style={styles.emptyPanel}>{loading ? "Loading..." : "No category data."}</div>
                   ) : (
-                    statusItems.map((item) => (
+                    categoryItems.map((item) => (
                       <MetricBar
-                        key={item.key}
-                        label={item.label}
+                        key={item.categoryId ?? item.categoryName}
+                        label={item.categoryName}
                         count={item.count}
                         ratio={item.ratio}
-                        color={STATUS_COLORS[item.key] || "#4b5563"}
-                        marker={item.bottleneck ? "Review Bottleneck" : item.workflow_stage ? "Workflow" : "Standard"}
-                        highlight={item.bottleneck}
+                        color={item.categoryStatus === "ACTIVE" ? "#2d6a4f" : "#a16207"}
+                        marker={item.categoryStatus}
                       />
                     ))
                   )}
                 </div>
               </div>
-            </div>
+            </section>
+          ) : null}
 
-            <div ref={workflowRef} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div>
-                  <span style={styles.cardTitle}>Workflow Status</span>
-                  <p style={styles.cardSubtitle}>Resource review and management stages, separate from contributor applications.</p>
+          {activePanel === "tags" ? (
+            <section style={styles.singleSection}>
+              <div style={styles.card}>
+                <div style={styles.cardHeader}>
+                  <div>
+                    <span style={styles.cardTitle}>Top Approved Tags</span>
+                    <p style={styles.cardSubtitle}>
+                      Popularity based only on approved resources. Showing {visibleTagItems.length} / {approvedTagItems.length}.
+                    </p>
+                  </div>
+                  {approvedTagItems.length > 10 ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTags((previous) => !previous)}
+                      style={styles.secondaryButton}
+                    >
+                      {showAllTags ? "Collapse" : "Show all"}
+                    </button>
+                  ) : null}
+                </div>
+
+                <div style={styles.chartListCompact}>
+                  {approvedTagItems.length === 0 ? (
+                    <div style={styles.emptyPanel}>{loading ? "Loading..." : "No approved tag data."}</div>
+                  ) : (
+                    visibleTagItems.map((item) => (
+                      <MetricBar
+                        key={item.tagId}
+                        label={item.tagName}
+                        count={item.approvedResourceCount}
+                        ratio={item.ratio}
+                        color="#2d6a4f"
+                        marker="Approved resources"
+                      />
+                    ))
+                  )}
                 </div>
               </div>
-
-              <div style={styles.chartListCompact}>
-                {workflowStages.length === 0 ? (
-                  <div style={styles.emptyPanel}>{loading ? "Loading..." : "No workflow data."}</div>
-                ) : (
-                  workflowStages.map((stage) => (
-                    <MetricBar
-                      key={stage.key}
-                      label={stage.label}
-                      count={stage.count}
-                      ratio={stage.ratio}
-                      color={stage.bottleneck ? "#b91c1c" : "#2d6a4f"}
-                      marker={stage.bottleneck ? "Review Bottleneck" : "Workflow"}
-                      highlight={stage.bottleneck}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section style={styles.grid}>
-            <div ref={categoryRef} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div>
-                  <span style={styles.cardTitle}>Category Dashboard</span>
-                  <p style={styles.cardSubtitle}>Resource distribution across heritage categories.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleDownload("category")}
-                  style={styles.secondaryButton}
-                  disabled={loading || downloading === "category"}
-                >
-                  {downloading === "category" ? "Downloading..." : "Download CSV"}
-                </button>
-              </div>
-
-              <div style={styles.chartList}>
-                {categoryItems.length === 0 ? (
-                  <div style={styles.emptyPanel}>{loading ? "Loading..." : "No category data."}</div>
-                ) : (
-                  categoryItems.map((item) => (
-                    <MetricBar
-                      key={item.categoryId ?? item.categoryName}
-                      label={item.categoryName}
-                      count={item.count}
-                      ratio={item.ratio}
-                      color={item.categoryStatus === "ACTIVE" ? "#2d6a4f" : "#a16207"}
-                      marker={item.categoryStatus}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div ref={tagsRef} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div>
-                  <span style={styles.cardTitle}>Top Approved Tags</span>
-                  <p style={styles.cardSubtitle}>
-                    Popularity based only on approved resources. Showing {visibleTagItems.length} / {approvedTagItems.length}.
-                  </p>
-                </div>
-                {approvedTagItems.length > 10 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllTags((previous) => !previous)}
-                    style={styles.secondaryButton}
-                  >
-                    {showAllTags ? "Collapse" : "Show all"}
-                  </button>
-                ) : null}
-              </div>
-
-              <div style={styles.chartListCompact}>
-                {approvedTagItems.length === 0 ? (
-                  <div style={styles.emptyPanel}>{loading ? "Loading..." : "No approved tag data."}</div>
-                ) : (
-                  visibleTagItems.map((item) => (
-                    <MetricBar
-                      key={item.tagId}
-                      label={item.tagName}
-                      count={item.approvedResourceCount}
-                      ratio={item.ratio}
-                      color="#2d6a4f"
-                      marker="Approved resources"
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </div>
-
-        <aside style={styles.sectionNav}>
-          <div style={styles.sectionNavTitle}>Quick Jump</div>
-          <div style={styles.sectionNavList}>
-            {[
-              { id: "summary", label: "Summary" },
-              { id: "status", label: "Status" },
-              { id: "workflow", label: "Workflow" },
-              { id: "category", label: "Category" },
-              { id: "tags", label: "Tags" },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => jumpToSection(item.id)}
-                style={{
-                  ...styles.sectionNavBtn,
-                  ...(activeSection === item.id ? styles.sectionNavBtnActive : null),
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </aside>
       </div>
     </div>
   );
@@ -416,8 +379,8 @@ const styles = {
   },
   pageLayout: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 170px",
-    gap: 16,
+    gridTemplateColumns: "220px minmax(0, 1fr)",
+    gap: 18,
     alignItems: "start",
   },
   mainColumn: {
@@ -428,8 +391,8 @@ const styles = {
     top: 74,
     background: "#fff",
     border: "1px solid #e8e3dc",
-    borderRadius: 8,
-    padding: "12px 10px",
+    borderRadius: 10,
+    padding: "14px 12px",
   },
   sectionNavTitle: {
     fontSize: 11,
@@ -437,20 +400,20 @@ const styles = {
     letterSpacing: "0.08em",
     textTransform: "uppercase",
     color: "#6b7280",
-    marginBottom: 8,
-    padding: "0 4px",
+    marginBottom: 10,
+    padding: "0 6px",
   },
   sectionNavList: {
     display: "grid",
-    gap: 6,
+    gap: 8,
   },
   sectionNavBtn: {
     border: "1px solid #e8e3dc",
     background: "#fff",
     color: "#4b5563",
     borderRadius: 8,
-    padding: "7px 10px",
-    fontSize: 13,
+    padding: "9px 12px",
+    fontSize: 14,
     fontWeight: 600,
     textAlign: "left",
     cursor: "pointer",
@@ -552,6 +515,11 @@ const styles = {
     gridTemplateColumns: "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
     gap: 18,
     alignItems: "start",
+    marginBottom: 18,
+  },
+  singleSection: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr)",
     marginBottom: 18,
   },
   card: {
