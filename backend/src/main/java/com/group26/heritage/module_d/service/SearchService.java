@@ -1,14 +1,18 @@
 package com.group26.heritage.module_d.service;
 
 import com.group26.heritage.common.dto.PageResult;
+import com.group26.heritage.common.dto.UserSummaryDto;
+import com.group26.heritage.common.exception.ResourceNotFoundException;
 import com.group26.heritage.common.repository.CategoryRepository;
 import com.group26.heritage.common.repository.ResourceRepository;
 import com.group26.heritage.common.repository.TagRepository;
+import com.group26.heritage.common.repository.UserRepository;
 import com.group26.heritage.entity.Category;
 import com.group26.heritage.entity.Resource;
 import com.group26.heritage.entity.Tag;
 import com.group26.heritage.entity.enums.ResourceStatus;
 import com.group26.heritage.module_d.dto.CategoryOptionDto;
+import com.group26.heritage.module_d.dto.MediaDetailDto;
 import com.group26.heritage.module_d.dto.ResourceDetailDto;
 import com.group26.heritage.module_d.dto.ResourceSummaryDto;
 import com.group26.heritage.module_d.dto.TagOptionDto;
@@ -29,9 +33,13 @@ public class SearchService {
     /** Cached after first check; some DBs may not have resource_tags yet. */
     private volatile Boolean resourceTagsTableAvailable;
 
+    /** Interaction sort uses the likes table only; cache after first probe. */
+    private volatile Boolean interactionSortTablesAvailable;
+
     private final ResourceRepository resourceRepository;
     private final CategoryRepository categoryRepository;
     private final TagRepository tagRepository;
+    private final UserRepository userRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -39,15 +47,17 @@ public class SearchService {
     public SearchService(
             ResourceRepository resourceRepository,
             CategoryRepository categoryRepository,
-            TagRepository tagRepository
+            TagRepository tagRepository,
+            UserRepository userRepository
     ) {
         this.resourceRepository = resourceRepository;
         this.categoryRepository = categoryRepository;
         this.tagRepository = tagRepository;
+        this.userRepository = userRepository;
     }
 
     public PageResult<ResourceSummaryDto> browseApproved(int page, int size, String sortBy, String direction) {
-        return queryResources(null, null, null, page, size, sortBy, direction);
+        return queryResources(null, null, null, null, page, size, sortBy, direction);
     }
 
     public PageResult<ResourceSummaryDto> searchByKeyword(
@@ -58,7 +68,7 @@ public class SearchService {
             String direction
     ) {
         String normalizedKeyword = normalizeKeyword(keyword);
-        return queryResources(normalizedKeyword, null, null, page, size, sortBy, direction);
+        return queryResources(normalizedKeyword, null, null, null, page, size, sortBy, direction);
     }
 
     public PageResult<ResourceSummaryDto> filterByCategoryAndTags(
@@ -70,13 +80,14 @@ public class SearchService {
             String direction
     ) {
         List<Long> normalizedTagIds = normalizeTagIds(tagIds);
-        return queryResources(null, categoryId, normalizedTagIds, page, size, sortBy, direction);
+        return queryResources(null, categoryId, normalizedTagIds, null, page, size, sortBy, direction);
     }
 
     public PageResult<ResourceSummaryDto> searchAndFilter(
             String keyword,
             Long categoryId,
             List<Long> tagIds,
+            String place,
             int page,
             int size,
             String sortBy,
@@ -84,13 +95,43 @@ public class SearchService {
     ) {
         String normalizedKeyword = normalizeKeyword(keyword);
         List<Long> normalizedTagIds = normalizeTagIds(tagIds);
-        return queryResources(normalizedKeyword, categoryId, normalizedTagIds, page, size, sortBy, direction);
+        String normalizedPlace = normalizePlace(place);
+        return queryResources(normalizedKeyword, categoryId, normalizedTagIds, normalizedPlace, page, size, sortBy, direction);
+    }
+
+    /**
+     * Distinct non-empty place values from approved resources (for filter dropdowns).
+     */
+    public List<String> listDistinctPlaces() {
+        try {
+            String sql = """
+                    SELECT DISTINCT TRIM(r.place) AS p
+                    FROM resources r
+                    WHERE r.status = :status
+                      AND r.place IS NOT NULL
+                      AND TRIM(r.place) <> ''
+                    ORDER BY p ASC
+                    """;
+            var q = entityManager.createNativeQuery(sql);
+            q.setParameter("status", ResourceStatus.APPROVED.name());
+            @SuppressWarnings("unchecked")
+            List<Object> rows = q.getResultList();
+            List<String> out = new ArrayList<>();
+            for (Object row : rows) {
+                if (row != null) {
+                    out.add(String.valueOf(row).trim());
+                }
+            }
+            return out;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 
     public ResourceDetailDto getResourceDetail(Long resourceId) {
         Resource resource = resourceRepository.findById(resourceId)
                 .filter(r -> r.getStatus() == ResourceStatus.APPROVED)
-                .orElseThrow(() -> new NoSuchElementException("Approved resource not found: " + resourceId));
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found: " + resourceId));
 
         String categoryName = categoryRepository.findById(resource.getCategoryId())
                 .map(Category::getName)
@@ -99,7 +140,16 @@ public class SearchService {
         List<TagOptionDto> tags = getTagsForResourceIds(List.of(resource.getId()))
                 .getOrDefault(resource.getId(), Collections.emptyList());
 
-        return toResourceDetail(resource, categoryName, tags);
+        UserSummaryDto contributor = userRepository.findById(resource.getContributorId())
+                .map(u -> new UserSummaryDto(u.getId(), u.getUsername(), u.getAvatarUrl()))
+                .orElse(null);
+
+        List<Long> idOne = List.of(resource.getId());
+        long likeCount = getLikeCountMap(idOne).getOrDefault(resource.getId(), 0L);
+        long commentCount = getCommentCountMap(idOne).getOrDefault(resource.getId(), 0L);
+        List<MediaDetailDto> media = loadMediaForResource(resource.getId());
+
+        return toResourceDetail(resource, categoryName, tags, contributor, media, likeCount, commentCount);
     }
 
     public List<CategoryOptionDto> listCategories() {
@@ -120,6 +170,7 @@ public class SearchService {
             String keyword,
             Long categoryId,
             List<Long> tagIds,
+            String place,
             int page,
             int size,
             String sortBy,
@@ -128,6 +179,9 @@ public class SearchService {
         int normalizedPage = Math.max(page, 0);
         int normalizedSize = normalizePageSize(size);
         String normalizedSortBy = normalizeSortBy(sortBy);
+        if ("interaction".equals(normalizedSortBy) && !hasInteractionSortTables()) {
+            normalizedSortBy = "createdAt";
+        }
         String normalizedDirection = normalizeDirection(direction);
 
         StringBuilder whereSql = new StringBuilder(" WHERE r.status = :status ");
@@ -142,6 +196,11 @@ public class SearchService {
         if (categoryId != null) {
             whereSql.append(" AND r.category_id = :categoryId ");
             params.put("categoryId", categoryId);
+        }
+
+        if (place != null && !place.isBlank()) {
+            whereSql.append(" AND LOWER(TRIM(COALESCE(r.place, ''))) LIKE :place ");
+            params.put("place", "%" + place.trim().toLowerCase(Locale.ROOT) + "%");
         }
 
         if (tagIds != null && !tagIds.isEmpty()) {
@@ -178,8 +237,10 @@ public class SearchService {
 
         Map<Long, String> categoryNameMap = getCategoryNameMap(resources);
         Map<Long, List<TagOptionDto>> tagsMap = getTagsForResourceIds(resources.stream().map(Resource::getId).toList());
-        Map<Long, Long> likeCountMap = getLikeCountMap(resources.stream().map(Resource::getId).toList());
-        Map<Long, Long> commentCountMap = getCommentCountMap(resources.stream().map(Resource::getId).toList());
+        List<Long> resourceIds = resources.stream().map(Resource::getId).toList();
+        Map<Long, Long> likeCountMap = getLikeCountMap(resourceIds);
+        Map<Long, Long> commentCountMap = getCommentCountMap(resourceIds);
+        Map<Long, Long> firstCoverMediaIdByResourceId = loadFirstCoverMediaIdByResourceIds(resourceIds);
 
         List<ResourceSummaryDto> content = resources.stream()
                 .map(resource -> toResourceSummary(
@@ -187,7 +248,8 @@ public class SearchService {
                         categoryNameMap.get(resource.getCategoryId()),
                         tagsMap.getOrDefault(resource.getId(), Collections.emptyList()),
                         likeCountMap.getOrDefault(resource.getId(), 0L),
-                        commentCountMap.getOrDefault(resource.getId(), 0L)
+                        commentCountMap.getOrDefault(resource.getId(), 0L),
+                        firstCoverMediaIdByResourceId.get(resource.getId())
                 ))
                 .toList();
 
@@ -212,6 +274,30 @@ public class SearchService {
                 resourceTagsTableAvailable = false;
             }
             return resourceTagsTableAvailable;
+        }
+    }
+
+    /**
+     * Most interactive = sort by like count (DESC by default). Requires {@code likes} table.
+     */
+    private boolean hasInteractionSortTables() {
+        if (interactionSortTablesAvailable != null) {
+            return interactionSortTablesAvailable;
+        }
+        synchronized (this) {
+            if (interactionSortTablesAvailable != null) {
+                return interactionSortTablesAvailable;
+            }
+            try {
+                Object result = entityManager.createNativeQuery(
+                                "SELECT COUNT(*) FROM information_schema.tables "
+                                        + "WHERE table_schema = DATABASE() AND table_name = 'likes'")
+                        .getSingleResult();
+                interactionSortTablesAvailable = ((Number) result).longValue() > 0L;
+            } catch (Exception ignored) {
+                interactionSortTablesAvailable = false;
+            }
+            return interactionSortTablesAvailable;
         }
     }
 
@@ -274,14 +360,24 @@ public class SearchService {
             String categoryName,
             List<TagOptionDto> tags,
             Long likeCount,
-            Long commentCount
+            Long commentCount,
+            Long firstCoverMediaId
     ) {
+        String thumbnail = null;
+        if (firstCoverMediaId != null) {
+            thumbnail = "/api/discover/media/" + firstCoverMediaId;
+        } else {
+            thumbnail = resource.getFilePath();
+            if (thumbnail != null && thumbnail.isBlank()) {
+                thumbnail = null;
+            }
+        }
         return new ResourceSummaryDto(
                 resource.getId(),
                 resource.getTitle(),
                 resource.getDescription(),
                 resource.getPlace(),
-                resource.getFilePath(),
+                thumbnail,
                 resource.getExternalLink(),
                 categoryName,
                 tags,
@@ -291,20 +387,122 @@ public class SearchService {
         );
     }
 
-    private ResourceDetailDto toResourceDetail(Resource resource, String categoryName, List<TagOptionDto> tags) {
+    /**
+     * First image media id (COVER or DETAIL) per resource for thumbnails — sort_order, id.
+     * URL is served via GET /api/discover/media/{id} (anonymous allowed).
+     */
+    private Map<Long, Long> loadFirstCoverMediaIdByResourceIds(List<Long> resourceIds) {
+        if (resourceIds == null || resourceIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        try {
+            String sql = """
+                    SELECT resource_id, id
+                    FROM resource_media
+                    WHERE resource_id IN :resourceIds
+                      AND media_type IN ('COVER', 'DETAIL')
+                    ORDER BY resource_id, sort_order ASC, id ASC
+                    """;
+            var query = entityManager.createNativeQuery(sql);
+            query.setParameter("resourceIds", resourceIds);
+            List<?> rows = query.getResultList();
+            Map<Long, Long> map = new LinkedHashMap<>();
+            for (Object row : rows) {
+                Object[] cols = (Object[]) row;
+                Long resourceId = ((Number) cols[0]).longValue();
+                Long mediaId = ((Number) cols[1]).longValue();
+                map.putIfAbsent(resourceId, mediaId);
+            }
+            return map;
+        } catch (Exception ignored) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private List<MediaDetailDto> loadMediaForResource(Long resourceId) {
+        try {
+            String sql = """
+                    SELECT id, media_type, file_url, file_name
+                    FROM resource_media
+                    WHERE resource_id = :rid
+                    ORDER BY sort_order ASC, id ASC
+                    """;
+            var query = entityManager.createNativeQuery(sql);
+            query.setParameter("rid", resourceId);
+            List<?> rows = query.getResultList();
+            List<MediaDetailDto> list = new ArrayList<>();
+            for (Object row : rows) {
+                Object[] cols = (Object[]) row;
+                Long id = ((Number) cols[0]).longValue();
+                String mediaType = cols[1] != null ? String.valueOf(cols[1]) : null;
+                String fileUrl = (String) cols[2];
+                String fileName = cols[3] != null ? String.valueOf(cols[3]) : null;
+                list.add(new MediaDetailDto(id, mediaType, fileUrl, fileName));
+            }
+            return list;
+        } catch (Exception ignored) {
+            return Collections.emptyList();
+        }
+    }
+
+    private ResourceDetailDto toResourceDetail(
+            Resource resource,
+            String categoryName,
+            List<TagOptionDto> tags,
+            UserSummaryDto contributor,
+            List<MediaDetailDto> media,
+            long likeCount,
+            long commentCount
+    ) {
+        List<MediaDetailDto> publicMedia = mapMediaToDiscoverUrls(media);
+        String detailFileUrl = resource.getFilePath();
+        if (!publicMedia.isEmpty()) {
+            MediaDetailDto firstImg = null;
+            for (MediaDetailDto m : publicMedia) {
+                if ("COVER".equals(m.mediaType()) || "DETAIL".equals(m.mediaType())) {
+                    firstImg = m;
+                    break;
+                }
+            }
+            if (firstImg != null) {
+                detailFileUrl = firstImg.fileUrl();
+            } else {
+                detailFileUrl = publicMedia.get(0).fileUrl();
+            }
+        }
+        if (detailFileUrl != null && detailFileUrl.isBlank()) {
+            detailFileUrl = null;
+        }
         return new ResourceDetailDto(
                 resource.getId(),
                 resource.getTitle(),
                 resource.getDescription(),
                 resource.getPlace(),
-                resource.getFilePath(),
+                detailFileUrl,
                 resource.getExternalLink(),
                 resource.getCopyrightDeclaration(),
                 categoryName,
                 tags,
                 resource.getCreatedAt(),
-                resource.getUpdatedAt()
+                resource.getUpdatedAt(),
+                resource.getStatus(),
+                contributor,
+                publicMedia,
+                Math.toIntExact(Math.min(commentCount, Integer.MAX_VALUE)),
+                Math.toIntExact(Math.min(likeCount, Integer.MAX_VALUE))
         );
+    }
+
+    private List<MediaDetailDto> mapMediaToDiscoverUrls(List<MediaDetailDto> media) {
+        if (media == null || media.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<MediaDetailDto> out = new ArrayList<>(media.size());
+        for (MediaDetailDto m : media) {
+            String url = "/api/discover/media/" + m.id();
+            out.add(new MediaDetailDto(m.id(), m.mediaType(), url, m.fileName()));
+        }
+        return out;
     }
 
     private int normalizePageSize(int size) {
@@ -338,9 +536,10 @@ public class SearchService {
 
     private String buildOrderBy(String sortBy, String direction) {
         if ("interaction".equals(sortBy)) {
-            // Temporary interaction proxy for Module D demo:
-            // use resource id order to simulate "most interactive" ranking.
-            return " ORDER BY r.id " + direction + " ";
+            // Most interactive: primary = like count (high first when direction is DESC), then recency.
+            return " ORDER BY "
+                    + "(SELECT COUNT(*) FROM `likes` l WHERE l.resource_id = r.id) " + direction + ", "
+                    + "r.created_at DESC ";
         }
         return " ORDER BY r." + toColumnName(sortBy) + " " + direction + " ";
     }
@@ -350,6 +549,14 @@ public class SearchService {
             return null;
         }
         String trimmed = keyword.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizePlace(String place) {
+        if (place == null) {
+            return null;
+        }
+        String trimmed = place.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 

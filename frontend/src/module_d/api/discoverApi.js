@@ -41,4 +41,6 @@ export const searchAndFilterResources = ({
 
 export const listCategories = () => apiClient.get('/discover/categories');
 export const listTags = () => apiClient.get('/discover/tags');
+/** Distinct place strings from approved resources (for place dropdown). */
+export const listPlaces = () => apiClient.get('/discover/places');
 export const getResourceDetail = (id) => apiClient.get(`/discover/resources/${id}`);

@@ -1,51 +1,79 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import {
   DISCOVER_LOAD_ERROR_MESSAGE,
   listCategories,
+  listPlaces,
   listTags,
   searchAndFilterResources,
 } from '../api/discoverApi';
+import { TagFilterCombo } from '../components/TagFilterCombo';
 import '../styles/discovery.css';
 
+/**
+ * Global search page — simplified layout:
+ * one-line search hint + unified filters (category + place + tags + sort).
+ */
 function SearchResultsPage() {
-  const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
+  const [, setParams] = useSearchParams();
+  const { search } = useLocation();
+
+  const query = useMemo(() => {
+    const p = new URLSearchParams(search);
+    return {
+      keyword: p.get('keyword') || '',
+      categoryId: p.get('categoryId') || '',
+      tagIds: p.getAll('tagIds').map(Number).filter(Number.isFinite),
+      place: p.get('place') || '',
+      page: Number(p.get('page') || 0),
+      sort: p.get('sort') || 'latest',
+    };
+  }, [search]);
+
   const [resources, setResources] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
-  const [keywordInput, setKeywordInput] = useState(params.get('keyword') || '');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [draftCategoryId, setDraftCategoryId] = useState(params.get('categoryId') || '');
-  const [draftTagIds, setDraftTagIds] = useState(params.getAll('tagIds').map(Number).filter(Number.isFinite));
+  const [places, setPlaces] = useState([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [sortMode, setSortMode] = useState(params.get('sort') || 'latest');
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const query = useMemo(
-    () => ({
-      keyword: params.get('keyword') || '',
-      categoryId: params.get('categoryId') || '',
-      tagIds: params.getAll('tagIds').map(Number).filter(Number.isFinite),
-      page: Number(params.get('page') || 0),
-      sort: params.get('sort') || 'latest',
-    }),
-    [params],
-  );
+  const [keywordInput, setKeywordInput] = useState(query.keyword);
+  const [draftCategoryId, setDraftCategoryId] = useState(query.categoryId);
+  const [draftTagIds, setDraftTagIds] = useState(query.tagIds);
+  const [draftPlace, setDraftPlace] = useState(query.place);
+  const [draftSort, setDraftSort] = useState(query.sort);
+  const [tagResetSignal, setTagResetSignal] = useState(0);
 
-  const sync = ({ keyword, categoryId, tagIds, pageNo = 0, sort = query.sort }) => {
+  const sync = ({ keyword, categoryId, tagIds, place, pageNo = 0, sort = query.sort }) => {
     const next = new URLSearchParams();
     if (keyword) next.set('keyword', keyword);
     if (categoryId) next.set('categoryId', String(categoryId));
     tagIds.forEach((id) => next.append('tagIds', String(id)));
-    if (sort) next.set('sort', sort);
+    if (place) next.set('place', place);
+    if (sort && sort !== 'latest') next.set('sort', sort);
     if (pageNo > 0) next.set('page', String(pageNo));
     setParams(next);
   };
+
+  useEffect(() => {
+    Promise.all([listCategories(), listTags(), listPlaces()])
+      .then(([c, t, p]) => {
+        setCategories(c?.data ?? []);
+        setTags(t?.data ?? []);
+        setPlaces(Array.isArray(p?.data) ? p.data : []);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setKeywordInput(query.keyword);
+    setDraftCategoryId(query.categoryId);
+    setDraftTagIds(query.tagIds);
+    setDraftPlace(query.place);
+    setDraftSort(query.sort);
+  }, [query.keyword, query.categoryId, query.sort, query.place, query.tagIds.join(',')]);
 
   const fetchData = async (p) => {
     setLoading(true);
@@ -56,15 +84,16 @@ function SearchResultsPage() {
         keyword: query.keyword || undefined,
         categoryId: query.categoryId ? Number(query.categoryId) : undefined,
         tagIds: query.tagIds,
+        place: query.place || undefined,
         page: p,
-        size: 5,
+        size: 10,
         sortBy,
         direction: 'DESC',
       });
       setResources(data?.content ?? []);
       setPage(data?.page ?? p);
       setTotalPages(data?.totalPages ?? 0);
-    } catch (e) {
+    } catch (_e) {
       setResources([]);
       setTotalPages(0);
       setLoadError(true);
@@ -74,67 +103,29 @@ function SearchResultsPage() {
   };
 
   useEffect(() => {
-    Promise.all([listCategories(), listTags()]).then(([c, t]) => {
-      setCategories(c?.data ?? []);
-      setTags(t?.data ?? []);
-    });
-  }, []);
-
-  useEffect(() => {
-    setKeywordInput(query.keyword);
-    setDraftCategoryId(query.categoryId);
-    setDraftTagIds(query.tagIds);
-    setSortMode(query.sort);
     fetchData(query.page);
-  }, [query.keyword, query.categoryId, query.sort, params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.keyword, query.categoryId, query.sort, query.page, query.place, query.tagIds.join(','), search]);
 
   const applyFilters = () => {
-    sync({ keyword: query.keyword, categoryId: draftCategoryId, tagIds: draftTagIds, pageNo: 0, sort: sortMode });
-    setFilterOpen(false);
+    sync({
+      keyword: keywordInput.trim(),
+      categoryId: draftCategoryId,
+      tagIds: draftTagIds,
+      place: draftPlace.trim(),
+      pageNo: 0,
+      sort: draftSort,
+    });
   };
 
   const submitSearch = (e) => {
     e.preventDefault();
-    const kw = keywordInput.trim();
-    setShowSuggestions(false);
-    sync({ keyword: kw, categoryId: query.categoryId, tagIds: query.tagIds, pageNo: 0, sort: sortMode });
+    applyFilters();
   };
-
-  useEffect(() => {
-    const keyword = keywordInput.trim();
-    if (!keyword) {
-      setSuggestions([]);
-      return;
-    }
-
-    const timer = window.setTimeout(async () => {
-      try {
-        const { data } = await searchAndFilterResources({
-          keyword,
-          page: 0,
-          size: 30,
-          sortBy: 'createdAt',
-          direction: 'DESC',
-        });
-        const content = data?.content ?? [];
-        const uniqueTitles = [...new Set(content.map((item) => item.title).filter(Boolean))];
-        setSuggestions(uniqueTitles);
-      } catch (_e) {
-        setSuggestions([]);
-      }
-    }, 250);
-
-    return () => window.clearTimeout(timer);
-  }, [keywordInput]);
 
   return (
     <div className="d-page">
-      <header className="d-topbar">
-        <h1 className="d-title">Search Resources</h1>
-        <button className="d-button d-button-secondary" type="button" onClick={() => navigate('/')}>
-          🏠
-        </button>
-      </header>
+      <p className="d-search-brief">Type keywords and refine with filters below.</p>
 
       <div className="d-controls">
         <form className="d-search-form" onSubmit={submitSearch}>
@@ -143,95 +134,93 @@ function SearchResultsPage() {
               className="d-input"
               value={keywordInput}
               onChange={(e) => setKeywordInput(e.target.value)}
-              onFocus={() => setShowSuggestions(true)}
-              placeholder="Search title or description"
+              placeholder="Search titles, tags, or places…"
               aria-label="Search keywords"
+              autoComplete="off"
             />
-            {showSuggestions && suggestions.length > 0 && (
-              <div
-                className="d-suggest-box"
-                onWheel={(event) => {
-                  event.stopPropagation();
-                }}
-              >
-                {suggestions.map((title) => (
-                  <button
-                    key={title}
-                    className="d-suggest-item"
-                    type="button"
-                    onClick={() => {
-                      setKeywordInput(title);
-                      setShowSuggestions(false);
-                      sync({ keyword: title, categoryId: query.categoryId, tagIds: query.tagIds, pageNo: 0, sort: sortMode });
-                    }}
-                  >
-                    {title}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-          <button className="d-button" type="submit" aria-label="Search">
-            🔍
+          <button className="d-button" type="submit">
+            Search
           </button>
         </form>
-        <button className="d-button d-button-secondary" type="button" onClick={() => setFilterOpen((v) => !v)}>
-          ⚙
-        </button>
-        <select
-          className="d-select"
-          value={sortMode}
-          onChange={(e) => {
-            const nextSort = e.target.value;
-            setSortMode(nextSort);
-            sync({ keyword: query.keyword, categoryId: query.categoryId, tagIds: query.tagIds, pageNo: 0, sort: nextSort });
-          }}
-        >
-          <option value="latest">Latest First</option>
-          <option value="interaction">Most Interactive</option>
-        </select>
       </div>
 
-      {filterOpen && (
-        <section className="d-panel">
-          <h3>Filters</h3>
-          <div>
-            <label htmlFor="cat">Category: </label>
-            <select className="d-select" id="cat" value={draftCategoryId} onChange={(e) => setDraftCategoryId(e.target.value)}>
-              <option value="">All</option>
+      <section className="d-cat-unified-panel d-search-minimal-panel" aria-label="Search filters">
+        <div className="d-cat-unified-toolbar d-search-filters-toolbar">
+          <label className="d-cat-unified-field d-cat-unified-grow" htmlFor="search-filter-cat">
+            <span>Category</span>
+            <select
+              className="d-select"
+              id="search-filter-cat"
+              value={draftCategoryId}
+              onChange={(e) => setDraftCategoryId(e.target.value)}
+            >
+              <option value="">All categories</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
-          </div>
-          <div className="d-tags">
-            {tags.map((tag) => (
-              <label key={tag.id} style={{ marginRight: 10 }}>
-                <input
-                  type="checkbox"
-                  checked={draftTagIds.includes(tag.id)}
-                  onChange={() =>
-                    setDraftTagIds((prev) =>
-                      prev.includes(tag.id) ? prev.filter((id) => id !== tag.id) : [...prev, tag.id],
-                    )
-                  }
-                />{' '}
-                {tag.name}
-              </label>
-            ))}
-          </div>
-          <div className="d-controls">
-            <button className="d-button d-button-secondary" type="button" onClick={() => { setDraftCategoryId(''); setDraftTagIds([]); }}>
-              Clear All
-            </button>
-            <button className="d-button" type="button" onClick={applyFilters}>
-              Apply
-            </button>
-          </div>
-        </section>
-      )}
+          </label>
+          <label className="d-cat-unified-field d-cat-unified-grow" htmlFor="search-filter-place">
+            <span>Place</span>
+            <select
+              className="d-select"
+              id="search-filter-place"
+              value={draftPlace}
+              onChange={(e) => setDraftPlace(e.target.value)}
+            >
+              <option value="">Any place</option>
+              {places.map((pl) => (
+                <option key={pl} value={pl}>
+                  {pl}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="d-cat-unified-field" htmlFor="search-filter-sort">
+            <span>Sort</span>
+            <select
+              className="d-select"
+              id="search-filter-sort"
+              value={draftSort}
+              onChange={(e) => setDraftSort(e.target.value)}
+            >
+              <option value="latest">Latest first</option>
+              <option value="interaction">Most interactive</option>
+            </select>
+          </label>
+        </div>
+        <div className="d-cat-unified-tag-block">
+          <span className="d-cat-unified-tag-label">Tags</span>
+          <TagFilterCombo
+            tags={tags}
+            selectedIds={draftTagIds}
+            onSelectedIdsChange={setDraftTagIds}
+            inputId="search-tag-input"
+            resetSignal={tagResetSignal}
+          />
+        </div>
+        <div className="d-cat-unified-actions">
+          <button
+            type="button"
+            className="d-button d-button-quiet"
+            onClick={() => {
+              setDraftCategoryId('');
+              setDraftTagIds([]);
+              setDraftPlace('');
+              setDraftSort('latest');
+              setTagResetSignal((n) => n + 1);
+            }}
+          >
+            Clear all
+          </button>
+          <button type="button" className="d-button" onClick={applyFilters}>
+            Apply
+          </button>
+        </div>
+      </section>
 
       {loadError && (
         <div className="d-load-error" role="alert">
@@ -242,46 +231,81 @@ function SearchResultsPage() {
         </div>
       )}
       {loading && <p className="d-status">Loading...</p>}
-      {!loading && !loadError && resources.length === 0 && (
-        <p className="d-empty-hint">No resources found.</p>
-      )}
+      {!loading && !loadError && resources.length === 0 && <p className="d-empty-hint">No resources found.</p>}
 
       <div className="d-list">
-      {resources.map((r) => (
-        <article key={r.id} className="d-card">
-          <div className="d-card-body">
-            <Link to={`/resources/${r.id}`}>
-              {r.fileUrl ? (
-                <img className="d-thumb" src={r.fileUrl} alt={r.title || 'resource'} />
-              ) : (
-                <div className="d-thumb-placeholder">No Image</div>
-              )}
-            </Link>
-            <div>
-              <h3 style={{ marginTop: 0 }}>
-                <Link className="d-link" to={`/resources/${r.id}`}>{r.title || 'Untitled'}</Link>
-              </h3>
-              <p>{r.description || 'Not provided'}</p>
-              <p>Category: {r.categoryName || 'Not provided'}</p>
-              <div className="d-meta-row">
-                <span className="d-meta-item" title="Like count">❤ {r.likeCount ?? 0}</span>
-                <span className="d-meta-item" title="Comment count">💬 {r.commentCount ?? 0}</span>
+        {resources.map((r) => (
+          <article key={r.id} className="d-card">
+            <div className="d-card-body">
+              <div className="d-thumb-wrap">
+                {r.fileUrl ? (
+                  <img className="d-thumb" src={r.fileUrl} alt={r.title || 'resource'} />
+                ) : (
+                  <div className="d-thumb-placeholder">No Image</div>
+                )}
+              </div>
+              <div>
+                <h3 style={{ marginTop: 0 }}>
+                  <Link className="d-link" to={`/resources/${r.id}`}>
+                    {r.title || 'Untitled'}
+                  </Link>
+                </h3>
+                <p>{r.description || 'Not provided'}</p>
+                <p>
+                  Category: {r.categoryName || 'Not provided'}
+                  {r.place && ` · ${r.place}`}
+                </p>
+                <div className="d-meta-row">
+                  <span className="d-meta-item" title="Like count">
+                    ❤ {r.likeCount ?? 0}
+                  </span>
+                  <span className="d-meta-item" title="Comment count">
+                    💬 {r.commentCount ?? 0}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </article>
-      ))}
+          </article>
+        ))}
       </div>
 
-      {totalPages > 0 && (
+      {totalPages > 1 && (
         <footer className="d-footer">
-          <button className="d-button d-button-secondary" type="button" disabled={page <= 0} onClick={() => sync({ keyword: query.keyword, categoryId: query.categoryId, tagIds: query.tagIds, pageNo: page - 1, sort: sortMode })}>
+          <button
+            type="button"
+            className="d-button d-button-secondary"
+            disabled={page <= 0}
+            onClick={() =>
+              sync({
+                keyword: query.keyword,
+                categoryId: query.categoryId,
+                tagIds: query.tagIds,
+                place: query.place,
+                pageNo: page - 1,
+                sort: query.sort,
+              })
+            }
+          >
             Previous Page
           </button>
           <span>
             Page {page + 1} / {totalPages}
           </span>
-          <button className="d-button" type="button" disabled={page + 1 >= totalPages} onClick={() => sync({ keyword: query.keyword, categoryId: query.categoryId, tagIds: query.tagIds, pageNo: page + 1, sort: sortMode })}>
+          <button
+            type="button"
+            className="d-button"
+            disabled={page + 1 >= totalPages}
+            onClick={() =>
+              sync({
+                keyword: query.keyword,
+                categoryId: query.categoryId,
+                tagIds: query.tagIds,
+                place: query.place,
+                pageNo: page + 1,
+                sort: query.sort,
+              })
+            }
+          >
             Next Page
           </button>
         </footer>

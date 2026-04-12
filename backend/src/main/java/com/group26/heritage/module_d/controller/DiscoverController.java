@@ -5,7 +5,10 @@ import com.group26.heritage.module_d.dto.CategoryOptionDto;
 import com.group26.heritage.module_d.dto.ResourceDetailDto;
 import com.group26.heritage.module_d.dto.ResourceSummaryDto;
 import com.group26.heritage.module_d.dto.TagOptionDto;
+import com.group26.heritage.module_d.service.DiscoverMediaService;
 import com.group26.heritage.module_d.service.SearchService;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,9 +25,11 @@ import java.util.List;
 @RequestMapping("/api/discover")
 public class DiscoverController {
     private final SearchService searchService;
+    private final DiscoverMediaService discoverMediaService;
 
-    public DiscoverController(SearchService searchService) {
+    public DiscoverController(SearchService searchService, DiscoverMediaService discoverMediaService) {
         this.searchService = searchService;
+        this.discoverMediaService = discoverMediaService;
     }
 
     @GetMapping("/resources")
@@ -32,12 +37,13 @@ public class DiscoverController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) List<Long> tagIds,
+            @RequestParam(required = false) String place,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction
     ) {
-        return searchService.searchAndFilter(keyword, categoryId, tagIds, page, size, sortBy, direction);
+        return searchService.searchAndFilter(keyword, categoryId, tagIds, place, page, size, sortBy, direction);
     }
 
     @GetMapping("/resources/search")
@@ -68,6 +74,12 @@ public class DiscoverController {
         return searchService.getResourceDetail(id);
     }
 
+    /** Public binary for a media row (parent resource must be APPROVED). */
+    @GetMapping("/media/{mediaId}")
+    public ResponseEntity<Resource> getPublicMedia(@PathVariable("mediaId") Long mediaId) {
+        return discoverMediaService.servePublicMedia(mediaId);
+    }
+
     @GetMapping("/categories")
     public List<CategoryOptionDto> listCategories() {
         return searchService.listCategories();
@@ -76,5 +88,11 @@ public class DiscoverController {
     @GetMapping("/tags")
     public List<TagOptionDto> listTags() {
         return searchService.listTags();
+    }
+
+    /** Distinct place strings from approved resources (for search filters). */
+    @GetMapping("/places")
+    public List<String> listPlaces() {
+        return searchService.listDistinctPlaces();
     }
 }

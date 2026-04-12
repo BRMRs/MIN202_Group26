@@ -8,18 +8,20 @@ import { LoginPage, RegisterPage, ProfilePage, ContributorApplyPage, AdminApprov
 import { ResourceSubmissionPage, DraftBoxPage } from './module_b/pages';
 import ReviewerDashboardPage from './module_c/pages/ReviewerDashboardPage';
 import ResourceReviewPage from './module_c/pages/ResourceReviewPage';
-import { HomePage, ResourceDetailPage, SearchResultsPage } from './module_d/pages';
+import { HomePage, ResourceDetailPage, SearchResultsPage, CategoryBrowsePage } from './module_d/pages';
+import { ResourceStatsProvider } from './module_d/context/ResourceStatsContext';
 import CategoryManagementPage from './module_e/pages/CategoryManagementPage';
 import AdminDashboardPage from './module_e/pages/AdminDashboardPage';
 import TagManagementPage from './module_e/pages/TagManagementPage';
 
 function App() {
   return (
-    <>
+    <ResourceStatsProvider>
       <Navbar />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchResultsPage />} />
+        <Route path="/browse/category/:categoryId" element={<CategoryBrowsePage />} />
         <Route path="/resources/:id" element={<ResourceDetailPage />} />
 
         <Route path="/login" element={<LoginPage />} />
@@ -43,7 +45,7 @@ function App() {
         <Route path="*" element={<div style={{ padding: '2rem' }}><h2>Heritage Platform</h2><p>CPT202 Group 26</p></div>} />
       </Routes>
       <Footer />
-    </>
+    </ResourceStatsProvider>
   );
 }
 
