@@ -253,9 +253,7 @@ public class ResourceService {
 
     /** 草稿/打回相关入口需要关注的数量（Drafts 红点） */
     public long countDraftAttentionForContributor(Long contributorId) {
-        return repository.countByContributorIdAndStatus(contributorId, ResourceStatus.REJECTED)
-                + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.UNPUBLISHED)
-                + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.ARCHIVED);
+        return repository.countByContributorIdAndStatus(contributorId, ResourceStatus.REJECTED);
     }
 
     /** 个人状态更新数量（Profile/头像红点） */
