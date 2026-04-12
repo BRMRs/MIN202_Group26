@@ -16,7 +16,7 @@ const CATEGORY_TRANSLATIONS = {
 
 const translateCategoryName = name => CATEGORY_TRANSLATIONS[name] || name
 
-export default function DraftForm({ form, setForm, options, files, setFiles, serverMedia, externalLinkError, tagSubmitError }) {
+export default function DraftForm({ form, setForm, options, files, setFiles, serverMedia, fileInputResetKey = 0, externalLinkError, tagSubmitError }) {
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
   const titleMax = options.titleMaxLength || 30
   const descMax = options.descriptionMaxLength || 2000
@@ -302,6 +302,7 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
             </div>
           )}
           <input
+            key={`file-input-${fileInputResetKey}`}
             type="file"
             accept={allowedExt.join(',')}
             multiple

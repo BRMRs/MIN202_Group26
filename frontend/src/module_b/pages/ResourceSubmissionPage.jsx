@@ -29,6 +29,7 @@ export default function ResourceSubmissionPage() {
   const tagErrorTimerRef = useRef(null)
   const [form, setForm] = useState(emptyForm)
   const [files, setFiles] = useState([])
+  const [fileInputResetKey, setFileInputResetKey] = useState(0)
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -69,6 +70,7 @@ export default function ResourceSubmissionPage() {
   const resetComposer = () => {
     setForm(emptyForm())
     setFiles([])
+    setFileInputResetKey(prev => prev + 1)
     setErrors([])
     setExternalLinkError('')
     setTagSubmitError('')
@@ -159,6 +161,7 @@ export default function ResourceSubmissionPage() {
               options={options}
               files={files}
               setFiles={setFiles}
+              fileInputResetKey={fileInputResetKey}
               externalLinkError={externalLinkError}
               tagSubmitError={tagSubmitError}
             />
