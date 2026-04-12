@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class ReviewService {
+    private static final String REVIEW_REASON_FALLBACK = "Not available";
 
     @Autowired private ResourceRepository resourceRepository;
     @Autowired private ReviewFeedbackRepository reviewFeedbackRepository;
@@ -192,7 +193,8 @@ public class ReviewService {
             throw new IllegalArgumentException("Unpublish reason is mandatory.");
         }
 
-        if (reason.trim().split("\\s+").length > 500) {
+        String normalizedReason = normalizeReviewReason(reason);
+        if (normalizedReason.split("\\s+").length > 500) {
             throw new IllegalArgumentException("Unpublish reason must not exceed 500 words");
         }
 
@@ -205,10 +207,13 @@ public class ReviewService {
         }
 
         ResourceStatus previous = resource.getStatus();
-        resourceRepository.updateStatus(resourceId, ResourceStatus.UNPUBLISHED, LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        resourceRepository.updateStatus(resourceId, ResourceStatus.UNPUBLISHED, now);
         resourceRepository.flush();
 
-        saveReviewFeedback(resourceId, adminId, ReviewDecision.UNPUBLISHED, previous, reason);
+        saveReviewFeedback(resourceId, adminId, ReviewDecision.UNPUBLISHED, previous, normalizedReason);
+        resourceRepository.updateReviewFeedback(resourceId, normalizedReason, now);
+        resourceRepository.flush();
         return toDetailResponse(findResourceOrThrow(resourceId));
     }
 
@@ -259,6 +264,7 @@ public class ReviewService {
     public ResourceReviewDetailResponse archiveResource(Long resourceId, Long adminId, String archiveReason) {
         User admin = findAdminOrThrow(adminId);
         Resource resource = findResourceOrThrow(resourceId);
+        String normalizedReason = normalizeReviewReason(archiveReason);
 
         if (resource.getStatus() != ResourceStatus.APPROVED
                 && resource.getStatus() != ResourceStatus.UNPUBLISHED) {
@@ -267,11 +273,14 @@ public class ReviewService {
         }
 
         ResourceStatus previous = resource.getStatus();
+        LocalDateTime now = LocalDateTime.now();
         resourceRepository.updateStatusWithReason(
-                resourceId, ResourceStatus.ARCHIVED, archiveReason, LocalDateTime.now());
+                resourceId, ResourceStatus.ARCHIVED, normalizedReason, now);
         resourceRepository.flush();
 
-        saveReviewFeedback(resourceId, admin.getId(), ReviewDecision.ARCHIVED, previous, archiveReason);
+        saveReviewFeedback(resourceId, admin.getId(), ReviewDecision.ARCHIVED, previous, normalizedReason);
+        resourceRepository.updateReviewFeedback(resourceId, normalizedReason, now);
+        resourceRepository.flush();
         return toDetailResponse(findResourceOrThrow(resourceId));
     }
 
@@ -315,6 +324,12 @@ public class ReviewService {
         feedback.setFeedbackText(feedbackText);
         feedback.setReviewedAt(LocalDateTime.now());
         reviewFeedbackRepository.save(feedback);
+    }
+
+    private String normalizeReviewReason(String reason) {
+        if (reason == null) return REVIEW_REASON_FALLBACK;
+        String normalized = reason.trim();
+        return normalized.isEmpty() ? REVIEW_REASON_FALLBACK : normalized;
     }
 
     private ResourceReviewSummaryDto toSummaryDto(Resource r) {
