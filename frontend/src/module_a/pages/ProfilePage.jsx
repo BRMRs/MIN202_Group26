@@ -29,6 +29,13 @@ const STATUS_CONFIG = {
 };
 
 const REASON_FALLBACK = 'Not available';
+const STATUS_UPDATE_STATUSES = ['APPROVED', 'REJECTED', 'UNPUBLISHED', 'ARCHIVED'];
+
+const statusUpdateReadStoreKey = (user) =>
+  `heritage-status-update-read-map:${user?.id ?? user?.username ?? 'anonymous'}`;
+
+const statusNoticeSeenCountKey = (user) =>
+  `heritage-status-notice-seen-count:${user?.id ?? user?.username ?? 'anonymous'}`;
 
 function decisionForStatus(status) {
   if (status === 'APPROVED') return ['REPUBLISHED', 'APPROVED'];
@@ -44,6 +51,22 @@ function reasonLabelForStatus(status) {
   if (status === 'UNPUBLISHED') return 'Unpublish reason';
   if (status === 'ARCHIVED') return 'Archive reason';
   return 'Review note';
+}
+
+function isStatusUpdateResource(resource) {
+  return STATUS_UPDATE_STATUSES.includes(resource?.status);
+}
+
+function statusUpdateItemKey(resource) {
+  return `${resource?.id}:${resource?.status}:${resource?.updatedAt || resource?.createdAt || ''}`;
+}
+
+function noteClassForStatus(status) {
+  if (status === 'APPROVED') return 'reviewNoteApproved';
+  if (status === 'REJECTED') return 'reviewNoteRejected';
+  if (status === 'UNPUBLISHED') return 'reviewNoteUnpublished';
+  if (status === 'ARCHIVED') return 'reviewNoteArchived';
+  return 'reviewNoteDefault';
 }
 
 function statusBadge(status, stylesMod) {
@@ -76,11 +99,12 @@ function CoverOrPlaceholder({ url, title, stylesMod }) {
 
 // ── Resource card shared by all tabs ─────────────────────────────────────────
 
-function ResourceCard({ resource, reviewNote, stylesMod }) {
+function ResourceCard({ resource, reviewNote, stylesMod, isStatusUpdateTab = false, onMarkAsRead }) {
   const navigate = useNavigate();
   const status = resource.status;
   const cover  = resource.mediaFiles?.[0]?.url ?? null;
   const showReviewNote = decisionForStatus(status).length > 0;
+  const noteClass = noteClassForStatus(status);
 
   return (
     <div className={stylesMod.resourceCard}>
@@ -112,7 +136,7 @@ function ResourceCard({ resource, reviewNote, stylesMod }) {
 
         {/* Review note */}
         {showReviewNote && (
-          <div className={stylesMod.rejectionNote}>
+          <div className={`${stylesMod.reviewNote} ${stylesMod[noteClass]}`}>
             <strong>{reasonLabelForStatus(status)}:</strong> {reviewNote || REASON_FALLBACK}
           </div>
         )}
@@ -124,6 +148,16 @@ function ResourceCard({ resource, reviewNote, stylesMod }) {
           </span>
 
           <div className={stylesMod.cardActions}>
+            {isStatusUpdateTab ? (
+              <button
+                className={stylesMod.actionBtnSecondary}
+                onClick={() => onMarkAsRead?.(resource)}
+                type="button"
+              >
+                Mark as Read
+              </button>
+            ) : (
+              <>
             {/* DRAFT actions */}
             {status === 'DRAFT' && (
               <>
@@ -183,6 +217,8 @@ function ResourceCard({ resource, reviewNote, stylesMod }) {
               <span className={stylesMod.actionHint}>
                 No further action available
               </span>
+            )}
+              </>
             )}
           </div>
         </div>
@@ -431,6 +467,7 @@ function ProfilePage() {
   const [contentLoading, setContentLoading] = useState(false);
   const [contentError, setContentError]   = useState('');
   const [reviewNotes, setReviewNotes] = useState({});
+  const [readStatusUpdateMap, setReadStatusUpdateMap] = useState({});
   const [activeTab, setActiveTab] = useState('all');
 
   const isContributor = user?.role === USER_ROLES.CONTRIBUTOR;
@@ -451,6 +488,20 @@ function ProfilePage() {
       .catch(() => setContentError('Failed to load your resources.'))
       .finally(() => setContentLoading(false));
   }, [isContributor]);
+
+  useEffect(() => {
+    if (!isContributor) {
+      setReadStatusUpdateMap({});
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(statusUpdateReadStoreKey(user));
+      const parsed = raw ? JSON.parse(raw) : {};
+      setReadStatusUpdateMap(parsed && typeof parsed === 'object' ? parsed : {});
+    } catch {
+      setReadStatusUpdateMap({});
+    }
+  }, [isContributor, user]);
 
   // Fetch review notes for rejected/unpublished/archived resources
   useEffect(() => {
@@ -488,11 +539,26 @@ function ProfilePage() {
     });
   }, [allResources]);
 
-  useEffect(() => {
-    if (!isContributor) return;
-    if (activeTab !== 'statusUpdates') return;
-    window.dispatchEvent(new CustomEvent('heritage-status-updates-viewed'));
-  }, [isContributor, activeTab]);
+  const statusUpdateResources = allResources.filter(isStatusUpdateResource);
+  const unreadStatusUpdates = statusUpdateResources.filter(
+    (r) => !readStatusUpdateMap[statusUpdateItemKey(r)]
+  );
+
+  const markStatusUpdateAsRead = (resource) => {
+    if (!resource) return;
+    const key = statusUpdateItemKey(resource);
+    if (readStatusUpdateMap[key]) return;
+
+    setReadStatusUpdateMap((prev) => {
+      const next = { ...prev, [key]: true };
+      localStorage.setItem(statusUpdateReadStoreKey(user), JSON.stringify(next));
+      return next;
+    });
+
+    const seenCount = Number(localStorage.getItem(statusNoticeSeenCountKey(user))) || 0;
+    localStorage.setItem(statusNoticeSeenCountKey(user), String(seenCount + 1));
+    window.dispatchEvent(new CustomEvent('heritage-status-update-read'));
+  };
 
   // Filter resources per tab
   const tabResources = (() => {
@@ -501,13 +567,7 @@ function ProfilePage() {
     if (activeTab === 'pending')  return allResources.filter((r) => r.status === 'PENDING_REVIEW');
     if (activeTab === 'approved') return allResources.filter((r) => r.status === 'APPROVED');
     if (activeTab === 'rejected') return allResources.filter((r) => r.status === 'REJECTED');
-    if (activeTab === 'statusUpdates') {
-      return allResources.filter((r) =>
-        r.status === 'APPROVED'
-        || r.status === 'REJECTED'
-        || r.status === 'UNPUBLISHED'
-        || r.status === 'ARCHIVED');
-    }
+    if (activeTab === 'statusUpdates') return unreadStatusUpdates;
     return [];
   })();
 
@@ -517,11 +577,7 @@ function ProfilePage() {
     pending:  allResources.filter((r) => r.status === 'PENDING_REVIEW').length,
     approved: allResources.filter((r) => r.status === 'APPROVED').length,
     rejected: allResources.filter((r) => r.status === 'REJECTED').length,
-    statusUpdates: allResources.filter((r) =>
-      r.status === 'APPROVED'
-      || r.status === 'REJECTED'
-      || r.status === 'UNPUBLISHED'
-      || r.status === 'ARCHIVED').length,
+    statusUpdates: unreadStatusUpdates.length,
     total:    allResources.length,
   };
 
@@ -634,6 +690,7 @@ function ProfilePage() {
             <StatCard label="Pending Review" value={stats.pending}  stylesMod={styles} onClick={() => setActiveTab('pending')} />
             <StatCard label="Approved"       value={stats.approved} accent="approved"  stylesMod={styles} onClick={() => setActiveTab('approved')} />
             <StatCard label="Rejected"       value={stats.rejected} accent="rejected"  stylesMod={styles} onClick={() => setActiveTab('rejected')} />
+            <StatCard label="Status Updates" value={stats.statusUpdates} accent="statusUpdates" stylesMod={styles} onClick={() => setActiveTab('statusUpdates')} />
           </div>
         )}
 
@@ -687,6 +744,8 @@ function ProfilePage() {
                       resource={r}
                       reviewNote={reviewNotes[r.id]}
                       stylesMod={styles}
+                      isStatusUpdateTab={activeTab === 'statusUpdates'}
+                      onMarkAsRead={markStatusUpdateAsRead}
                     />
                   ))}
                 </div>

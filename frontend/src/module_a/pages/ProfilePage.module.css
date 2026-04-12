@@ -285,6 +285,9 @@
 .statAccent_rejected { border-top: 3px solid #ef4444; }
 .statAccent_rejected .statValue { color: #b91c1c; }
 
+.statAccent_statusUpdates { border-top: 3px solid #2563eb; }
+.statAccent_statusUpdates .statValue { color: #1d4ed8; }
+
 /* ── Tabs section ───────────────────────────────────────────────────────── */
 
 .tabsSection {
@@ -469,15 +472,46 @@
   margin: 0;
 }
 
-.rejectionNote {
+.reviewNote {
   font-size: 12.5px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+
+.reviewNoteDefault {
+  color: #374151;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-left: 3px solid #9ca3af;
+}
+
+.reviewNoteApproved {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-left: 3px solid #16a34a;
+}
+
+.reviewNoteRejected {
   color: #7f1d1d;
   background: #fff1f2;
   border: 1px solid #fecaca;
   border-left: 3px solid #dc2626;
-  border-radius: 8px;
-  padding: 8px 12px;
-  line-height: 1.5;
+}
+
+.reviewNoteUnpublished {
+  color: #1e3a8a;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 3px solid #2563eb;
+}
+
+.reviewNoteArchived {
+  color: #4b5563;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-left: 3px solid #9ca3af;
 }
 
 .cardFooter {

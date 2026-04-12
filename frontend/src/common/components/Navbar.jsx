@@ -3,8 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 import useAuth from '../hooks/useAuth';
 import { resourceApi } from '../../module_b/api/resourceApi';
 
-const statusNoticeSeenKey = (user) =>
-  `heritage-status-notice-seen:${user?.id ?? user?.username ?? 'anonymous'}`;
+const statusNoticeSeenCountKey = (user) =>
+  `heritage-status-notice-seen-count:${user?.id ?? user?.username ?? 'anonymous'}`;
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -20,8 +20,11 @@ function Navbar() {
         const draftCount = res.data?.draftAttentionCount ?? res.data?.rejectedCount;
         const noticeCount = res.data?.statusNoticeCount ?? draftCount;
         const total = Number(noticeCount) || 0;
-        const seenRaw = localStorage.getItem(statusNoticeSeenKey(user));
-        const seen = Number(seenRaw) || 0;
+        let seen = Number(localStorage.getItem(statusNoticeSeenCountKey(user))) || 0;
+        if (seen > total) {
+          seen = total;
+          localStorage.setItem(statusNoticeSeenCountKey(user), String(total));
+        }
         setDraftAttentionCount(Number(draftCount) || 0);
         setStatusNoticeTotal(total);
         setUnseenStatusNoticeCount(Math.max(total - seen, 0));
@@ -50,14 +53,17 @@ function Navbar() {
     const onDraftsChanged = () => loadRejectedCount();
     window.addEventListener('heritage-contributor-drafts-changed', onDraftsChanged);
     const onStatusUpdatesViewed = () => {
-      localStorage.setItem(statusNoticeSeenKey(user), String(statusNoticeTotal));
+      localStorage.setItem(statusNoticeSeenCountKey(user), String(statusNoticeTotal));
       setUnseenStatusNoticeCount(0);
     };
+    const onStatusUpdateRead = () => loadRejectedCount();
     window.addEventListener('heritage-status-updates-viewed', onStatusUpdatesViewed);
+    window.addEventListener('heritage-status-update-read', onStatusUpdateRead);
     return () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('heritage-contributor-drafts-changed', onDraftsChanged);
       window.removeEventListener('heritage-status-updates-viewed', onStatusUpdatesViewed);
+      window.removeEventListener('heritage-status-update-read', onStatusUpdateRead);
     };
   }, [isAuthenticated, user, user?.role, loadRejectedCount, statusNoticeTotal]);
 
