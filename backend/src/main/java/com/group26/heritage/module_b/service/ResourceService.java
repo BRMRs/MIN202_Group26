@@ -264,7 +264,9 @@ public class ResourceService {
     /** 个人状态更新数量（Profile/头像红点） */
     public long countStatusNoticesForContributor(Long contributorId) {
         return repository.countByContributorIdAndStatus(contributorId, ResourceStatus.APPROVED)
-                + countDraftAttentionForContributor(contributorId);
+                + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.REJECTED)
+                + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.UNPUBLISHED)
+                + repository.countByContributorIdAndStatus(contributorId, ResourceStatus.ARCHIVED);
     }
 
     /**
