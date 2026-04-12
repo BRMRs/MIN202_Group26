@@ -15,6 +15,11 @@ export async function getTagDashboard() {
   return response.data.data;
 }
 
+export async function getContributorDashboard() {
+  const response = await axiosInstance.get('/admin/dashboard/contributor-overview');
+  return response.data.data;
+}
+
 export async function downloadStatusDashboardReport() {
   const response = await axiosInstance.get('/admin/dashboard/status-overview/report', {
     responseType: 'blob',
@@ -44,6 +49,7 @@ export default {
   getStatusDashboard,
   getCategoryDashboard,
   getTagDashboard,
+  getContributorDashboard,
   downloadStatusDashboardReport,
   downloadCategoryDashboardReport,
 };
