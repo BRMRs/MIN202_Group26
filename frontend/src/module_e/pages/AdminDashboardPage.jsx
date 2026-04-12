@@ -3,6 +3,7 @@ import {
   downloadCategoryDashboardReport,
   downloadStatusDashboardReport,
   getCategoryDashboard,
+  getContributorDashboard,
   getStatusDashboard,
   getTagDashboard,
 } from "@/module_e/api/dashboardApi";
@@ -15,28 +16,43 @@ const STATUS_COLORS = {
   ARCHIVED: "#374151",
 };
 
+const OVERVIEW_CONTRIBUTOR_LIMIT = 5;
+const OVERVIEW_TAG_LIMIT = 10;
+
+const SIDEBAR_ITEMS = [
+  { id: "overview", label: "Overview" },
+  { id: "status", label: "Status Dashboard" },
+  { id: "category", label: "Category Distribution" },
+  { id: "contributor", label: "Contributor Activity" },
+  { id: "tags", label: "Tags Top 10" },
+];
+
 function AdminDashboardPage() {
   const [statusDashboard, setStatusDashboard] = useState(null);
   const [categoryDashboard, setCategoryDashboard] = useState(null);
   const [tagDashboard, setTagDashboard] = useState(null);
+  const [contributorDashboard, setContributorDashboard] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [activePanel, setActivePanel] = useState("overview");
   const [showAllTags, setShowAllTags] = useState(false);
+  const [showAllContributors, setShowAllContributors] = useState(false);
 
   async function refreshDashboard() {
     setLoading(true);
     setErrorMessage("");
     try {
-      const [statusData, categoryData, tagData] = await Promise.all([
+      const [statusData, categoryData, tagData, contributorData] = await Promise.all([
         getStatusDashboard(),
         getCategoryDashboard(),
         getTagDashboard(),
+        getContributorDashboard(),
       ]);
       setStatusDashboard(statusData);
       setCategoryDashboard(categoryData);
       setTagDashboard(tagData);
+      setContributorDashboard(contributorData);
     } catch (error) {
       setErrorMessage(error?.message || "Failed to load report data.");
     } finally {
@@ -49,46 +65,55 @@ function AdminDashboardPage() {
   }, []);
 
   const statusItems = useMemo(() => {
-    const items = (statusDashboard?.items ?? []).filter((item) => item?.key !== "DRAFT");
-    const total = items.reduce((sum, item) => sum + Number(item.count ?? 0), 0);
+    const rows = (statusDashboard?.items ?? []).filter((item) => item?.key !== "DRAFT");
+    const total = rows.reduce((sum, item) => sum + Number(item.count ?? 0), 0);
     if (total <= 0) {
-      return items;
+      return rows;
     }
-    return items.map((item) => ({
+    return rows.map((item) => ({
       ...item,
-      ratio: (Number(item.count ?? 0) / total) * 100,
+      ratio: Math.round((Number(item.count ?? 0) * 10000) / total) / 100,
     }));
   }, [statusDashboard]);
+
+  const statusTotal = useMemo(
+    () => statusItems.reduce((sum, item) => sum + Number(item.count ?? 0), 0),
+    [statusItems]
+  );
+
   const categoryItems = categoryDashboard?.items ?? [];
   const tagItems = tagDashboard?.items ?? [];
+  const contributorItems = contributorDashboard?.items ?? [];
+
   const approvedTagItems = useMemo(
     () => tagItems.filter((item) => Number(item.approvedResourceCount ?? 0) > 0),
     [tagItems]
   );
-  const visibleTagItems = showAllTags ? approvedTagItems : approvedTagItems.slice(0, 10);
-  const canExpandTags = approvedTagItems.length > 10;
+  const overviewTagItems = useMemo(() => approvedTagItems.slice(0, OVERVIEW_TAG_LIMIT), [approvedTagItems]);
+  const visibleTagItems = showAllTags ? approvedTagItems : approvedTagItems.slice(0, OVERVIEW_TAG_LIMIT);
+  const canExpandTags = approvedTagItems.length > OVERVIEW_TAG_LIMIT;
 
-  const reviewAttention = statusDashboard?.workflow?.bottleneck_stage === "PENDING_REVIEW"
-    ? `Pending Review (${statusDashboard.workflow.bottleneck_count})`
-    : "No pending review backlog";
+  const overviewContributorItems = useMemo(
+    () => contributorItems.slice(0, OVERVIEW_CONTRIBUTOR_LIMIT),
+    [contributorItems]
+  );
+  const visibleContributorItems = showAllContributors
+    ? contributorItems
+    : contributorItems.slice(0, OVERVIEW_CONTRIBUTOR_LIMIT);
+  const canExpandContributors = contributorItems.length > OVERVIEW_CONTRIBUTOR_LIMIT;
 
-  const topCategory = useMemo(() => {
-    if (categoryItems.length === 0) {
-      return null;
-    }
-    return categoryItems.reduce((best, item) => (item.count > best.count ? item : best), categoryItems[0]);
-  }, [categoryItems]);
-
-  const topTag = useMemo(() => {
-    if (approvedTagItems.length === 0) {
-      return null;
-    }
-    return approvedTagItems[0];
-  }, [approvedTagItems]);
+  const pendingReviewItem = statusItems.find((item) => item.key === "PENDING_REVIEW");
+  const topCategory = categoryItems[0] ?? null;
+  const topTag = approvedTagItems[0] ?? null;
+  const topContributor = contributorItems[0] ?? null;
 
   useEffect(() => {
     setShowAllTags(false);
   }, [approvedTagItems.length]);
+
+  useEffect(() => {
+    setShowAllContributors(false);
+  }, [contributorItems.length]);
 
   async function handleDownload(type) {
     setErrorMessage("");
@@ -112,11 +137,7 @@ function AdminDashboardPage() {
         <aside style={styles.sectionNav}>
           <div style={styles.sectionNavTitle}>Reports Menu</div>
           <div style={styles.sectionNavList}>
-            {[
-              { id: "overview", label: "Overview" },
-              { id: "category", label: "Category" },
-              { id: "tags", label: "Tags" },
-            ].map((item) => (
+            {SIDEBAR_ITEMS.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -138,8 +159,7 @@ function AdminDashboardPage() {
               <div>
                 <h1 style={styles.title}>Reports</h1>
                 <p style={styles.subtitle}>
-                  Track resource status distribution, review attention, category coverage, and approved-resource tag
-                  popularity.
+                  Track pending review pressure, status distribution, category coverage, top tags, and contributor activity.
                 </p>
               </div>
               <button type="button" onClick={refreshDashboard} style={styles.primaryButton} disabled={loading}>
@@ -157,21 +177,31 @@ function AdminDashboardPage() {
           {activePanel === "overview" ? (
             <>
               <section style={styles.summaryGrid} aria-label="Reports summary">
-                <SummaryCard label="Total Resources" value={statusDashboard?.total ?? 0} />
-                <SummaryCard label="Review Attention" value={reviewAttention} highlight={statusDashboard?.workflow?.bottleneck_stage === "PENDING_REVIEW"} />
-                <SummaryCard label="Top Category" value={topCategory ? `${topCategory.categoryName} (${topCategory.count})` : "No category data"} />
-                <SummaryCard label="Top Tag" value={topTag ? `${topTag.tagName} (${topTag.approvedResourceCount})` : "No approved tag data"} />
+                <SummaryCard
+                  label="Pending Review"
+                  value={pendingReviewItem ? `${pendingReviewItem.count}` : "0"}
+                  helper={pendingReviewItem ? `${formatRatio(pendingReviewItem.ratio)} of visible statuses` : "No pending resources"}
+                  highlight={Boolean(pendingReviewItem?.count)}
+                />
+                <SummaryCard
+                  label="Top Category"
+                  value={topCategory ? `${topCategory.categoryName} (${topCategory.count})` : "No category data"}
+                />
+                <SummaryCard
+                  label="Top Contributor"
+                  value={topContributor ? `${topContributor.contributorName} (${topContributor.count})` : "No contributor data"}
+                />
+                <SummaryCard
+                  label="Top Tag"
+                  value={topTag ? `${topTag.tagName} (${topTag.approvedResourceCount})` : "No approved tag data"}
+                />
               </section>
 
-              <section style={styles.singleSection}>
-                <div style={styles.card}>
-                  <div style={styles.cardHeader}>
-                    <div>
-                      <span style={styles.cardTitle}>Status Dashboard</span>
-                      <p style={styles.cardSubtitle}>
-                        Distribution across all resource statuses. Pending Review is the review bottleneck when it has items.
-                      </p>
-                    </div>
+              <section style={styles.grid}>
+                <SectionCard
+                  title="Status Dashboard"
+                  subtitle="Donut chart with exact counts and ratio for each visible status."
+                  action={
                     <button
                       type="button"
                       onClick={() => handleDownload("status")}
@@ -180,49 +210,121 @@ function AdminDashboardPage() {
                     >
                       {downloading === "status" ? "Downloading..." : "Download CSV"}
                     </button>
-                  </div>
+                  }
+                >
+                  <StatusChartBlock items={statusItems} total={statusTotal} loading={loading} />
+                </SectionCard>
 
-                  <div style={styles.chartArea}>
-                    <div style={styles.donutWrap}>
-                      <div style={{ ...styles.donut, background: buildStatusDonut(statusItems) }}>
-                        <div style={styles.donutCenter}>
-                          <strong style={styles.donutValue}>{statusDashboard?.total ?? 0}</strong>
-                          <span style={styles.donutLabel}>Resources</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={styles.chartList}>
-                      {statusItems.length === 0 ? (
-                        <div style={styles.emptyPanel}>{loading ? "Loading..." : "No status data."}</div>
-                      ) : (
-                        statusItems.map((item) => (
-                          <MetricBar
-                            key={item.key}
-                            label={item.label}
-                            count={item.count}
-                            ratio={item.ratio}
-                            color={STATUS_COLORS[item.key] || "#4b5563"}
-                            marker={item.bottleneck ? "Review Bottleneck" : item.workflow_stage ? "Workflow" : "Standard"}
-                            highlight={item.bottleneck}
-                          />
-                        ))
-                      )}
-                    </div>
+                <SectionCard
+                  title="Contributor Activity"
+                  subtitle={`Top ${OVERVIEW_CONTRIBUTOR_LIMIT} contributors by submitted resources.`}
+                >
+                  <div style={styles.chartListCompact}>
+                    {overviewContributorItems.length === 0 ? (
+                      <div style={styles.emptyPanel}>{loading ? "Loading..." : "No contributor data."}</div>
+                    ) : (
+                      overviewContributorItems.map((item) => (
+                        <MetricBar
+                          key={item.contributorId ?? item.contributorName}
+                          label={item.contributorName}
+                          count={item.count}
+                          ratio={item.ratio}
+                          color="#1f7a5c"
+                          marker="Submitted resources"
+                        />
+                      ))
+                    )}
                   </div>
-                </div>
+                </SectionCard>
+              </section>
 
+              <section style={styles.singleSection}>
+                <SectionCard
+                  title="Category Distribution"
+                  subtitle="Bar chart with exact resource counts for each category."
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => handleDownload("category")}
+                      style={styles.secondaryButton}
+                      disabled={loading || downloading === "category"}
+                    >
+                      {downloading === "category" ? "Downloading..." : "Download CSV"}
+                    </button>
+                  }
+                >
+                  <div style={styles.chartList}>
+                    {categoryItems.length === 0 ? (
+                      <div style={styles.emptyPanel}>{loading ? "Loading..." : "No category data."}</div>
+                    ) : (
+                      categoryItems.map((item) => (
+                        <MetricBar
+                          key={item.categoryId ?? item.categoryName}
+                          label={item.categoryName}
+                          count={item.count}
+                          ratio={item.ratio}
+                          color="#2d6a4f"
+                          marker={item.categoryStatus}
+                        />
+                      ))
+                    )}
+                  </div>
+                </SectionCard>
+              </section>
+
+              <section style={styles.singleSection}>
+                <SectionCard
+                  title="Top 10 Tags"
+                  subtitle={`Bar chart for approved-resource tag usage (showing ${overviewTagItems.length} / ${approvedTagItems.length}).`}
+                >
+                  <div style={styles.chartListCompact}>
+                    {overviewTagItems.length === 0 ? (
+                      <div style={styles.emptyPanel}>{loading ? "Loading..." : "No approved tag data."}</div>
+                    ) : (
+                      overviewTagItems.map((item) => (
+                        <MetricBar
+                          key={item.tagId}
+                          label={item.tagName}
+                          count={item.approvedResourceCount}
+                          ratio={item.ratio}
+                          color="#2563eb"
+                          marker="Approved resources"
+                        />
+                      ))
+                    )}
+                  </div>
+                </SectionCard>
               </section>
             </>
           ) : null}
 
+          {activePanel === "status" ? (
+            <section style={styles.singleSection}>
+              <SectionCard
+                title="Status Dashboard"
+                subtitle="Status donut and list view with explicit quantity and percentage."
+                action={
+                  <button
+                    type="button"
+                    onClick={() => handleDownload("status")}
+                    style={styles.secondaryButton}
+                    disabled={loading || downloading === "status"}
+                  >
+                    {downloading === "status" ? "Downloading..." : "Download CSV"}
+                  </button>
+                }
+              >
+                <StatusChartBlock items={statusItems} total={statusTotal} loading={loading} />
+              </SectionCard>
+            </section>
+          ) : null}
+
           {activePanel === "category" ? (
             <section style={styles.singleSection}>
-              <div style={styles.card}>
-                <div style={styles.cardHeader}>
-                  <div>
-                    <span style={styles.cardTitle}>Category Dashboard</span>
-                    <p style={styles.cardSubtitle}>Resource distribution across heritage categories.</p>
-                  </div>
+              <SectionCard
+                title="Category Distribution"
+                subtitle="Full category list with bar chart and exact resource count."
+                action={
                   <button
                     type="button"
                     onClick={() => handleDownload("category")}
@@ -231,8 +333,8 @@ function AdminDashboardPage() {
                   >
                     {downloading === "category" ? "Downloading..." : "Download CSV"}
                   </button>
-                </div>
-
+                }
+              >
                 <div style={styles.chartList}>
                   {categoryItems.length === 0 ? (
                     <div style={styles.emptyPanel}>{loading ? "Loading..." : "No category data."}</div>
@@ -243,40 +345,70 @@ function AdminDashboardPage() {
                         label={item.categoryName}
                         count={item.count}
                         ratio={item.ratio}
-                        color={item.categoryStatus === "ACTIVE" ? "#2d6a4f" : "#a16207"}
+                        color="#2d6a4f"
                         marker={item.categoryStatus}
                       />
                     ))
                   )}
                 </div>
-              </div>
+              </SectionCard>
+            </section>
+          ) : null}
+
+          {activePanel === "contributor" ? (
+            <section style={styles.singleSection}>
+              <SectionCard
+                title="Contributor Activity"
+                subtitle={`Sorted by submitted resources. Showing ${visibleContributorItems.length} / ${contributorItems.length}.`}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setShowAllContributors((previous) => !previous)}
+                    style={styles.secondaryButton}
+                    disabled={!canExpandContributors}
+                  >
+                    {showAllContributors ? `Show top ${OVERVIEW_CONTRIBUTOR_LIMIT}` : "Show all"}
+                  </button>
+                }
+              >
+                <div style={styles.chartListCompact}>
+                  {visibleContributorItems.length === 0 ? (
+                    <div style={styles.emptyPanel}>{loading ? "Loading..." : "No contributor data."}</div>
+                  ) : (
+                    visibleContributorItems.map((item) => (
+                      <MetricBar
+                        key={item.contributorId ?? item.contributorName}
+                        label={item.contributorName}
+                        count={item.count}
+                        ratio={item.ratio}
+                        color="#1f7a5c"
+                        marker="Submitted resources"
+                      />
+                    ))
+                  )}
+                </div>
+              </SectionCard>
             </section>
           ) : null}
 
           {activePanel === "tags" ? (
             <section style={styles.singleSection}>
-              <div style={styles.card}>
-                <div style={styles.cardHeader}>
-                  <div>
-                    <span style={styles.cardTitle}>Top Approved Tags</span>
-                    <p style={styles.cardSubtitle}>
-                      Popularity based only on approved resources. Showing {visibleTagItems.length} / {approvedTagItems.length} (Top 10 by default).
-                    </p>
-                  </div>
-                  {approvedTagItems.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllTags((previous) => !previous)}
-                      style={styles.secondaryButton}
-                      disabled={!canExpandTags}
-                    >
-                      {showAllTags ? "Show top 10" : "Show all"}
-                    </button>
-                  ) : null}
-                </div>
-
+              <SectionCard
+                title="Top 10 Tags"
+                subtitle={`Approved-resource popularity. Showing ${visibleTagItems.length} / ${approvedTagItems.length}.`}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags((previous) => !previous)}
+                    style={styles.secondaryButton}
+                    disabled={!canExpandTags}
+                  >
+                    {showAllTags ? `Show top ${OVERVIEW_TAG_LIMIT}` : "Show all"}
+                  </button>
+                }
+              >
                 <div style={styles.chartListCompact}>
-                  {approvedTagItems.length === 0 ? (
+                  {visibleTagItems.length === 0 ? (
                     <div style={styles.emptyPanel}>{loading ? "Loading..." : "No approved tag data."}</div>
                   ) : (
                     visibleTagItems.map((item) => (
@@ -285,13 +417,13 @@ function AdminDashboardPage() {
                         label={item.tagName}
                         count={item.approvedResourceCount}
                         ratio={item.ratio}
-                        color="#2d6a4f"
+                        color="#2563eb"
                         marker="Approved resources"
                       />
                     ))
                   )}
                 </div>
-              </div>
+              </SectionCard>
             </section>
           ) : null}
         </div>
@@ -300,11 +432,59 @@ function AdminDashboardPage() {
   );
 }
 
-function SummaryCard({ label, value, highlight = false }) {
+function StatusChartBlock({ items, total, loading }) {
+  if (!items.length) {
+    return <div style={styles.emptyPanel}>{loading ? "Loading..." : "No status data."}</div>;
+  }
+
+  return (
+    <div style={styles.chartArea}>
+      <div style={styles.donutWrap}>
+        <div style={{ ...styles.donut, background: buildStatusDonut(items) }}>
+          <div style={styles.donutCenter}>
+            <strong style={styles.donutValue}>{total}</strong>
+            <span style={styles.donutLabel}>Resources</span>
+          </div>
+        </div>
+      </div>
+      <div style={styles.chartList}>
+        {items.map((item) => (
+          <MetricBar
+            key={item.key}
+            label={item.label}
+            count={item.count}
+            ratio={item.ratio}
+            color={STATUS_COLORS[item.key] || "#4b5563"}
+            marker={item.bottleneck ? "Review Bottleneck" : "Status"}
+            highlight={item.bottleneck}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, subtitle, action, children }) {
+  return (
+    <div style={styles.card}>
+      <div style={styles.cardHeader}>
+        <div>
+          <span style={styles.cardTitle}>{title}</span>
+          <p style={styles.cardSubtitle}>{subtitle}</p>
+        </div>
+        {action || null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function SummaryCard({ label, value, helper = "", highlight = false }) {
   return (
     <div style={{ ...styles.summaryCard, ...(highlight ? styles.summaryHighlight : null) }}>
       <span style={styles.summaryLabel}>{label}</span>
       <strong style={styles.summaryValue}>{value}</strong>
+      {helper ? <span style={styles.summaryHelper}>{helper}</span> : null}
     </div>
   );
 }
@@ -313,7 +493,7 @@ function MetricBar({ label, count, ratio, color, marker, highlight = false }) {
   return (
     <div style={{ ...styles.metricItem, ...(highlight ? styles.metricHighlight : null) }}>
       <div style={styles.metricTop}>
-        <span style={styles.metricLabel}>{label}</span>
+        <span style={styles.metricLabel} title={label}>{label}</span>
         <span style={styles.metricCount}>{count}</span>
       </div>
       <div style={styles.progressTrack}>
@@ -429,7 +609,7 @@ const styles = {
     color: "#6b7280",
     fontSize: 14,
     lineHeight: 1.6,
-    maxWidth: 720,
+    maxWidth: 760,
   },
   primaryButton: {
     padding: "9px 16px",
@@ -494,9 +674,14 @@ const styles = {
     fontSize: 18,
     lineHeight: 1.25,
   },
+  summaryHelper: {
+    color: "#9ca3af",
+    fontSize: 12,
+    lineHeight: 1.4,
+  },
   grid: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
     gap: 18,
     alignItems: "start",
     marginBottom: 18,
@@ -603,12 +788,16 @@ const styles = {
     color: "#1a2e1f",
     fontSize: 13,
     fontWeight: 700,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   metricCount: {
     color: "#374151",
     fontSize: 16,
     fontWeight: 800,
     fontVariantNumeric: "tabular-nums",
+    flexShrink: 0,
   },
   progressTrack: {
     height: 8,
@@ -638,3 +827,4 @@ const styles = {
 };
 
 export default AdminDashboardPage;
+
