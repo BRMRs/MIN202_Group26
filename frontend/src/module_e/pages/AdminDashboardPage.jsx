@@ -24,7 +24,7 @@ const SIDEBAR_ITEMS = [
   { id: "status", label: "Status Dashboard" },
   { id: "category", label: "Category Distribution" },
   { id: "contributor", label: "Contributor Activity" },
-  { id: "tags", label: "Tags Top 10" },
+  { id: "tags", label: "Tag Popularity" },
 ];
 
 function AdminDashboardPage() {
@@ -289,7 +289,7 @@ function AdminDashboardPage() {
 
               <section style={styles.singleSection}>
                 <SectionCard
-                  title="Top 10 Tags"
+                  title="Tag Popularity"
                   subtitle={`Bar chart for approved-resource tag usage (showing ${overviewTagItems.length} / ${approvedTagItems.length}).`}
                 >
                   <div style={styles.chartListCompact}>
@@ -409,7 +409,7 @@ function AdminDashboardPage() {
           {activePanel === "tags" ? (
             <section style={styles.singleSection}>
               <SectionCard
-                title="Top 10 Tags"
+                title="Tag Popularity"
                 subtitle={`Approved-resource popularity. Showing ${visibleTagItems.length} / ${approvedTagItems.length}.`}
                 action={
                   <button
