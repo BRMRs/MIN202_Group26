@@ -99,15 +99,31 @@ function CoverOrPlaceholder({ url, title, stylesMod }) {
 
 // ── Resource card shared by all tabs ─────────────────────────────────────────
 
-function ResourceCard({ resource, reviewNote, stylesMod, isStatusUpdateTab = false, onMarkAsRead }) {
+function ResourceCard({
+  resource,
+  reviewNote,
+  stylesMod,
+  isStatusUpdateTab = false,
+  onMarkAsRead,
+  onOpenInMyResources,
+}) {
   const navigate = useNavigate();
   const status = resource.status;
-  const cover  = resource.mediaFiles?.[0]?.url ?? null;
+  const mediaFiles = Array.isArray(resource.mediaFiles) ? resource.mediaFiles : [];
+  const explicitCover = mediaFiles.find((m) => m?.mediaType === 'COVER');
+  const firstMedia = mediaFiles[0];
+  const cover = explicitCover?.fileUrl
+    || explicitCover?.url
+    || firstMedia?.fileUrl
+    || firstMedia?.url
+    || resource.fileUrl
+    || resource.filePath
+    || null;
   const showReviewNote = decisionForStatus(status).length > 0;
   const noteClass = noteClassForStatus(status);
 
   return (
-    <div className={stylesMod.resourceCard}>
+    <div className={stylesMod.resourceCard} data-resource-id={resource.id}>
       <div className={stylesMod.cardImageCol}>
         <CoverOrPlaceholder url={cover} title={resource.title} stylesMod={stylesMod} />
       </div>
@@ -149,13 +165,22 @@ function ResourceCard({ resource, reviewNote, stylesMod, isStatusUpdateTab = fal
 
           <div className={stylesMod.cardActions}>
             {isStatusUpdateTab ? (
-              <button
-                className={stylesMod.actionBtnSecondary}
-                onClick={() => onMarkAsRead?.(resource)}
-                type="button"
-              >
-                Mark as Read
-              </button>
+              <>
+                <button
+                  className={stylesMod.actionBtn}
+                  onClick={() => onOpenInMyResources?.(resource.id)}
+                  type="button"
+                >
+                  Open in My Resources
+                </button>
+                <button
+                  className={stylesMod.actionBtnSecondary}
+                  onClick={() => onMarkAsRead?.(resource)}
+                  type="button"
+                >
+                  Mark as Read
+                </button>
+              </>
             ) : (
               <>
             {/* DRAFT actions */}
@@ -468,6 +493,7 @@ function ProfilePage() {
   const [contentError, setContentError]   = useState('');
   const [reviewNotes, setReviewNotes] = useState({});
   const [readStatusUpdateMap, setReadStatusUpdateMap] = useState({});
+  const [focusResourceId, setFocusResourceId] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
 
   const isContributor = user?.role === USER_ROLES.CONTRIBUTOR;
@@ -559,6 +585,24 @@ function ProfilePage() {
     localStorage.setItem(statusNoticeSeenCountKey(user), String(seenCount + 1));
     window.dispatchEvent(new CustomEvent('heritage-status-update-read'));
   };
+
+  const openStatusUpdateInMyResources = (resourceId) => {
+    setFocusResourceId(resourceId);
+    setActiveTab('all');
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'all' || !focusResourceId) return;
+    const target = document.querySelector(`[data-resource-id="${focusResourceId}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.classList.add(styles.resourceCardFocus);
+    const timer = setTimeout(() => {
+      target.classList.remove(styles.resourceCardFocus);
+      setFocusResourceId(null);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [activeTab, focusResourceId]);
 
   // Filter resources per tab
   const tabResources = (() => {
@@ -746,6 +790,7 @@ function ProfilePage() {
                       stylesMod={styles}
                       isStatusUpdateTab={activeTab === 'statusUpdates'}
                       onMarkAsRead={markStatusUpdateAsRead}
+                      onOpenInMyResources={openStatusUpdateInMyResources}
                     />
                   ))}
                 </div>

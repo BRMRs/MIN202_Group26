@@ -224,7 +224,12 @@ public class ResourceService {
     }
 
     public List<Resource> listMine(Long contributorId) {
-        return repository.findByContributorIdOrderByUpdatedAtDesc(contributorId);
+        List<Resource> resources = repository.findByContributorIdOrderByUpdatedAtDesc(contributorId);
+        for (Resource r : resources) {
+            List<ResourceMedia> media = mediaRepository.findByResourceIdOrderBySortOrderAsc(r.getId());
+            r.setMediaFiles(media);
+        }
+        return resources;
     }
 
     public List<ResourceDraftListItem> listDrafts(Long contributorId) {

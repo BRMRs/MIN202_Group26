@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 // PBI 3.2 — Task: Optimize status update performance
@@ -64,6 +65,9 @@ public class Resource {
 
     @Column(name = "archive_reason", columnDefinition = "TEXT")
     private String archiveReason;
+
+    @Transient
+    private List<ResourceMedia> mediaFiles;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

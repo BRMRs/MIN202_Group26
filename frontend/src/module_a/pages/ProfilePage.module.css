@@ -369,6 +369,10 @@
   transform: translateY(-1px);
 }
 
+.resourceCardFocus {
+  box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.22), 0 6px 20px rgba(0,0,0,0.10);
+}
+
 .cardImageCol {
   width: 160px;
   min-width: 160px;
