@@ -18,6 +18,7 @@ function Navbar() {
   const location = useLocation();
   const [draftAttentionCount, setDraftAttentionCount] = useState(0);
   const [unseenStatusNoticeCount, setUnseenStatusNoticeCount] = useState(0);
+  const [hasRejectedApplication, setHasRejectedApplication] = useState(false);
 
   const loadContributorNotices = useCallback(() => {
     Promise.all([resourceApi.getContributorRejectedCount(), resourceApi.getMine()])
@@ -55,7 +56,17 @@ function Navbar() {
       setDraftAttentionCount(0);
       setUnseenStatusNoticeCount(0);
     }
-  }, [isAuthenticated, user?.role, location.pathname, loadContributorNotices]);
+
+    // Check for rejected application (VIEWER only)
+    if (isAuthenticated && user?.role === 'VIEWER') {
+      const hasUnreadRejection = user?.applicationStatus === 'REJECTED' &&
+                                  user?.applicationReviewedAt &&
+                                  !localStorage.getItem(`rejection-read-${user.id}`);
+      setHasRejectedApplication(hasUnreadRejection);
+    } else {
+      setHasRejectedApplication(false);
+    }
+  }, [isAuthenticated, user?.role, user?.applicationStatus, user?.applicationReviewedAt, user?.id, location.pathname, loadContributorNotices]);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'CONTRIBUTOR') return undefined;
@@ -78,6 +89,18 @@ function Navbar() {
       window.removeEventListener('storage', onStorage);
     };
   }, [isAuthenticated, user, user?.role, loadContributorNotices]);
+
+  // Listen for rejection read event (VIEWER only)
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'VIEWER') return undefined;
+    const onRejectionRead = () => {
+      setHasRejectedApplication(false);
+    };
+    window.addEventListener('heritage-rejection-read', onRejectionRead);
+    return () => {
+      window.removeEventListener('heritage-rejection-read', onRejectionRead);
+    };
+  }, [isAuthenticated, user?.role]);
 
   const handleLogout = () => {
     logout();
@@ -161,9 +184,10 @@ function Navbar() {
                   <span className="hn-avatar">
                     {user?.username?.[0]?.toUpperCase() || 'U'}
                   </span>
-                  {user?.role === 'CONTRIBUTOR' && unseenStatusNoticeCount > 0 && (
+                  {((user?.role === 'CONTRIBUTOR' && unseenStatusNoticeCount > 0) ||
+                    (user?.role === 'VIEWER' && hasRejectedApplication)) && (
                     <span
-                      title="You have status updates in Profile."
+                      title={user?.role === 'VIEWER' ? "Your application was reviewed." : "You have status updates in Profile."}
                       style={{
                         position: 'absolute',
                         top: -1,

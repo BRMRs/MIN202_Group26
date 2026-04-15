@@ -57,7 +57,9 @@ public class AuthService implements UserDetailsService {
     }
 
     public LoginResponse login(LoginRequest request) {
+        // Try to find user by username first, then by email
         User user = userRepository.findByUsername(request.getUsername())
+                .or(() -> userRepository.findByEmail(request.getUsername()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new UnauthorizedException("Invalid credentials");

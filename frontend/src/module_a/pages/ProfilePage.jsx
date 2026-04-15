@@ -197,12 +197,9 @@ function ResourceCard({
 
             {/* PENDING_REVIEW actions */}
             {status === 'PENDING_REVIEW' && (
-              <button
-                className={stylesMod.actionBtnSecondary}
-                onClick={() => navigate('/module-b/drafts')}
-              >
-                View Submission
-              </button>
+              <span className={stylesMod.actionHint}>
+                Awaiting admin review
+              </span>
             )}
 
             {/* APPROVED actions */}
@@ -221,9 +218,6 @@ function ResourceCard({
                 >
                   Revise & Resubmit
                 </button>
-                <Link to={`/resources/${resource.id}`} className={stylesMod.actionBtnSecondary}>
-                  View Feedback
-                </Link>
               </>
             )}
 
@@ -372,9 +366,9 @@ function ContributorStatusBadge({ applicationStatus, role, stylesMod }) {
   }
   if (applicationStatus === 'REJECTED') {
     return (
-      <span className={`${stylesMod.csBadge} ${stylesMod.csBadgeRejected}`}>
-        Application Rejected
-      </span>
+      <Link to="/apply-contributor" className={`${stylesMod.csBadge} ${stylesMod.csBadgeRejected}`}>
+        Application Rejected — Reapply
+      </Link>
     );
   }
   return null;
@@ -495,6 +489,15 @@ function ProfilePage() {
 
   const isContributor = user?.role === USER_ROLES.CONTRIBUTOR;
   const isAdmin       = user?.role === USER_ROLES.ADMIN;
+
+  // Mark rejection as read when VIEWER visits profile
+  useEffect(() => {
+    if (user?.role === 'VIEWER' && user?.applicationStatus === 'REJECTED' && user?.id) {
+      localStorage.setItem(`rejection-read-${user.id}`, 'true');
+      // Trigger a custom event to update Navbar
+      window.dispatchEvent(new CustomEvent('heritage-rejection-read'));
+    }
+  }, [user?.role, user?.applicationStatus, user?.id]);
 
   // Load contributor resources
   useEffect(() => {
@@ -708,13 +711,13 @@ function ProfilePage() {
                 {appStatus === 'PENDING'
                   ? 'Your contributor application is under review. You will gain access once an administrator approves it.'
                   : appStatus === 'REJECTED'
-                  ? 'Your previous application was not approved. You may reapply with more details.'
+                  ? '⚠️ Your application was not approved. Please review the feedback and consider reapplying with more details about your qualifications and the heritage resources you plan to contribute.'
                   : 'Apply to become a contributor and start sharing cultural and community heritage resources with the world.'}
               </p>
             </div>
             {appStatus !== 'PENDING' && (
               <Link to="/apply-contributor" className={styles.viewerPanelCta}>
-                {appStatus === 'REJECTED' ? 'Reapply' : 'Apply Now'}
+                {appStatus === 'REJECTED' ? 'Reapply Now' : 'Apply Now'}
               </Link>
             )}
           </div>

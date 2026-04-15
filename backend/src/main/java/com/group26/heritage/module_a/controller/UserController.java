@@ -5,6 +5,7 @@ import com.group26.heritage.entity.ContributorApplication;
 import com.group26.heritage.entity.User;
 import com.group26.heritage.module_a.dto.ContributorApplyRequest;
 import com.group26.heritage.module_a.dto.ProfileUpdateRequest;
+import com.group26.heritage.module_a.dto.UserProfileResponse;
 import com.group26.heritage.module_a.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,8 +22,8 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ApiResponse<User> getProfile(@AuthenticationPrincipal User user) {
-        User profile = userService.getProfile(user.getId());
+    public ApiResponse<UserProfileResponse> getProfile(@AuthenticationPrincipal User user) {
+        UserProfileResponse profile = userService.getProfileWithStatus(user.getId());
         return ApiResponse.success(profile);
     }
 

@@ -117,6 +117,7 @@ function AdminApprovalPage() {
                   <tr>
                     <th style={{ ...styles.th, width: 64 }}>ID</th>
                     <th style={styles.th}>User ID</th>
+                    <th style={styles.th}>Reason</th>
                     <th style={styles.th}>Applied At</th>
                     <th style={{ ...styles.th, width: 120 }}>Status</th>
                     <th style={{ ...styles.th, width: 180 }}>Actions</th>
@@ -125,7 +126,7 @@ function AdminApprovalPage() {
                 <tbody>
                   {!loading && filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={styles.emptyCell}>
+                      <td colSpan={6} style={styles.emptyCell}>
                         {filterStatus === 'ALL'
                           ? 'No applications found.'
                           : `No ${filterStatus.toLowerCase()} applications.`}
@@ -141,6 +142,7 @@ function AdminApprovalPage() {
                       >
                         <td style={styles.tdMono}>{app.id}</td>
                         <td style={styles.td}>{app.userId}</td>
+                        <td style={styles.td}>{app.reason || '—'}</td>
                         <td style={styles.td}>
                           {app.appliedAt ? new Date(app.appliedAt).toLocaleString() : '—'}
                         </td>
