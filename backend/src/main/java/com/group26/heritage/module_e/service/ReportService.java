@@ -1,0 +1,313 @@
+package com.group26.heritage.module_e.service;
+
+import com.group26.heritage.common.repository.ResourceRepository;
+import com.group26.heritage.common.repository.TagRepository;
+import com.group26.heritage.entity.User;
+import com.group26.heritage.entity.enums.ResourceStatus;
+import com.group26.heritage.module_e.dto.CategoryDashboardItem;
+import com.group26.heritage.module_e.dto.CategoryDashboardResponse;
+import com.group26.heritage.module_e.dto.ContributorDashboardItem;
+import com.group26.heritage.module_e.dto.ContributorDashboardResponse;
+import com.group26.heritage.module_e.dto.ReportFileResponse;
+import com.group26.heritage.module_e.dto.StatusDashboardItem;
+import com.group26.heritage.module_e.dto.StatusDashboardResponse;
+import com.group26.heritage.module_e.dto.StatusDashboardRow;
+import com.group26.heritage.module_e.dto.TagDashboardItem;
+import com.group26.heritage.module_e.dto.TagDashboardResponse;
+import com.group26.heritage.module_e.dto.TagUsageRow;
+import com.group26.heritage.module_e.dto.WorkflowStageItem;
+import com.group26.heritage.module_e.dto.WorkflowSummary;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+@Service
+public class ReportService {
+
+    private static final DateTimeFormatter REPORT_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static final List<ResourceStatus> WORKFLOW_STATUSES = List.of(
+            ResourceStatus.PENDING_REVIEW,
+            ResourceStatus.APPROVED,
+            ResourceStatus.REJECTED,
+            ResourceStatus.ARCHIVED
+    );
+
+    private final ResourceRepository resourceRepository;
+    private final TagRepository tagRepository;
+
+    public ReportService(ResourceRepository resourceRepository, TagRepository tagRepository) {
+        this.resourceRepository = resourceRepository;
+        this.tagRepository = tagRepository;
+    }
+
+    // PBI 5.5 / Task 1: Build resource status distribution and workflow bottleneck data.
+    @Transactional(readOnly = true)
+    public StatusDashboardResponse getStatusDashboard() {
+        Map<ResourceStatus, Long> countsByStatus = new EnumMap<>(ResourceStatus.class);
+        for (ResourceStatus status : ResourceStatus.values()) {
+            countsByStatus.put(status, 0L);
+        }
+
+        for (StatusDashboardRow row : resourceRepository.countResourcesByStatusForDashboard()) {
+            ResourceStatus status = ResourceStatus.valueOf(row.getStatus());
+            countsByStatus.put(status, safeCount(row.getCount()));
+        }
+
+        long total = countsByStatus.values().stream()
+                .mapToLong(Long::longValue)
+                .sum();
+
+        WorkflowSummary workflow = buildWorkflowSummary(countsByStatus);
+        Set<String> bottleneckKeys = workflow.bottleneckStage() == null
+                ? Set.of()
+                : Set.of(workflow.bottleneckStage());
+
+        List<StatusDashboardItem> items = countsByStatus.entrySet().stream()
+                .map(entry -> new StatusDashboardItem(
+                        entry.getKey().name(),
+                        toDisplayLabel(entry.getKey().name()),
+                        entry.getValue(),
+                        calculateRatio(entry.getValue(), total),
+                        WORKFLOW_STATUSES.contains(entry.getKey()),
+                        bottleneckKeys.contains(entry.getKey().name())
+                ))
+                .toList();
+
+        return new StatusDashboardResponse(total, items, workflow, LocalDateTime.now());
+    }
+
+    // PBI 5.5 / Task 1: Build category resource distribution data.
+    @Transactional(readOnly = true)
+    public CategoryDashboardResponse getCategoryDashboard() {
+        var rows = resourceRepository.countResourcesByCategoryForDashboard();
+        long total = rows.stream()
+                .mapToLong(row -> safeCount(row.getCount()))
+                .sum();
+
+        List<CategoryDashboardItem> items = rows.stream()
+                .map(row -> {
+                    long count = safeCount(row.getCount());
+                    return new CategoryDashboardItem(
+                            row.getCategoryId(),
+                            row.getCategoryName(),
+                            row.getCategoryStatus(),
+                            count,
+                            calculateRatio(count, total)
+                    );
+                })
+                .toList();
+
+        return new CategoryDashboardResponse(total, items, LocalDateTime.now());
+    }
+
+    // PBI 5.5 / Task 1: Build approved-resource tag popularity data for the reports summary.
+    @Transactional(readOnly = true)
+    public TagDashboardResponse getTagDashboard() {
+        List<TagUsageRow> rows = tagRepository.findActiveTagsByApprovedResourceCountForDashboard();
+        long totalApprovedTaggedResources = rows.stream()
+                .mapToLong(row -> safeCount(row.getApprovedResourceCount()))
+                .sum();
+
+        List<TagDashboardItem> items = rows.stream()
+                .map(row -> {
+                    long count = safeCount(row.getApprovedResourceCount());
+                    return new TagDashboardItem(
+                            row.getId(),
+                            row.getName(),
+                            count,
+                            calculateRatio(count, totalApprovedTaggedResources)
+                    );
+                })
+                .toList();
+
+        return new TagDashboardResponse(totalApprovedTaggedResources, items, LocalDateTime.now());
+    }
+
+    // Build contributor activity data using submitted resources (all non-draft resources).
+    @Transactional(readOnly = true)
+    public ContributorDashboardResponse getContributorDashboard() {
+        var rows = resourceRepository.countSubmittedResourcesByContributorForDashboard();
+        long total = rows.stream()
+                .mapToLong(row -> safeCount(row.getCount()))
+                .sum();
+
+        List<ContributorDashboardItem> items = rows.stream()
+                .map(row -> {
+                    long count = safeCount(row.getCount());
+                    return new ContributorDashboardItem(
+                            row.getContributorId(),
+                            row.getContributorName(),
+                            count,
+                            calculateRatio(count, total)
+                    );
+                })
+                .toList();
+
+        return new ContributorDashboardResponse(total, items, LocalDateTime.now());
+    }
+
+    // PBI 5.5 / Task 2: Generate a downloadable CSV report for resource status and workflow bottlenecks.
+    @Transactional(readOnly = true)
+    public ReportFileResponse generateStatusDashboardCsvReport(User admin) {
+        StatusDashboardResponse dashboard = getStatusDashboard();
+        StringBuilder csv = new StringBuilder();
+        csv.append("Report,Resource Status Dashboard\n");
+        csv.append("Generated At,").append(csvCell(dashboard.generatedAt().format(REPORT_TIME_FORMATTER))).append('\n');
+        csv.append("Generated By,").append(csvCell(describeAdmin(admin))).append('\n');
+        csv.append("Total Resources,").append(dashboard.total()).append('\n');
+        csv.append("Workflow Bottleneck,").append(csvCell(describeBottleneck(dashboard.workflow()))).append('\n');
+        csv.append('\n');
+        csv.append("Status,Count,Ratio,Workflow Stage,Bottleneck\n");
+        for (StatusDashboardItem item : dashboard.items()) {
+            csv.append(String.format(
+                    Locale.US,
+                    "%s,%d,%.2f%%,%s,%s\n",
+                    csvCell(item.label()),
+                    item.count(),
+                    item.ratio(),
+                    item.workflowStage() ? "Yes" : "No",
+                    item.bottleneck() ? "Yes" : "No"
+            ));
+        }
+        csv.append('\n');
+        csv.append("Workflow Stage,Count,Ratio Within Workflow,Bottleneck\n");
+        for (WorkflowStageItem item : dashboard.workflow().stages()) {
+            csv.append(String.format(
+                    Locale.US,
+                    "%s,%d,%.2f%%,%s\n",
+                    csvCell(item.label()),
+                    item.count(),
+                    item.ratio(),
+                    item.bottleneck() ? "Yes" : "No"
+            ));
+        }
+
+        return new ReportFileResponse(
+                "resource-status-dashboard-report.csv",
+                "text/csv; charset=UTF-8",
+                csv.toString().getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    // PBI 5.5 / Task 2: Generate a downloadable CSV report for category distribution.
+    @Transactional(readOnly = true)
+    public ReportFileResponse generateCategoryDashboardCsvReport(User admin) {
+        CategoryDashboardResponse dashboard = getCategoryDashboard();
+        StringBuilder csv = new StringBuilder();
+        csv.append("Report,Category Dashboard\n");
+        csv.append("Generated At,").append(csvCell(dashboard.generatedAt().format(REPORT_TIME_FORMATTER))).append('\n');
+        csv.append("Generated By,").append(csvCell(describeAdmin(admin))).append('\n');
+        csv.append("Total Resources,").append(dashboard.total()).append('\n');
+        csv.append('\n');
+        csv.append("Category ID,Category Name,Category Status,Count,Ratio\n");
+        for (CategoryDashboardItem item : dashboard.items()) {
+            csv.append(String.format(
+                    Locale.US,
+                    "%s,%s,%s,%d,%.2f%%\n",
+                    item.categoryId() == null ? "N/A" : item.categoryId().toString(),
+                    csvCell(item.categoryName()),
+                    csvCell(item.categoryStatus()),
+                    item.count(),
+                    item.ratio()
+            ));
+        }
+
+        return new ReportFileResponse(
+                "category-dashboard-report.csv",
+                "text/csv; charset=UTF-8",
+                csv.toString().getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    private WorkflowSummary buildWorkflowSummary(Map<ResourceStatus, Long> countsByStatus) {
+        long workflowTotal = WORKFLOW_STATUSES.stream()
+                .mapToLong(status -> countsByStatus.getOrDefault(status, 0L))
+                .sum();
+
+        long pendingReviewCount = countsByStatus.getOrDefault(ResourceStatus.PENDING_REVIEW, 0L);
+        ResourceStatus bottleneckStatus = pendingReviewCount > 0L ? ResourceStatus.PENDING_REVIEW : null;
+        long bottleneckCount = pendingReviewCount;
+
+        ResourceStatus finalBottleneckStatus = bottleneckStatus;
+        List<WorkflowStageItem> stages = WORKFLOW_STATUSES.stream()
+                .map(status -> {
+                    long count = countsByStatus.getOrDefault(status, 0L);
+                    return new WorkflowStageItem(
+                            status.name(),
+                            toDisplayLabel(status.name()),
+                            count,
+                            calculateRatio(count, workflowTotal),
+                            status.equals(finalBottleneckStatus)
+                    );
+                })
+                .toList();
+
+        return new WorkflowSummary(
+                stages,
+                bottleneckStatus == null ? null : bottleneckStatus.name(),
+                bottleneckStatus == null ? null : toDisplayLabel(bottleneckStatus.name()),
+                bottleneckCount
+        );
+    }
+
+    private long safeCount(Long count) {
+        return count == null ? 0L : count;
+    }
+
+    private double calculateRatio(long count, long total) {
+        if (total == 0L) {
+            return 0.0;
+        }
+        return Math.round(((double) count * 10000.0) / total) / 100.0;
+    }
+
+    private String toDisplayLabel(String key) {
+        String[] words = key.toLowerCase().split("_");
+        StringBuilder label = new StringBuilder();
+        for (String word : words) {
+            if (word.isBlank()) {
+                continue;
+            }
+            if (label.length() > 0) {
+                label.append(' ');
+            }
+            label.append(Character.toUpperCase(word.charAt(0)))
+                    .append(word.substring(1));
+        }
+        return label.toString();
+    }
+
+    private String describeAdmin(User admin) {
+        if (admin == null) {
+            return "Unknown administrator";
+        }
+        return admin.getUsername() + " (ID: " + admin.getId() + ")";
+    }
+
+    private String describeBottleneck(WorkflowSummary workflow) {
+        if (workflow == null || workflow.bottleneckStage() == null) {
+            return "No bottleneck detected";
+        }
+        return workflow.bottleneckLabel() + " (" + workflow.bottleneckCount() + " resources)";
+    }
+
+    private String csvCell(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (!value.contains(",") && !value.contains("\"") && !value.contains("\n") && !value.contains("\r")) {
+            return value;
+        }
+        return "\"" + value.replace("\"", "\"\"") + "\"";
+    }
+}

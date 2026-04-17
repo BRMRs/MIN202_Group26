@@ -1,0 +1,221 @@
+/* Europeana-style auth pages */
+
+.auth-page {
+  min-height: 100vh;
+  background-color: #e8e8e8;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1rem 3rem;
+}
+
+.auth-card {
+  background: #fff;
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid #d0d0d0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* Logo */
+.auth-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 2rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.auth-logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+/* Tabs */
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid #d0d0d0;
+  margin-top: 1rem;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #555;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  text-decoration: none;
+  display: block;
+}
+
+.auth-tab:hover {
+  color: #1565c0;
+}
+
+.auth-tab.active {
+  color: #1565c0;
+  border-bottom-color: #1565c0;
+  font-weight: 600;
+}
+
+/* Form body */
+.auth-body {
+  padding: 2rem 2.5rem 2.5rem;
+}
+
+.auth-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 1.5rem;
+  text-align: center;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: #555;
+  text-align: center;
+  margin: -0.75rem 0 1.5rem;
+  line-height: 1.5;
+}
+
+.auth-subtitle a {
+  color: #1565c0;
+}
+
+/* Field */
+.auth-field {
+  margin-bottom: 1.25rem;
+}
+
+.auth-field label {
+  display: block;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  margin-bottom: 0.35rem;
+}
+
+.auth-field input[type="text"],
+.auth-field input[type="email"],
+.auth-field input[type="password"] {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #999;
+  border-radius: 0;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  background: #fff;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.auth-field input:focus {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 2px rgba(21,101,192,0.15);
+}
+
+.auth-field .field-hint {
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+.auth-field .field-hint.required {
+  color: #b00;
+}
+
+/* Checkbox row */
+.auth-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.88rem;
+  color: #333;
+}
+
+.auth-checkbox input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.auth-checkbox a {
+  color: #1565c0;
+}
+
+/* Actions row */
+.auth-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.75rem;
+  gap: 0.75rem;
+}
+
+.auth-actions-right {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.75rem;
+}
+
+/* Buttons */
+.btn-primary {
+  background: #1565c0;
+  color: #fff;
+  border: none;
+  padding: 0.55rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0d47a1;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #1565c0;
+  border: 1px solid #1565c0;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-secondary:hover {
+  background: #e3f0ff;
+}
+
+/* Toast override position */
+.auth-page .toast-container {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  min-width: 300px;
+  text-align: center;
+}
