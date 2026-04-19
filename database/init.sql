@@ -311,6 +311,48 @@ VALUES (
     NOW()
 );
 
+-- Additional admin account
+-- Username : admin2
+-- Password : admin246
+INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
+VALUES (
+    'admin2',
+    'admin2@heritage.org',
+    '$2a$10$/c3TA3BeNlyChidDmivCy.Av00xH3x1xV3973aVyBpaqaMmEluaUO',
+    'ADMIN',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- Additional admin account
+-- Username : admin3
+-- Password : admin369
+INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
+VALUES (
+    'admin3',
+    'admin3@heritage.org',
+    '$2a$10$rh8lTt2DIX6945/e3FosLeydvYLh3g1QnR1F9LInGkhJYWM9PKn8C',
+    'ADMIN',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- Additional admin account
+-- Username : admin4
+-- Password : admin4812
+INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
+VALUES (
+    'admin4',
+    'admin4@heritage.org',
+    '$2a$10$2SzP2GH2xHFIR2gktn6qOeQemM63AVln.RqoAbn0tRzbM9aZtm8ny',
+    'ADMIN',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
 -- Demo contributor account
 -- Username : contributor_demo
 -- Password : demo123

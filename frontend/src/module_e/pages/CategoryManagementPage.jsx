@@ -278,27 +278,12 @@ function CategoryManagementPage() {
   }
 
   function applyBulkTarget() {
-    const resources = deactivationCheck?.resources ?? [];
     if (!bulkTargetId) {
-      setMigrationError("Choose a target category before applying to all resources.");
-      return;
-    }
-
-    const nextAssignments = {};
-    resources.forEach((resource) => {
-      nextAssignments[resource.id] = bulkTargetId;
-    });
-    setMigrationAssignments(nextAssignments);
-    setMigrationError("");
-  }
-
-  function applyTargetToSelected() {
-    if (!bulkTargetId) {
-      setMigrationError("Choose a target category before applying to selected resources.");
+      setMigrationError("Choose a target category before applying.");
       return;
     }
     if (selectedResourceIds.length === 0) {
-      setMigrationError("Select at least one resource before applying a target category.");
+      setMigrationError("Select at least one resource or use Select all before applying.");
       return;
     }
 
@@ -598,7 +583,7 @@ function CategoryManagementPage() {
               <>
                 <p style={styles.confirmText}>
                   This category contains <strong>{deactivationCheck.resources.length}</strong> resource(s). Assign every
-                  resource to another ACTIVE category before deactivation. Resource status will not change.
+                  resource to another ACTIVE category before deactivation.
                 </p>
 
                 {deactivationCheck.targetCategories.length === 0 ? (
@@ -607,7 +592,21 @@ function CategoryManagementPage() {
                   </div>
                 ) : (
                   <>
+                    <div style={styles.bulkHint}>Bulk action controls for the resources listed below.</div>
                     <div style={styles.bulkRow}>
+                      <select
+                        value={bulkTargetId}
+                        onChange={(event) => setBulkTargetId(event.target.value)}
+                        style={styles.input}
+                        disabled={loading}
+                      >
+                        <option value="">Move selected resources to...</option>
+                        {deactivationCheck.targetCategories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
                       <label style={styles.selectAllLabel}>
                         <input
                           type="checkbox"
@@ -620,24 +619,8 @@ function CategoryManagementPage() {
                         />
                         Select all
                       </label>
-                      <select
-                        value={bulkTargetId}
-                        onChange={(event) => setBulkTargetId(event.target.value)}
-                        style={styles.input}
-                        disabled={loading}
-                      >
-                        <option value="">Move all resources to...</option>
-                        {deactivationCheck.targetCategories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="button" onClick={applyTargetToSelected} style={styles.ghostButton} disabled={loading}>
-                        Apply to selected
-                      </button>
                       <button type="button" onClick={applyBulkTarget} style={styles.ghostButton} disabled={loading}>
-                        Apply to all
+                        Apply
                       </button>
                     </div>
 
@@ -1132,10 +1115,17 @@ const styles = {
   /* Migration modal */
   bulkRow: {
     display: "grid",
-    gridTemplateColumns: "auto minmax(220px, 1fr) auto auto",
+    gridTemplateColumns: "minmax(220px, 1fr) auto auto",
     gap: 10,
     alignItems: "center",
     marginBottom: 12,
+  },
+  bulkHint: {
+    marginBottom: 8,
+    fontSize: 12,
+    color: "#6b7280",
+    fontWeight: 600,
+    letterSpacing: "0.02em",
   },
   selectAllLabel: {
     display: "inline-flex",
