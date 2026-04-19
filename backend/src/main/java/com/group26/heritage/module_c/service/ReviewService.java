@@ -380,7 +380,15 @@ public class ReviewService {
         dto.setCopyrightDeclaration(ResourceReviewDetailResponse.orNotProvided(r.getCopyrightDeclaration()));
         dto.setExternalLink(ResourceReviewDetailResponse.orNotProvided(r.getExternalLink()));
         dto.setArchiveReason(ResourceReviewDetailResponse.orNotProvided(r.getArchiveReason()));
-        dto.setRequestedCategoryName(ResourceReviewDetailResponse.orNotProvided(r.getCategory()));
+
+        if (r.getTags() != null && !r.getTags().isBlank()) {
+            dto.setTags(java.util.Arrays.stream(r.getTags().split("#"))
+                    .map(String::trim)
+                    .filter(t -> !t.isEmpty())
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setTags(java.util.Collections.emptyList());
+        }        dto.setRequestedCategoryName(ResourceReviewDetailResponse.orNotProvided(r.getCategory()));
         dto.setCategoryRequestReason(null);
         dto.setCreatedAt(r.getCreatedAt());
         dto.setUpdatedAt(r.getUpdatedAt());

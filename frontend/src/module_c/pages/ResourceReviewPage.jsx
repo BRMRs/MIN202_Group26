@@ -100,6 +100,8 @@ function ResourceReviewPage() {
 
   // Media full-size preview
   const [previewMedia, setPreviewMedia] = useState(null);
+  const [txtContent, setTxtContent]     = useState(null);
+  const [txtLoading, setTxtLoading]     = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -114,9 +116,9 @@ function ResourceReviewPage() {
     } catch (err) {
       const msg = err.response?.data?.message || '';
       if (msg.includes('no longer available')) {
-        setError('⚠️ Resource no longer available.');
+        setError('⚠ Resource no longer available.');
       } else if (err.response?.status === 403) {
-        setError('⚠️ Resource no longer available.');
+        setError('⚠ Resource no longer available.');
       } else {
         setError('Failed to load resource. Make sure the backend is running.');
       }
@@ -127,10 +129,24 @@ function ResourceReviewPage() {
 
   useEffect(() => { loadData(); }, [resourceId]);
 
+  useEffect(() => {
+    if (!previewMedia || !isTextMedia(previewMedia)) {
+      setTxtContent(null);
+      return;
+    }
+    setTxtLoading(true);
+    setTxtContent(null);
+    fetch(previewMedia.fileUrl)
+      .then(res => res.text())
+      .then(text => setTxtContent(text))
+      .catch(() => setTxtContent('(Failed to load file content)'))
+      .finally(() => setTxtLoading(false));
+  }, [previewMedia]);
+
   const handleApprove = async () => {
     try {
       await approveResource(resourceId, approveFeedback);
-      showToast('✅ Resource approved successfully.');
+      showToast('Resource approved successfully.');
       setShowApproveModal(false);
       setApproveFeedback('');
       loadData();
@@ -157,7 +173,7 @@ function ResourceReviewPage() {
   const handleArchive = async () => {
     try {
       await archiveResource(resourceId, archiveReason);
-      showToast('📦 Resource archived.');
+      showToast(' Resource archived.');
       setShowArchiveModal(false);
       setArchiveReason('');
       loadData();
@@ -175,7 +191,7 @@ function ResourceReviewPage() {
     }
     try {
       await unpublishResource(resourceId, unpublishReason);
-      showToast('📥 Resource unpublished.');
+      showToast(' Resource unpublished.');
       setShowUnpublishModal(false);
       setUnpublishReason('');
       loadData();
@@ -187,7 +203,7 @@ function ResourceReviewPage() {
   const handleRepublish = async () => {
     try {
       await republishResource(resourceId, republishFeedback);
-      showToast('✅ Resource republished.');
+      showToast(' Resource republished.');
       setShowRepublishModal(false);
       setRepublishFeedback('');
       loadData();
@@ -327,7 +343,7 @@ function ResourceReviewPage() {
             <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
               boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20 }}>
               <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
-                📄 Resource Information
+                 Resource Information
               </h2>
               <MetaRow label="Title"           value={r?.title} />
               <MetaRow label="Contributor"     value={r?.contributorName} />
@@ -338,12 +354,27 @@ function ResourceReviewPage() {
               <MetaRow label="Last Updated"    value={r?.updatedAt ? new Date(r.updatedAt).toLocaleString() : null} />
               <MetaRow label="Comment Count"   value={String(r?.commentCount ?? 0)} />
               <MetaRow label="Like Count"      value={String(r?.likeCount ?? 0)} />
+              {r?.tags?.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
+                  padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <span style={{ minWidth: 120, color: '#888', fontSize: 13, fontWeight: 500 }}>Tags</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {r.tags.map(tag => (
+                      <span key={tag} style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12,
+                        background: '#e8f5e9', color: '#2d6a4f', fontWeight: 600,
+                        border: '1px solid #b2dfdb' }}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
               boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20 }}>
               <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
-                📝 Description
+                 Description
               </h2>
               <p style={{ color: r?.description === 'Not provided' ? '#bbb' : '#333',
                 fontStyle: r?.description === 'Not provided' ? 'italic' : 'normal',
@@ -355,7 +386,7 @@ function ResourceReviewPage() {
             <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
               boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20 }}>
               <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
-                ⚖️ Copyright &amp; Links
+                 Copyright &amp; Links
               </h2>
               <MetaRow label="Copyright"       value={r?.copyrightDeclaration} />
               <MetaRow label="External Link"   value={r?.externalLink} />
@@ -370,7 +401,7 @@ function ResourceReviewPage() {
             <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
               boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 20 }}>
               <h2 style={{ margin: '0 0 14px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
-                🖼️ Cover Image
+                Cover Image
               </h2>
               {coverMedia ? (
                 <img src={coverMedia.fileUrl} alt="Cover"
@@ -401,9 +432,9 @@ function ResourceReviewPage() {
                         padding: 10, borderRadius: 8, border: '1px solid #eee',
                         cursor: 'pointer', background: '#fafafa' }}>
                       <span style={{ fontSize: 22 }}>
-                        {m.mediaType === 'VIDEO' ? '🎥' :
-                         m.mediaType === 'AUDIO' ? '🎵' :
-                         m.mediaType === 'DOCUMENT' ? '📄' : '🖼️'}
+                        {m.mediaType === 'VIDEO' ? '' :
+                         m.mediaType === 'AUDIO' ? '' :
+                         m.mediaType === 'DOCUMENT' ? '' : ''}
                       </span>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -459,7 +490,7 @@ function ResourceReviewPage() {
           <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginTop: 4 }}>
             <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
-              🕐 Audit Trail — Review History
+               Audit Trail — Review History
               {priorRejections.length > 0 && (
                 <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, padding: '2px 8px',
                   borderRadius: 10, background: '#fff0f0', color: '#c0392b',
@@ -510,7 +541,7 @@ function ResourceReviewPage() {
         {categoryInactive && (
           <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 10,
             padding: '14px 20px', marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 20 }}>⚠️</span>
+            <span style={{ fontSize: 20 }}>⚠</span>
             <div>
               <strong style={{ color: '#856404', fontSize: 14 }}>Category Deactivated</strong>
               <div style={{ color: '#856404', fontSize: 13, marginTop: 2 }}>
@@ -535,13 +566,13 @@ function ResourceReviewPage() {
                   style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                     background: categoryInactive ? '#adb5bd' : '#198754', color: 'white', fontWeight: 700,
                     cursor: categoryInactive ? 'not-allowed' : 'pointer', fontSize: 14 }}>
-                  {categoryInactive ? 'Cannot approve' : '✅ Approve'}
+                  {categoryInactive ? 'Cannot approve' : ' Approve'}
                 </button>
                 <button onClick={() => setShowRejectModal(true)}
                   style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                     background: '#dc3545', color: 'white', fontWeight: 700,
                     cursor: 'pointer', fontSize: 14 }}>
-                  ❌ Reject
+                   Reject
                 </button>
               </>
             )}
@@ -550,7 +581,7 @@ function ResourceReviewPage() {
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                   background: '#0d6efd', color: 'white', fontWeight: 700,
                   cursor: 'pointer', fontSize: 14 }}>
-                📥 Unpublish
+                 Unpublish
               </button>
             )}
             {canRepublish && (
@@ -558,7 +589,7 @@ function ResourceReviewPage() {
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                   background: '#198754', color: 'white', fontWeight: 700,
                   cursor: 'pointer', fontSize: 14 }}>
-                🔄 Republish
+                 Republish
               </button>
             )}
             {canArchive && (
@@ -566,7 +597,7 @@ function ResourceReviewPage() {
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none',
                   background: '#6c757d', color: 'white', fontWeight: 700,
                   cursor: 'pointer', fontSize: 14 }}>
-                📦 Archive
+                 Archive
               </button>
             )}
             {canResubmit && (
@@ -588,7 +619,7 @@ function ResourceReviewPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 440,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 8px', color: '#dc3545' }}>❌ Reject Resource</h3>
+            <h3 style={{ margin: '0 0 8px', color: '#dc3545' }}> Reject Resource</h3>
             <p style={{ color: '#666', fontSize: 14, margin: '0 0 16px' }}>
               Feedback is <strong>mandatory</strong> when rejecting. The contributor will see this message.
             </p>
@@ -650,10 +681,10 @@ function ResourceReviewPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 480,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 8px', color: '#6c757d' }}>📦 Archive Resource</h3>
+            <h3 style={{ margin: '0 0 8px', color: '#6c757d' }}> Archive Resource</h3>
             <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8,
               padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#856404' }}>
-              ⚠️ <strong>Warning:</strong> Archiving is permanent and cannot be undone. 
+              ⚠ <strong>Warning:</strong> Archiving is permanent and cannot be undone. 
               The resource will be hidden from public view.
             </div>
             <p style={{ color: '#666', fontSize: 14, margin: '0 0 12px' }}>
@@ -747,7 +778,7 @@ function ResourceReviewPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 440,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 8px', color: '#198754' }}>🔄 Republish Resource</h3>
+            <h3 style={{ margin: '0 0 8px', color: '#198754' }}> Republish Resource</h3>
             {history.filter(fb => fb.decision === 'UNPUBLISHED').length > 0 && (
               <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8,
                 padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#856404' }}>
@@ -799,7 +830,7 @@ function ResourceReviewPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 440,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 8px', color: '#198754' }}>✅ Approve Resource</h3>
+            <h3 style={{ margin: '0 0 8px', color: '#198754' }}> Approve Resource</h3>
             <p style={{ color: '#666', fontSize: 14, margin: '0 0 16px' }}>
               Adding feedback is <strong>optional</strong> but recommended.
             </p>
@@ -869,11 +900,21 @@ function ResourceReviewPage() {
                 </p>
               </div>
             ) : isTextMedia(previewMedia) ? (
-              <iframe
-                src={previewMedia.fileUrl}
-                title={previewMedia.fileName || 'Text preview'}
-                style={{ width: '80vw', height: '75vh', borderRadius: 8, background: '#fff', border: 'none' }}
-              />
+              <div style={{ background: 'white', borderRadius: 12, padding: 0, overflow: 'hidden',
+                width: '80vw', maxWidth: 800, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '14px 20px', background: '#2d6a4f', color: 'white',
+                  fontSize: 13, fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>📃 {previewMedia.fileName}</span>
+                  <span style={{ opacity: 0.7, fontWeight: 400 }}>
+                    {previewMedia.fileSize ? `${(previewMedia.fileSize / 1024).toFixed(1)} KB` : ''}
+                  </span>
+                </div>
+                <pre style={{ margin: 0, padding: '16px 20px', overflowY: 'auto', flex: 1,
+                  fontSize: 13, lineHeight: 1.7, color: '#333', whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word', fontFamily: 'monospace', background: 'white' }}>
+                  {txtLoading ? 'Loading…' : txtContent}
+                </pre>
+              </div>
             ) : isImageMedia(previewMedia) ? (
               <img src={previewMedia.fileUrl} alt={previewMedia.fileName}
                 style={{ maxWidth: '88vw', maxHeight: '88vh', borderRadius: 8,

@@ -36,6 +36,7 @@ public class ResourceReviewDetailResponse {
     private String copyrightDeclaration;
     private String externalLink;
     private String archiveReason;
+    private List<String> tags;
 
     // Timestamps
     private LocalDateTime createdAt;
