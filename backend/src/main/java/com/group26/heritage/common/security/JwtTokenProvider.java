@@ -14,12 +14,15 @@ public class JwtTokenProvider {
 
     private final Key key;
     private final long expiration;
+    private final JwtBlacklistService blacklistService;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") long expiration) {
+            @Value("${jwt.expiration}") long expiration,
+            JwtBlacklistService blacklistService) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.expiration = expiration;
+        this.blacklistService = blacklistService;
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -38,6 +41,9 @@ public class JwtTokenProvider {
     }
 
     public boolean validateToken(String token) {
+        if (blacklistService.isBlacklisted(token)) {
+            return false;
+        }
         try {
             parseClaims(token);
             return true;

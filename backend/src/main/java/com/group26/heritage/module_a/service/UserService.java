@@ -21,11 +21,14 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ContributorApplicationRepository applicationRepository;
+    private final EmailService emailService;
 
     public UserService(UserRepository userRepository,
-                       ContributorApplicationRepository applicationRepository) {
+                       ContributorApplicationRepository applicationRepository,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.applicationRepository = applicationRepository;
+        this.emailService = emailService;
     }
 
     public UserProfileResponse getProfileWithStatus(Long userId) {
@@ -96,15 +99,19 @@ public class UserService {
         app.setReviewedAt(LocalDateTime.now());
         app.setAdminId(adminId);
         applicationRepository.save(app);
+        emailService.sendApprovalEmail(user.getEmail(), user.getUsername());
     }
 
     @Transactional
     public void rejectApplication(Long applicationId, Long adminId) {
         ContributorApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+        User user = userRepository.findById(app.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         app.setStatus(ApplicationStatus.REJECTED);
         app.setReviewedAt(LocalDateTime.now());
         app.setAdminId(adminId);
         applicationRepository.save(app);
+        emailService.sendRejectionEmail(user.getEmail(), user.getUsername());
     }
 }

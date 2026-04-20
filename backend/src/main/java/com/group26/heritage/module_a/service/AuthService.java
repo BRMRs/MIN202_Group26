@@ -2,6 +2,7 @@ package com.group26.heritage.module_a.service;
 
 import com.group26.heritage.common.exception.UnauthorizedException;
 import com.group26.heritage.common.repository.UserRepository;
+import com.group26.heritage.common.security.JwtBlacklistService;
 import com.group26.heritage.common.security.JwtTokenProvider;
 import com.group26.heritage.entity.User;
 import com.group26.heritage.entity.enums.UserRole;
@@ -23,13 +24,19 @@ public class AuthService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
+    private final JwtBlacklistService jwtBlacklistService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtTokenProvider jwtTokenProvider) {
+                       JwtTokenProvider jwtTokenProvider,
+                       EmailService emailService,
+                       JwtBlacklistService jwtBlacklistService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.emailService = emailService;
+        this.jwtBlacklistService = jwtBlacklistService;
     }
 
     @Override
@@ -53,7 +60,9 @@ public class AuthService implements UserDetailsService {
         user.setRole(UserRole.VIEWER);
         user.setEmailVerified(false);
         user.setVerificationToken(UUID.randomUUID().toString());
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        emailService.sendVerificationEmail(saved.getEmail(), saved.getVerificationToken());
+        return saved;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -75,5 +84,9 @@ public class AuthService implements UserDetailsService {
         user.setEmailVerified(true);
         user.setVerificationToken(null);
         userRepository.save(user);
+    }
+
+    public void logout(String token) {
+        jwtBlacklistService.invalidate(token);
     }
 }

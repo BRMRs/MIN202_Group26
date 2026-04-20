@@ -43,7 +43,12 @@ export function AuthProvider({ children }) {
     return userData;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authApi.logoutApi();
+    } catch {
+      // ignore — still clear local state
+    }
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);

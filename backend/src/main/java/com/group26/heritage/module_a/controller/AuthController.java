@@ -6,7 +6,9 @@ import com.group26.heritage.module_a.dto.LoginRequest;
 import com.group26.heritage.module_a.dto.LoginResponse;
 import com.group26.heritage.module_a.dto.RegisterRequest;
 import com.group26.heritage.module_a.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -35,5 +37,14 @@ public class AuthController {
     public ApiResponse<Void> verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
         return ApiResponse.success("Email verified successfully", null);
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
+            authService.logout(bearer.substring(7));
+        }
+        return ApiResponse.success("Logged out successfully", null);
     }
 }
