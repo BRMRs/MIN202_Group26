@@ -4,22 +4,13 @@ import { getResourceDetail } from '../api/discoverApi';
 import { addComment, getComments, getLikedState, likeResource, unlikeResource } from '../api/commentApi';
 import { getEffectiveLikeCount, useResourceStats } from '../context/ResourceStatsContext';
 import { isNotFoundError, readAxiosError } from '../utils/readAxiosError';
+import { DEFAULT_RESOURCE_COVER } from '../utils/defaultResourceCover';
+import {
+  attachmentKindLabel,
+  mediaTypeOf,
+  partitionResourceDetailMedia,
+} from '../utils/resourceMediaPartition';
 import '../styles/discovery.css';
-
-const IMAGE_MEDIA_TYPES = new Set(['COVER', 'DETAIL']);
-const ATTACHMENT_MEDIA_TYPES = new Set(['DOCUMENT', 'VIDEO', 'AUDIO']);
-
-function mediaTypeOf(m) {
-  return String(m?.mediaType ?? m?.media_type ?? '').toUpperCase();
-}
-
-function parseExternalLinks(raw) {
-  if (raw == null || typeof raw !== 'string') return [];
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 function hrefForExternalLink(url) {
   const u = String(url).trim();
@@ -35,6 +26,123 @@ function CategoryGridIcon() {
       <rect x="9" y="1" width="6" height="6" rx="1.2" fill="currentColor" />
       <rect x="1" y="9" width="6" height="6" rx="1.2" fill="currentColor" />
       <rect x="9" y="9" width="6" height="6" rx="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Map / nav app style: inverted teardrop with inner disk (same look as common map UIs). */
+function MapPinIcon({ size = 18, innerFill = '#ffffff' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      style={{ flexShrink: 0, display: 'block' }}
+    >
+      <path
+        fill="currentColor"
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+      />
+      <circle cx="12" cy="9" r="3" fill={innerFill} />
+    </svg>
+  );
+}
+
+function MagnifyingGlassIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path
+        fill="currentColor"
+        d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+      />
+    </svg>
+  );
+}
+
+function WarningTriangleIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path
+        fill="currentColor"
+        d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"
+      />
+    </svg>
+  );
+}
+
+function ArchiveBoxIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path
+        fill="currentColor"
+        d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"
+      />
+    </svg>
+  );
+}
+
+function HeartFilledIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path
+        fill="currentColor"
+        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+      />
+    </svg>
+  );
+}
+
+function HeartOutlineIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path
+        fill="currentColor"
+        d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"
+      />
+    </svg>
+  );
+}
+
+function ChatBubbleIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path
+        fill="currentColor"
+        d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"
+      />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+    </svg>
+  );
+}
+
+function ChevronThinLeftIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="2.2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronThinRightIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="2.2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+    </svg>
+  );
+}
+
+function CloseXIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
     </svg>
   );
 }
@@ -218,7 +326,6 @@ function ImageZoomModal({ imageUrl, onClose, onPrev, onNext, hasMultiple }) {
     borderRadius: '50%',
     width: '50px',
     height: '50px',
-    fontSize: '2em',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -258,7 +365,11 @@ function ImageZoomModal({ imageUrl, onClose, onPrev, onNext, hasMultiple }) {
         onTouchStart={handleTouchStart}
       >
         {loadError ? (
-          <div style={{ color: '#ccc', fontSize: '1.1em' }}>no image</div>
+          <img
+            src={DEFAULT_RESOURCE_COVER}
+            alt=""
+            style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }}
+          />
         ) : (
           <img
             ref={imgRef}
@@ -328,7 +439,7 @@ function ImageZoomModal({ imageUrl, onClose, onPrev, onNext, hasMultiple }) {
             }}
             style={{ ...arrowStyle, left: '30px' }}
           >
-            ‹
+            <ChevronThinLeftIcon size={28} />
           </button>
           <button
             type="button"
@@ -338,7 +449,7 @@ function ImageZoomModal({ imageUrl, onClose, onPrev, onNext, hasMultiple }) {
             }}
             style={{ ...arrowStyle, right: '30px' }}
           >
-            ›
+            <ChevronThinRightIcon size={28} />
           </button>
         </>
       )}
@@ -356,18 +467,20 @@ function ImageZoomModal({ imageUrl, onClose, onPrev, onNext, hasMultiple }) {
           borderRadius: '50%',
           width: '44px',
           height: '44px',
-          fontSize: '1.5em',
           cursor: 'pointer',
           zIndex: 10002,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        ✕
+        <CloseXIcon size={22} />
       </button>
     </div>
   );
 }
 
-function ImageGallery({ mediaFiles }) {
+function ImageGallery({ mediaFiles, fallbackCoverUrl = DEFAULT_RESOURCE_COVER }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [mainImageError, setMainImageError] = useState(false);
@@ -402,15 +515,16 @@ function ImageGallery({ mediaFiles }) {
           width: '100%',
           height: '360px',
           borderRadius: '10px',
-          backgroundColor: '#f0f0f0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#888',
-          fontSize: '0.95em',
+          overflow: 'hidden',
+          border: '1px solid #d5e8dd',
+          backgroundColor: '#f4faf7',
         }}
       >
-        no image
+        <img
+          src={fallbackCoverUrl}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
       </div>
     );
   }
@@ -437,7 +551,11 @@ function ImageGallery({ mediaFiles }) {
           }}
         >
           {mainImageError ? (
-            <span style={{ color: '#aaa', fontSize: '0.95em' }}>no image</span>
+            <img
+              src={fallbackCoverUrl}
+              alt=""
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', display: 'block' }}
+            />
           ) : (
             <img
               src={current.fileUrl}
@@ -460,7 +578,10 @@ function ImageGallery({ mediaFiles }) {
                 pointerEvents: 'none',
               }}
             >
-              🔍 Click to zoom
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <MagnifyingGlassIcon size={13} />
+                Click to zoom
+              </span>
             </div>
           )}
           {mediaFiles.length > 1 && (
@@ -503,9 +624,12 @@ function ImageGallery({ mediaFiles }) {
                 width: '36px',
                 height: '36px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              ‹
+              <ChevronThinLeftIcon size={22} />
             </button>
             <button
               type="button"
@@ -526,9 +650,12 @@ function ImageGallery({ mediaFiles }) {
                 width: '36px',
                 height: '36px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              ›
+              <ChevronThinRightIcon size={22} />
             </button>
           </>
         )}
@@ -555,7 +682,15 @@ function ImageGallery({ mediaFiles }) {
                 transition: 'opacity 0.15s, outline 0.15s',
               }}
             >
-              <img src={m.fileUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img
+                src={m.fileUrl}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = DEFAULT_RESOURCE_COVER;
+                }}
+              />
             </button>
           ))}
         </div>
@@ -647,32 +782,16 @@ function ResourceDetailPage() {
     };
   }, [id, setCommentCountForResource, seedLikeCountIfAbsent, setUserLikedForResource]);
 
-  const { imageMedia, attachmentMedia, externalLinks } = useMemo(() => {
-    if (!resource) {
-      return { imageMedia: [], attachmentMedia: [], externalLinks: [] };
-    }
-    const raw = Array.isArray(resource.media) ? resource.media : [];
-    const images = [];
-    const attachments = [];
-    for (const m of raw) {
-      const t = mediaTypeOf(m);
-      if (IMAGE_MEDIA_TYPES.has(t)) images.push(m);
-      else if (ATTACHMENT_MEDIA_TYPES.has(t)) attachments.push(m);
-    }
-    if (images.length === 0 && resource.fileUrl) {
-      images.push({
-        id: 'legacy-cover',
-        fileUrl: resource.fileUrl,
-        fileName: null,
-        mediaType: 'DETAIL',
-      });
-    }
-    return {
-      imageMedia: images,
-      attachmentMedia: attachments,
-      externalLinks: parseExternalLinks(resource.externalLink),
-    };
-  }, [resource]);
+  const { imageMedia, attachmentMedia, externalLinks } = useMemo(
+    () => partitionResourceDetailMedia(resource),
+    [resource],
+  );
+
+  const visibleTags = useMemo(() => {
+    const raw = resource?.tags;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((tag) => tag && !tag.isDeleted && !tag.is_deleted);
+  }, [resource?.tags]);
 
   const handleSendComment = async () => {
     if (!newComment.trim()) {
@@ -748,7 +867,12 @@ function ResourceDetailPage() {
     return (
       <div className="d-page">
         <div className="d-load-error" role="alert" style={{ marginTop: '40px' }}>
-          <span>⚠ {error}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: '#b45309', display: 'flex' }}>
+              <WarningTriangleIcon size={20} />
+            </span>
+            {error}
+          </span>
           <button className="d-retry" type="button" onClick={() => window.location.reload()}>
             Retry
           </button>
@@ -782,15 +906,24 @@ function ResourceDetailPage() {
     );
   };
 
+  /** Black section: full strip + top-right chamfer. */
+  const missionClip =
+    'polygon(0 0, calc(100% - 108px) 0, 100% 108px, 100% 100%, 0 100%)';
+  /** Deep green: fill chamfer + upper band; bottom edge lower than before so cut corner is not white. */
+  const missionGreenClip =
+    'polygon(0 0, calc(100% - 108px) 0, 100% 108px, 100% 56%, 0 56%)';
+
   return (
+    <>
     <div className="d-page" style={{ maxWidth: '1050px', margin: '0 auto', minWidth: 0, overflowX: 'hidden' }}>
       <button
         type="button"
         className="d-button d-button-secondary"
         onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
-        style={{ marginBottom: '20px' }}
+        style={{ marginBottom: '20px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
       >
-        ← Back
+        <ChevronLeftIcon size={20} />
+        Back
       </button>
 
       {isArchived && (
@@ -806,8 +939,15 @@ function ResourceDetailPage() {
             fontSize: '0.92em',
           }}
         >
-          📦 <strong>This resource has been archived.</strong> It is no longer publicly listed on the browse page. Likes and comments are
-          disabled.
+          <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 10 }}>
+            <span style={{ color: '#856404', marginTop: 2, flexShrink: 0 }}>
+              <ArchiveBoxIcon size={20} />
+            </span>
+            <span>
+              <strong>This resource has been archived.</strong> It is no longer publicly listed on the browse page. Likes and comments are
+              disabled.
+            </span>
+          </span>
         </div>
       )}
 
@@ -846,16 +986,29 @@ function ResourceDetailPage() {
             )}
           </div>
           {resource.place && (
-            <p className="d-detail-meta-text" style={{ color: '#666', margin: '0 0 8px' }}>
-              📍 <strong>Place:</strong> {resource.place}
+            <p
+              className="d-detail-meta-text"
+              style={{
+                margin: '0 0 8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ color: '#ff4d4f', display: 'inline-flex' }} aria-hidden>
+                <MapPinIcon size={18} />
+              </span>
+              <strong style={{ color: '#666' }}>Place:</strong>{' '}
+              <span style={{ color: '#000' }}>{resource.place}</span>
             </p>
           )}
           <p className="d-detail-prose" style={{ color: '#333', lineHeight: 1.65, margin: '12px 0' }}>
             {resource.description || 'Not provided'}
           </p>
-          {resource.tags && resource.tags.length > 0 && (
+          {visibleTags.length > 0 && (
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
-              {resource.tags.map((tag) => (
+              {visibleTags.map((tag) => (
                 <span
                   key={tag.id || tag.name}
                   style={{
@@ -879,16 +1032,23 @@ function ResourceDetailPage() {
               style={{
                 marginTop: '4px',
                 marginBottom: '16px',
-                border: '1px solid #c5ddd0',
-                borderRadius: '12px',
-                padding: '14px 16px',
-                background: 'linear-gradient(180deg, #f8fdf9 0%, #f4faf7 100%)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
               }}
             >
-              <h3 style={{ margin: '0 0 12px', fontSize: '0.95em', color: '#1a3a2e', fontWeight: 700 }}>Files & links</h3>
               {attachmentMedia.length > 0 && (
-                <div style={{ marginBottom: externalLinks.length > 0 ? 14 : 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.82em', color: '#6b7280', marginBottom: 8 }}>Attached files</div>
+                <div
+                  style={{
+                    border: '1px solid #c5ddd0',
+                    borderRadius: '12px',
+                    padding: '14px 16px',
+                    background: 'linear-gradient(180deg, #f8fdf9 0%, #f4faf7 100%)',
+                  }}
+                >
+                  <h3 style={{ margin: '0 0 12px', fontSize: '0.95em', color: '#1a3a2e', fontWeight: 700 }}>
+                    Attachments
+                  </h3>
                   <ul style={{ margin: 0, paddingLeft: '1.1em', fontSize: '0.88em' }}>
                     {attachmentMedia.map((m) => {
                       const label = m.fileName || m.fileUrl || 'File';
@@ -904,16 +1064,14 @@ function ResourceDetailPage() {
                           }}
                         >
                           <span style={{ flex: '1 1 140px', minWidth: 0, wordBreak: 'break-all' }}>{label}</span>
-                          {mediaTypeOf(m) ? (
-                            <span style={{ fontSize: '0.85em', color: '#9ca3af' }}>{mediaTypeOf(m)}</span>
-                          ) : null}
+                          <span style={{ fontSize: '0.85em', color: '#9ca3af' }}>{attachmentKindLabel(m)}</span>
                           <button
                             type="button"
                             className="d-button"
                             onClick={() => viewAttachment(m)}
                             style={{ padding: '6px 12px', fontSize: '0.82em' }}
                           >
-                            查看
+                            View
                           </button>
                         </li>
                       );
@@ -922,8 +1080,17 @@ function ResourceDetailPage() {
                 </div>
               )}
               {externalLinks.length > 0 && (
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.82em', color: '#6b7280', marginBottom: 8 }}>External links</div>
+                <div
+                  style={{
+                    border: '1px solid #c5ddd0',
+                    borderRadius: '12px',
+                    padding: '14px 16px',
+                    background: 'linear-gradient(180deg, #f8fdf9 0%, #f4faf7 100%)',
+                  }}
+                >
+                  <h3 style={{ margin: '0 0 12px', fontSize: '0.95em', color: '#1a3a2e', fontWeight: 700 }}>
+                    Links
+                  </h3>
                   <ul style={{ margin: 0, paddingLeft: '1.1em', fontSize: '0.88em' }}>
                     {externalLinks.map((url) => (
                       <li key={url} style={{ marginBottom: 6, wordBreak: 'break-all' }}>
@@ -987,11 +1154,30 @@ function ResourceDetailPage() {
                 transition: 'all 0.2s',
               }}
             >
-              <span>{isLiked && !isArchived ? '❤️' : '🤍'}</span>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  color: isArchived ? '#bbb' : isLiked ? '#ff4d4f' : '#9ca3af',
+                }}
+                aria-hidden
+              >
+                {isLiked && !isArchived ? <HeartFilledIcon size={18} /> : <HeartOutlineIcon size={18} />}
+              </span>
               <span>{likeCountDisplayed}</span>
             </button>
-            <span style={{ color: '#666', fontSize: '0.92em' }}>
-              💬 {commentCountDisplayed} {commentCountLabel}
+            <span
+              style={{
+                color: '#666',
+                fontSize: '0.92em',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span style={{ color: '#6b7280', display: 'inline-flex' }} aria-hidden>
+                <ChatBubbleIcon size={17} />
+              </span>
+              {commentCountDisplayed} {commentCountLabel}
             </span>
           </div>
         </div>
@@ -1008,9 +1194,15 @@ function ResourceDetailPage() {
               color: '#999',
               fontSize: '0.9em',
               marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
             }}
           >
-            💬 Comments are disabled for archived resources. Existing comments are shown below for reference.
+            <span style={{ color: '#9ca3af', flexShrink: 0, marginTop: 1 }} aria-hidden>
+              <ChatBubbleIcon size={18} />
+            </span>
+            <span>Comments are disabled for archived resources. Existing comments are shown below for reference.</span>
           </div>
         ) : (
           <div style={{ marginBottom: '28px' }}>
@@ -1077,6 +1269,98 @@ function ResourceDetailPage() {
           )}
         </div>
       </div>
+    </div>
+
+    <div
+      style={{
+        width: '100vw',
+        marginLeft: 'calc(50% - 50vw)',
+        marginRight: 'calc(50% - 50vw)',
+        marginTop: '48px',
+        position: 'relative',
+        zIndex: 0,
+        isolation: 'isolate',
+        overflow: 'hidden',
+        /* Base shows as white in the cut corner (like the reference). */
+        background: '#ffffff',
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          background: 'linear-gradient(125deg, #166534 0%, #2d6a4f 45%, #1b4332 100%)',
+          clipPath: missionGreenClip,
+          transform: 'translate(38px, 6px)',
+          opacity: 0.96,
+          zIndex: 1,
+        }}
+      />
+      {/* Brightest tip: small triangle at (100%,0) — on top of green, below black mask */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: 'min(140px, 28%)',
+          height: 'min(140px, 28%)',
+          background: '#ffffff',
+          clipPath: 'polygon(100% 0, 100% 32px, calc(100% - 32px) 0)',
+          zIndex: 2,
+          pointerEvents: 'none',
+        }}
+      />
+      <section
+        aria-labelledby="our-mission-heading"
+        style={{
+          position: 'relative',
+          zIndex: 3,
+          /* Solid black; missionClip cuts off top-right — layers below show white tip + green */
+          background: '#000',
+          color: '#fff',
+          clipPath: missionClip,
+          padding: '36px clamp(18px, 5vw, 72px) 44px',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+          <h2
+            id="our-mission-heading"
+            style={{
+              margin: '0 0 14px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#fff',
+              fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif',
+            }}
+          >
+            OUR MISSION
+          </h2>
+          <p
+            style={{
+              margin: 0,
+              fontSize: '0.98rem',
+              lineHeight: 1.65,
+              fontStyle: 'italic',
+              color: '#fff',
+              fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif',
+              maxWidth: '52em',
+            }}
+          >
+            We empower communities to share, curate, and celebrate local heritage in the digital age. We connect people,
+            places, and living traditions—supporting open collaboration so that cultural knowledge stays discoverable,
+            respectful, and enduring for generations to come.
+          </p>
+        </div>
+      </section>
+    </div>
 
       {showEmptyModal && (
         <div
@@ -1107,7 +1391,9 @@ function ResourceDetailPage() {
               borderTop: '4px solid #2d6a4f',
             }}
           >
-            <div style={{ fontSize: '2.8em', marginBottom: '8px' }}>⚠️</div>
+            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center', color: '#d97706' }}>
+              <WarningTriangleIcon size={40} />
+            </div>
             <h3 style={{ margin: '0 0 10px', color: '#333' }}>Cannot be empty</h3>
             <p style={{ color: '#666', margin: '0 0 22px', fontSize: '0.9em' }}>Please write something before posting a comment.</p>
             <button type="button" className="d-button" onClick={() => setShowEmptyModal(false)} style={{ padding: '10px 36px' }}>
@@ -1116,7 +1402,7 @@ function ResourceDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

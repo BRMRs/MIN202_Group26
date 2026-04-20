@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DISCOVER_LOAD_ERROR_MESSAGE, listCategories, searchAndFilterResources } from '../api/discoverApi';
+import { DEFAULT_RESOURCE_COVER, thumbnailSrcOrDefault } from '../utils/defaultResourceCover';
 import '../styles/discovery.css';
 
 const PREVIEW_SIZE = 4;
@@ -157,11 +158,15 @@ function HomePage() {
                 {resources.map((r) => (
                   <article key={r.id} className="d-story-card">
                     <div className="d-story-image-wrap">
-                      {r.fileUrl ? (
-                        <img className="d-story-cover" src={r.fileUrl} alt={r.title || 'Resource'} />
-                      ) : (
-                        <div className="d-story-no-img">no image</div>
-                      )}
+                      <img
+                        className="d-story-cover"
+                        src={thumbnailSrcOrDefault(r.fileUrl)}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = DEFAULT_RESOURCE_COVER;
+                        }}
+                      />
                     </div>
                     <p className="d-story-label">{r.place || 'PLACE NOT SET'}</p>
                     <Link className="d-story-title" to={`/resources/${r.id}`}>

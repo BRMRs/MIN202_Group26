@@ -6,6 +6,7 @@ import {
   searchAndFilterResources,
 } from '../api/discoverApi';
 import { TagFilterCombo } from '../components/TagFilterCombo';
+import { DEFAULT_RESOURCE_COVER, thumbnailSrcOrDefault } from '../utils/defaultResourceCover';
 import '../styles/discovery.css';
 
 const MAX_FACET_SCAN_PAGES = 20;
@@ -258,11 +259,14 @@ function CategoryBrowsePage() {
         {resources.map((r) => (
           <article key={r.id} className="d-explore-tile">
             <div className="d-explore-tile-img">
-              {r.fileUrl ? (
-                <img src={r.fileUrl} alt={r.title || ''} />
-              ) : (
-                <div className="d-explore-tile-ph">No image</div>
-              )}
+              <img
+                src={thumbnailSrcOrDefault(r.fileUrl)}
+                alt=""
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = DEFAULT_RESOURCE_COVER;
+                }}
+              />
             </div>
             <div className="d-explore-tile-body">
               <h3 className="d-explore-tile-title">
