@@ -14,6 +14,16 @@ function Navbar() {
   const location = useLocation();
   const [draftAttentionCount, setDraftAttentionCount] = useState(0);
   const [unseenStatusNoticeCount, setUnseenStatusNoticeCount] = useState(0);
+  const [hasRejectedApplication, setHasRejectedApplication] = useState(false);
+
+  const rejectionReadStoreKey = useCallback(
+    (u) => `heritage-rejection-read:${u?.id ?? u?.username ?? 'anonymous'}`,
+    []
+  );
+
+  const applicationStatus = user?.applicationStatus ?? user?.contributorApplicationStatus ?? null;
+  const applicationReviewedAt =
+    user?.applicationReviewedAt ?? user?.contributorApplicationReviewedAt ?? null;
 
   const loadContributorNotices = useCallback(async () => {
     try {
@@ -54,7 +64,26 @@ function Navbar() {
       setDraftAttentionCount(0);
       setUnseenStatusNoticeCount(0);
     }
-  }, [isAuthenticated, user?.role, location.pathname, loadContributorNotices]);
+
+    if (isAuthenticated && user?.role === 'VIEWER') {
+      const isRejected = applicationStatus === 'REJECTED';
+      const reviewedMarker = applicationReviewedAt || 'reviewed';
+      const readToken = localStorage.getItem(rejectionReadStoreKey(user));
+      const hasUnreadRejection = isRejected && reviewedMarker && readToken !== String(reviewedMarker);
+      setHasRejectedApplication(Boolean(hasUnreadRejection));
+    } else {
+      setHasRejectedApplication(false);
+    }
+  }, [
+    isAuthenticated,
+    user,
+    user?.role,
+    location.pathname,
+    loadContributorNotices,
+    applicationStatus,
+    applicationReviewedAt,
+    rejectionReadStoreKey,
+  ]);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'CONTRIBUTOR') return undefined;
@@ -77,6 +106,19 @@ function Navbar() {
       window.removeEventListener('storage', onStorage);
     };
   }, [isAuthenticated, user, user?.role, loadContributorNotices]);
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'VIEWER') return undefined;
+
+    const onRejectionRead = () => {
+      setHasRejectedApplication(false);
+    };
+
+    window.addEventListener('heritage-rejection-read', onRejectionRead);
+    return () => {
+      window.removeEventListener('heritage-rejection-read', onRejectionRead);
+    };
+  }, [isAuthenticated, user?.role]);
 
   const handleLogout = () => {
     logout();
@@ -160,9 +202,14 @@ function Navbar() {
                   <span className="hn-avatar">
                     {user?.username?.[0]?.toUpperCase() || 'U'}
                   </span>
-                  {user?.role === 'CONTRIBUTOR' && unseenStatusNoticeCount > 0 && (
+                  {((user?.role === 'CONTRIBUTOR' && unseenStatusNoticeCount > 0)
+                    || (user?.role === 'VIEWER' && hasRejectedApplication)) && (
                     <span
-                      title="You have Resource Status Notifications in Profile."
+                      title={
+                        user?.role === 'VIEWER'
+                          ? 'Your contributor application has been reviewed.'
+                          : 'You have Resource Status Notifications in Profile.'
+                      }
                       style={{
                         position: 'absolute',
                         top: -1,

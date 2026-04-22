@@ -339,14 +339,16 @@ function EmptyState({ tabId, isContributor, stylesMod }) {
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, accent, stylesMod }) {
+function StatCard({ label, value, accent, stylesMod, onClick }) {
   return (
-    <div
+    <button
+      type="button"
       className={`${stylesMod.statCard} ${accent ? stylesMod[`statAccent_${accent}`] : ''}`}
+      onClick={onClick}
     >
       <span className={stylesMod.statValue}>{value}</span>
       <span className={stylesMod.statLabel}>{label}</span>
-    </div>
+    </button>
   );
 }
 
@@ -503,6 +505,18 @@ function ProfilePage() {
 
   const isContributor = user?.role === USER_ROLES.CONTRIBUTOR;
   const isAdmin       = user?.role === USER_ROLES.ADMIN;
+
+  const appStatus = user?.contributorApplicationStatus ?? user?.applicationStatus ?? null;
+  const appReviewedAt = user?.applicationReviewedAt ?? user?.contributorApplicationReviewedAt ?? null;
+  const rejectionReadStoreKey = `heritage-rejection-read:${user?.id ?? user?.username ?? 'anonymous'}`;
+
+  useEffect(() => {
+    if (!user || user.role !== USER_ROLES.VIEWER || appStatus !== 'REJECTED') return;
+
+    const reviewedMarker = appReviewedAt || 'reviewed';
+    localStorage.setItem(rejectionReadStoreKey, String(reviewedMarker));
+    window.dispatchEvent(new CustomEvent('heritage-rejection-read'));
+  }, [user, appStatus, appReviewedAt, rejectionReadStoreKey]);
 
   // Load contributor resources
   useEffect(() => {
@@ -664,10 +678,6 @@ function ProfilePage() {
 
   const initials = user.username?.[0]?.toUpperCase() || 'U';
 
-  // Derive contributor application status from user object
-  // Backend may surface this as user.contributorApplicationStatus or user.applicationStatus
-  const appStatus = user.contributorApplicationStatus ?? user.applicationStatus ?? null;
-
   return (
     <div className={styles.page}>
       {editing && (
@@ -756,11 +766,18 @@ function ProfilePage() {
         {/* ── Quick Stats (contributor only) ────────────────────── */}
         {isContributor && (
           <div className={styles.statsRow}>
-            <StatCard label="Total"          value={stats.total}    stylesMod={styles} />
-            <StatCard label="Drafts"         value={stats.drafts}   stylesMod={styles} />
-            <StatCard label="Pending Review" value={stats.pending}  stylesMod={styles} />
-            <StatCard label="Approved"       value={stats.approved} accent="approved"  stylesMod={styles} />
-            <StatCard label="Rejected"       value={stats.rejected} accent="rejected"  stylesMod={styles} />
+            <StatCard label="Total"          value={stats.total}    stylesMod={styles} onClick={() => setActiveTab('all')} />
+            <StatCard label="Drafts"         value={stats.drafts}   stylesMod={styles} onClick={() => setActiveTab('draft')} />
+            <StatCard label="Pending Review" value={stats.pending}  stylesMod={styles} onClick={() => setActiveTab('pending')} />
+            <StatCard label="Approved"       value={stats.approved} accent="approved"  stylesMod={styles} onClick={() => setActiveTab('approved')} />
+            <StatCard label="Rejected"       value={stats.rejected} accent="rejected"  stylesMod={styles} onClick={() => setActiveTab('rejected')} />
+            <StatCard
+              label="Status Updates"
+              value={stats.statusUpdates}
+              accent="statusUpdates"
+              stylesMod={styles}
+              onClick={() => setActiveTab('statusUpdates')}
+            />
           </div>
         )}
 
