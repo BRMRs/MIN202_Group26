@@ -8,11 +8,13 @@ import com.group26.heritage.entity.User;
 import com.group26.heritage.entity.enums.ApplicationStatus;
 import com.group26.heritage.entity.enums.UserRole;
 import com.group26.heritage.module_a.dto.ProfileUpdateRequest;
+import com.group26.heritage.module_a.dto.UserProfileResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -26,14 +28,22 @@ public class UserService {
         this.applicationRepository = applicationRepository;
     }
 
-    public User getProfile(Long userId) {
-        return userRepository.findById(userId)
+    public UserProfileResponse getProfileWithStatus(Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Get the latest application status
+        Optional<ContributorApplication> latestApp = applicationRepository.findByUserId(userId);
+        ApplicationStatus appStatus = latestApp.map(ContributorApplication::getStatus).orElse(null);
+        LocalDateTime reviewedAt = latestApp.map(ContributorApplication::getReviewedAt).orElse(null);
+
+        return UserProfileResponse.fromUser(user, appStatus, reviewedAt);
     }
 
     @Transactional
     public User updateProfile(Long userId, ProfileUpdateRequest request) {
-        User user = getProfile(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
             if (userRepository.existsByUsername(request.getUsername())) {
                 throw new IllegalArgumentException("Username already exists");
@@ -54,7 +64,8 @@ public class UserService {
 
     @Transactional
     public ContributorApplication applyForContributor(Long userId, String reason) {
-        User user = getProfile(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (user.getRole() != UserRole.VIEWER) {
             throw new IllegalArgumentException("Only VIEWER can apply for contributor role");
         }
@@ -77,7 +88,8 @@ public class UserService {
     public void approveApplication(Long applicationId, Long adminId) {
         ContributorApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
-        User user = getProfile(app.getUserId());
+        User user = userRepository.findById(app.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setRole(UserRole.CONTRIBUTOR);
         userRepository.save(user);
         app.setStatus(ApplicationStatus.APPROVED);

@@ -30,7 +30,16 @@ export function AuthProvider({ children }) {
     const { token: jwt, ...userData } = res.data.data;
     localStorage.setItem('token', jwt);
     setToken(jwt);
-    setUser(userData);
+
+    // Fetch full profile with application status
+    try {
+      const profileRes = await getProfile();
+      setUser(profileRes.data.data);
+    } catch {
+      // Fallback to login response data
+      setUser(userData);
+    }
+
     return userData;
   };
 
