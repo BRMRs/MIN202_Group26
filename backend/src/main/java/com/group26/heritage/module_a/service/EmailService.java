@@ -20,6 +20,20 @@ public class EmailService {
         this.appProperties = appProperties;
     }
 
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        String link = appProperties.getBaseUrl() + "/reset-password?token=" + token;
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromAddress);
+        msg.setTo(toEmail);
+        msg.setSubject("Heritage Platform - Reset Your Password");
+        msg.setText("You requested a password reset.\n\n"
+                + "Click the link below to set a new password:\n"
+                + link + "\n\n"
+                + "This link will expire in 1 hour.\n\n"
+                + "If you did not request this, please ignore this email.");
+        mailSender.send(msg);
+    }
+
     public void sendVerificationEmail(String toEmail, String token) {
         String link = appProperties.getBaseUrl() + "/api/auth/verify-email?token=" + token;
         SimpleMailMessage msg = new SimpleMailMessage();

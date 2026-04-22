@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
 import Toast from '../../common/components/Toast';
+import { forgotPassword } from '../api/authApi';
 import '../styles/auth.css';
 
 function LoginPage() {
@@ -39,10 +40,18 @@ function LoginPage() {
     }
   };
 
-  const handleForgotSubmit = (e) => {
+  const handleForgotSubmit = async (e) => {
     e.preventDefault();
     if (!forgotEmail) { showToast('Please enter your email address.'); return; }
-    showToast('If this email is registered, a reset link has been sent.', 'success');
+    setLoading(true);
+    try {
+      await forgotPassword(forgotEmail);
+      showToast('If this email is registered, a reset link has been sent.', 'success');
+    } catch {
+      showToast('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Logo SVG (heritage/globe style, matching the page theme)
@@ -87,8 +96,8 @@ function LoginPage() {
                 <button type="button" className="btn-secondary" onClick={() => { setView('login'); setToast(null); }}>
                   CANCEL
                 </button>
-                <button type="submit" className="btn-primary">
-                  RESET PASSWORD
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'SENDING...' : 'RESET PASSWORD'}
                 </button>
               </div>
             </form>

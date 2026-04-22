@@ -47,4 +47,16 @@ public class AuthController {
         }
         return ApiResponse.success("Logged out successfully", null);
     }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@RequestBody java.util.Map<String, String> body) {
+        authService.forgotPassword(body.get("email"));
+        return ApiResponse.success("If this email is registered, a reset link has been sent.", null);
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@RequestBody java.util.Map<String, String> body) {
+        authService.resetPassword(body.get("token"), body.get("newPassword"));
+        return ApiResponse.success("Password reset successfully", null);
+    }
 }
