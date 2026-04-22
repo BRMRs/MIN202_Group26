@@ -329,9 +329,10 @@ public class SearchService {
         }
 
         try {
+            // Exclude soft-deleted tags (Module E). Use numeric compare for MySQL BOOLEAN/tinyint compatibility.
             String sql = "SELECT rt.resource_id, t.id, t.name " +
-                    "FROM resource_tags rt JOIN tags t ON t.id = rt.tag_id " +
-                    "WHERE rt.resource_id IN :resourceIds AND t.is_deleted = false";
+                    "FROM resource_tags rt INNER JOIN tags t ON t.id = rt.tag_id " +
+                    "WHERE rt.resource_id IN :resourceIds AND COALESCE(t.is_deleted, 0) = 0";
 
             var query = entityManager.createNativeQuery(sql);
             query.setParameter("resourceIds", resourceIds);

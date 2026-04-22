@@ -8,6 +8,7 @@ import {
   searchAndFilterResources,
 } from '../api/discoverApi';
 import { TagFilterCombo } from '../components/TagFilterCombo';
+import { DEFAULT_RESOURCE_COVER, thumbnailSrcOrDefault } from '../utils/defaultResourceCover';
 import '../styles/discovery.css';
 
 /**
@@ -238,11 +239,15 @@ function SearchResultsPage() {
           <article key={r.id} className="d-card">
             <div className="d-card-body">
               <div className="d-thumb-wrap">
-                {r.fileUrl ? (
-                  <img className="d-thumb" src={r.fileUrl} alt={r.title || 'resource'} />
-                ) : (
-                  <div className="d-thumb-placeholder">No Image</div>
-                )}
+                <img
+                  className="d-thumb"
+                  src={thumbnailSrcOrDefault(r.fileUrl)}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_RESOURCE_COVER;
+                  }}
+                />
               </div>
               <div>
                 <h3 style={{ marginTop: 0 }}>
