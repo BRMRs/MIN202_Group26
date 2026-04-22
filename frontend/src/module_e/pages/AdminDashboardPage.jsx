@@ -9,11 +9,12 @@ import {
 } from "@/module_e/api/dashboardApi";
 
 const STATUS_COLORS = {
-  PENDING_REVIEW: "#b91c1c",
-  APPROVED: "#166534",
-  REJECTED: "#a16207",
-  UNPUBLISHED: "#7c3aed",
-  ARCHIVED: "#374151",
+  DRAFT: "#BFDFD2",
+  PENDING_REVIEW: "#51999F",
+  APPROVED: "#7BC0CD",
+  REJECTED: "#FAA26F",
+  UNPUBLISHED: "#FDCD94",
+  ARCHIVED: "#FEE199",
 };
 
 const OVERVIEW_CONTRIBUTOR_LIMIT = 5;

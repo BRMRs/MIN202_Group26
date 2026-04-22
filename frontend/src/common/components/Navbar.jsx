@@ -2,15 +2,11 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
 import useAuth from '../hooks/useAuth';
 import { resourceApi } from '../../module_b/api/resourceApi';
-
-const STATUS_UPDATE_STATUSES = new Set(['APPROVED', 'REJECTED', 'UNPUBLISHED', 'ARCHIVED']);
-const statusUpdateReadStoreKey = (user) =>
-  `heritage-status-update-read-map:${user?.id ?? user?.username ?? 'anonymous'}`;
-
-const statusUpdateItemKey = (resource) =>
-  `${resource?.id}:${resource?.status}:${resource?.updatedAt || resource?.createdAt || ''}`;
-
-const isStatusUpdateResource = (resource) => STATUS_UPDATE_STATUSES.has(resource?.status);
+import {
+  buildStatusNotifications,
+  fetchResourceReviewHistories,
+  statusUpdateReadStoreKey,
+} from '../utils/statusNotifications';
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -19,33 +15,36 @@ function Navbar() {
   const [draftAttentionCount, setDraftAttentionCount] = useState(0);
   const [unseenStatusNoticeCount, setUnseenStatusNoticeCount] = useState(0);
 
-  const loadContributorNotices = useCallback(() => {
-    Promise.all([resourceApi.getContributorRejectedCount(), resourceApi.getMine()])
-      .then(([countRes, mineRes]) => {
-        const res = countRes;
-        const draftCount = res.data?.draftAttentionCount ?? res.data?.rejectedCount;
-        const rawMine = mineRes.data?.data ?? mineRes.data;
-        const mine = Array.isArray(rawMine) ? rawMine : [];
-        let readMap = {};
-        try {
-          const raw = localStorage.getItem(statusUpdateReadStoreKey(user));
-          const parsed = raw ? JSON.parse(raw) : {};
-          readMap = parsed && typeof parsed === 'object' ? parsed : {};
-        } catch {
-          readMap = {};
-        }
-        const unread = mine
-          .filter(isStatusUpdateResource)
-          .filter((r) => !readMap[statusUpdateItemKey(r)])
-          .length;
+  const loadContributorNotices = useCallback(async () => {
+    try {
+      const [countRes, mineRes] = await Promise.all([
+        resourceApi.getContributorRejectedCount(),
+        resourceApi.getMine(),
+      ]);
 
-        setDraftAttentionCount(Number(draftCount) || 0);
-        setUnseenStatusNoticeCount(unread);
-      })
-      .catch(() => {
-        setDraftAttentionCount(0);
-        setUnseenStatusNoticeCount(0);
-      });
+      const draftCount = countRes.data?.draftAttentionCount ?? countRes.data?.rejectedCount;
+      const rawMine = mineRes.data?.data ?? mineRes.data;
+      const mine = Array.isArray(rawMine) ? rawMine : [];
+
+      let readMap = {};
+      try {
+        const raw = localStorage.getItem(statusUpdateReadStoreKey(user));
+        const parsed = raw ? JSON.parse(raw) : {};
+        readMap = parsed && typeof parsed === 'object' ? parsed : {};
+      } catch {
+        readMap = {};
+      }
+
+      const historyByResourceId = await fetchResourceReviewHistories(mine);
+      const notifications = buildStatusNotifications(mine, historyByResourceId);
+      const unread = notifications.filter((item) => !readMap[item.readKey]).length;
+
+      setDraftAttentionCount(Number(draftCount) || 0);
+      setUnseenStatusNoticeCount(unread);
+    } catch {
+      setDraftAttentionCount(0);
+      setUnseenStatusNoticeCount(0);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -121,7 +120,7 @@ function Navbar() {
                     </Link>
                     {draftAttentionCount > 0 && (
                       <span
-                        title="Resources have status updates. Please check the latest feedback."
+                        title="Resources have status notifications. Please check the latest feedback."
                         style={{
                           position: 'absolute',
                           top: -4,
@@ -163,7 +162,7 @@ function Navbar() {
                   </span>
                   {user?.role === 'CONTRIBUTOR' && unseenStatusNoticeCount > 0 && (
                     <span
-                      title="You have status updates in Profile."
+                      title="You have Resource Status Notifications in Profile."
                       style={{
                         position: 'absolute',
                         top: -1,

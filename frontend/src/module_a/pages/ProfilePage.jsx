@@ -3,39 +3,41 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
 import { updateProfile } from '../api/userApi';
 import { resourceApi } from '../../module_b/api/resourceApi';
-import { getReviewHistory } from '../../module_c/api/reviewApi';
 import { pickLatestDecisionTextByAny } from '../../module_b/utils/reviewFeedback';
 import { VALIDATION, USER_ROLES } from '../../common/utils/constants';
+import {
+  buildStatusNotifications,
+  fetchResourceReviewHistories,
+  statusUpdateReadStoreKey,
+} from '../../common/utils/statusNotifications';
 import styles from './ProfilePage.module.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'all',      label: 'My Resources' },
+  { id: 'all',      label: 'All My Resources' },
   { id: 'draft',    label: 'Drafts' },
   { id: 'pending',  label: 'Pending Review' },
   { id: 'approved', label: 'Approved' },
   { id: 'rejected', label: 'Rejected' },
-  { id: 'statusUpdates', label: 'Status Updates' },
+  { id: 'statusUpdates', label: 'Resource Status Notifications' },
 ];
 
 const STATUS_CONFIG = {
   DRAFT:          { label: 'Draft',          cls: 'statusDraft' },
   PENDING_REVIEW: { label: 'Pending Review', cls: 'statusPending' },
   APPROVED:       { label: 'Approved',       cls: 'statusApproved' },
+  REPUBLISHED:    { label: 'Republished',    cls: 'statusRepublished' },
   REJECTED:       { label: 'Rejected',       cls: 'statusRejected' },
   UNPUBLISHED:    { label: 'Unpublished',    cls: 'statusUnpublished' },
   ARCHIVED:       { label: 'Archived',       cls: 'statusArchived' },
 };
 
 const REASON_FALLBACK = 'Not available';
-const STATUS_UPDATE_STATUSES = ['APPROVED', 'REJECTED', 'UNPUBLISHED', 'ARCHIVED'];
-
-const statusUpdateReadStoreKey = (user) =>
-  `heritage-status-update-read-map:${user?.id ?? user?.username ?? 'anonymous'}`;
 
 function decisionForStatus(status) {
   if (status === 'APPROVED') return ['REPUBLISHED', 'APPROVED'];
+  if (status === 'REPUBLISHED') return ['REPUBLISHED'];
   if (status === 'REJECTED') return ['REJECTED'];
   if (status === 'UNPUBLISHED') return ['UNPUBLISHED'];
   if (status === 'ARCHIVED') return ['ARCHIVED'];
@@ -44,22 +46,16 @@ function decisionForStatus(status) {
 
 function reasonLabelForStatus(status) {
   if (status === 'APPROVED') return 'Approval note';
+  if (status === 'REPUBLISHED') return 'Republish note';
   if (status === 'REJECTED') return 'Reviewer note';
   if (status === 'UNPUBLISHED') return 'Unpublish reason';
   if (status === 'ARCHIVED') return 'Archive reason';
   return 'Review note';
 }
 
-function isStatusUpdateResource(resource) {
-  return STATUS_UPDATE_STATUSES.includes(resource?.status);
-}
-
-function statusUpdateItemKey(resource) {
-  return `${resource?.id}:${resource?.status}:${resource?.updatedAt || resource?.createdAt || ''}`;
-}
-
 function noteClassForStatus(status) {
   if (status === 'APPROVED') return 'reviewNoteApproved';
+  if (status === 'REPUBLISHED') return 'reviewNoteApproved';
   if (status === 'REJECTED') return 'reviewNoteRejected';
   if (status === 'UNPUBLISHED') return 'reviewNoteUnpublished';
   if (status === 'ARCHIVED') return 'reviewNoteArchived';
@@ -79,6 +75,18 @@ function fmtDate(str) {
   if (!str) return '';
   return new Date(str).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
+  });
+}
+
+function fmtDateTimeMinute(str) {
+  if (!str) return '';
+  return new Date(str).toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
   });
 }
 
@@ -106,6 +114,7 @@ function ResourceCard({
 }) {
   const navigate = useNavigate();
   const status = resource.status;
+  const eventTime = resource.statusChangedAt || resource.updatedAt || resource.createdAt;
   const mediaFiles = Array.isArray(resource.mediaFiles) ? resource.mediaFiles : [];
   const explicitCover = mediaFiles.find((m) => m?.mediaType === 'COVER');
   const firstMedia = mediaFiles[0];
@@ -157,7 +166,7 @@ function ResourceCard({
         {/* Footer */}
         <div className={stylesMod.cardFooter}>
           <span className={stylesMod.cardDate}>
-            Updated {fmtDate(resource.updatedAt || resource.createdAt)}
+            {isStatusUpdateTab ? `Status changed ${fmtDateTimeMinute(eventTime)}` : `Updated ${fmtDate(eventTime)}`}
           </span>
 
           <div className={stylesMod.cardActions}>
@@ -168,7 +177,7 @@ function ResourceCard({
                   onClick={() => onOpenInMyResources?.(resource.id)}
                   type="button"
                 >
-                  Open in My Resources
+                  Open in All My Resources
                 </button>
                 <button
                   className={stylesMod.actionBtnSecondary}
@@ -284,8 +293,8 @@ const EMPTY_CONFIG = {
   },
   statusUpdates: {
     icon: '🔔',
-    title: 'No status updates yet',
-    sub: 'Approval and admin status-change notes will appear here.',
+    title: 'No resource status notifications yet',
+    sub: 'Approval and admin status-change notifications will appear here.',
     action: { label: 'View All Resources', to: '/profile' },
   },
 };
@@ -330,16 +339,14 @@ function EmptyState({ tabId, isContributor, stylesMod }) {
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, accent, stylesMod, onClick }) {
+function StatCard({ label, value, accent, stylesMod }) {
   return (
-    <button
-      type="button"
+    <div
       className={`${stylesMod.statCard} ${accent ? stylesMod[`statAccent_${accent}`] : ''}`}
-      onClick={onClick}
     >
       <span className={stylesMod.statValue}>{value}</span>
       <span className={stylesMod.statLabel}>{label}</span>
-    </button>
+    </div>
   );
 }
 
@@ -489,6 +496,7 @@ function ProfilePage() {
   const [contentLoading, setContentLoading] = useState(false);
   const [contentError, setContentError]   = useState('');
   const [reviewNotes, setReviewNotes] = useState({});
+  const [statusNotifications, setStatusNotifications] = useState([]);
   const [readStatusUpdateMap, setReadStatusUpdateMap] = useState({});
   const [focusResourceId, setFocusResourceId] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
@@ -514,6 +522,8 @@ function ProfilePage() {
 
   useEffect(() => {
     if (!isContributor) {
+      setReviewNotes({});
+      setStatusNotifications([]);
       setReadStatusUpdateMap({});
       return;
     }
@@ -526,50 +536,73 @@ function ProfilePage() {
     }
   }, [isContributor, user]);
 
-  // Fetch review notes for rejected/unpublished/archived resources
+  // Fetch review notes and build per-status-change notifications
   useEffect(() => {
-    const targets = allResources.filter((r) => decisionForStatus(r.status).length > 0);
-    if (!targets.length) return;
-    Promise.all(
-      targets.map((r) =>
-        getReviewHistory(r.id)
-          .then((res) => {
-            const list = res.data?.data;
-            const decisions = decisionForStatus(r.status);
-            const fromHistory = pickLatestDecisionTextByAny(Array.isArray(list) ? list : [], decisions);
-            const fromArchiveField = r.archiveReason && String(r.archiveReason).trim()
-              ? String(r.archiveReason).trim()
-              : null;
-            const fromResource = r.reviewFeedback && String(r.reviewFeedback).trim()
-              ? String(r.reviewFeedback).trim()
-              : null;
-            return { id: r.id, text: fromHistory || fromArchiveField || fromResource || REASON_FALLBACK };
-          })
-          .catch(() => {
-            const fromArchiveField = r.archiveReason && String(r.archiveReason).trim()
-              ? String(r.archiveReason).trim()
-              : null;
-            const fromResource = r.reviewFeedback && String(r.reviewFeedback).trim()
-              ? String(r.reviewFeedback).trim()
-              : null;
-            return { id: r.id, text: fromArchiveField || fromResource || REASON_FALLBACK };
-          })
-      )
-    ).then((rows) => {
-      const map = {};
-      rows.forEach(({ id, text }) => { map[id] = text; });
-      setReviewNotes(map);
-    });
-  }, [allResources]);
+    if (!isContributor || allResources.length === 0) {
+      setReviewNotes({});
+      setStatusNotifications([]);
+      return;
+    }
 
-  const statusUpdateResources = allResources.filter(isStatusUpdateResource);
-  const unreadStatusUpdates = statusUpdateResources.filter(
-    (r) => !readStatusUpdateMap[statusUpdateItemKey(r)]
+    let isCancelled = false;
+
+    fetchResourceReviewHistories(allResources)
+      .then((historyByResourceId) => {
+        if (isCancelled) return;
+
+        const nextNotes = {};
+
+        allResources.forEach((resource) => {
+          const decisions = decisionForStatus(resource.status);
+          if (decisions.length === 0) return;
+
+          const history = Array.isArray(historyByResourceId[resource.id]) ? historyByResourceId[resource.id] : [];
+          const fromHistory = pickLatestDecisionTextByAny(history, decisions);
+          const fromArchiveField = resource.archiveReason && String(resource.archiveReason).trim()
+            ? String(resource.archiveReason).trim()
+            : null;
+          const fromResource = resource.reviewFeedback && String(resource.reviewFeedback).trim()
+            ? String(resource.reviewFeedback).trim()
+            : null;
+
+          nextNotes[resource.id] = fromHistory || fromArchiveField || fromResource || REASON_FALLBACK;
+        });
+
+        setReviewNotes(nextNotes);
+        setStatusNotifications(buildStatusNotifications(allResources, historyByResourceId));
+      })
+      .catch(() => {
+        if (isCancelled) return;
+
+        const nextNotes = {};
+        allResources.forEach((resource) => {
+          const decisions = decisionForStatus(resource.status);
+          if (decisions.length === 0) return;
+          const fromArchiveField = resource.archiveReason && String(resource.archiveReason).trim()
+            ? String(resource.archiveReason).trim()
+            : null;
+          const fromResource = resource.reviewFeedback && String(resource.reviewFeedback).trim()
+            ? String(resource.reviewFeedback).trim()
+            : null;
+          nextNotes[resource.id] = fromArchiveField || fromResource || REASON_FALLBACK;
+        });
+
+        setReviewNotes(nextNotes);
+        setStatusNotifications([]);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isContributor, allResources]);
+
+  const unreadStatusUpdates = statusNotifications.filter(
+    (item) => !readStatusUpdateMap[item.readKey]
   );
 
-  const markStatusUpdateAsRead = (resource) => {
-    if (!resource) return;
-    const key = statusUpdateItemKey(resource);
+  const markStatusUpdateAsRead = (item) => {
+    const key = item?.statusUpdateKey ?? item?.readKey;
+    if (!key) return;
     if (readStatusUpdateMap[key]) return;
 
     setReadStatusUpdateMap((prev) => {
@@ -723,12 +756,11 @@ function ProfilePage() {
         {/* ── Quick Stats (contributor only) ────────────────────── */}
         {isContributor && (
           <div className={styles.statsRow}>
-            <StatCard label="Total"          value={stats.total}    stylesMod={styles} onClick={() => setActiveTab('all')} />
-            <StatCard label="Drafts"         value={stats.drafts}   stylesMod={styles} onClick={() => setActiveTab('draft')} />
-            <StatCard label="Pending Review" value={stats.pending}  stylesMod={styles} onClick={() => setActiveTab('pending')} />
-            <StatCard label="Approved"       value={stats.approved} accent="approved"  stylesMod={styles} onClick={() => setActiveTab('approved')} />
-            <StatCard label="Rejected"       value={stats.rejected} accent="rejected"  stylesMod={styles} onClick={() => setActiveTab('rejected')} />
-            <StatCard label="Status Updates" value={stats.statusUpdates} accent="statusUpdates" stylesMod={styles} onClick={() => setActiveTab('statusUpdates')} />
+            <StatCard label="Total"          value={stats.total}    stylesMod={styles} />
+            <StatCard label="Drafts"         value={stats.drafts}   stylesMod={styles} />
+            <StatCard label="Pending Review" value={stats.pending}  stylesMod={styles} />
+            <StatCard label="Approved"       value={stats.approved} accent="approved"  stylesMod={styles} />
+            <StatCard label="Rejected"       value={stats.rejected} accent="rejected"  stylesMod={styles} />
           </div>
         )}
 
@@ -742,10 +774,17 @@ function ProfilePage() {
                   key={t.id}
                   role="tab"
                   aria-selected={activeTab === t.id}
-                  className={`${styles.tabBtn} ${activeTab === t.id ? styles.tabBtnActive : ''}`}
+                  className={`${styles.tabBtn} ${t.id === 'statusUpdates' ? styles.tabBtnNotice : ''} ${activeTab === t.id ? styles.tabBtnActive : ''}`}
                   onClick={() => setActiveTab(t.id)}
                 >
                   {t.label}
+                  {t.id === 'statusUpdates' && stats.statusUpdates > 0 && (
+                    <span
+                      className={`${styles.tabAlertDot} ${styles.tabAlertDotTop}`}
+                      title="You have new resource status notifications."
+                      aria-hidden
+                    />
+                  )}
                   {/* Count pip */}
                   {t.id !== 'all' && (() => {
                     const map = {
@@ -757,7 +796,7 @@ function ProfilePage() {
                     };
                     const n = map[t.id] ?? 0;
                     return n > 0
-                      ? <span className={styles.tabCount}>{n}</span>
+                      ? <span className={`${styles.tabCount} ${t.id === 'statusUpdates' ? styles.tabCountAlert : ''}`}>{n}</span>
                       : null;
                   })()}
                 </button>
@@ -776,17 +815,34 @@ function ProfilePage() {
                 <EmptyState tabId={activeTab} isContributor={isContributor} stylesMod={styles} />
               ) : (
                 <div className={styles.resourceList}>
-                  {tabResources.map((r) => (
-                    <ResourceCard
-                      key={r.id}
-                      resource={r}
-                      reviewNote={reviewNotes[r.id]}
-                      stylesMod={styles}
-                      isStatusUpdateTab={activeTab === 'statusUpdates'}
-                      onMarkAsRead={markStatusUpdateAsRead}
-                      onOpenInMyResources={openStatusUpdateInMyResources}
-                    />
-                  ))}
+                  {activeTab === 'statusUpdates'
+                    ? tabResources.map((item) => (
+                      <ResourceCard
+                        key={item.readKey}
+                        resource={{
+                          ...item.resource,
+                          status: item.decision,
+                          statusChangedAt: item.reviewedAt,
+                          statusUpdateKey: item.readKey,
+                        }}
+                        reviewNote={item.feedbackText || REASON_FALLBACK}
+                        stylesMod={styles}
+                        isStatusUpdateTab
+                        onMarkAsRead={markStatusUpdateAsRead}
+                        onOpenInMyResources={openStatusUpdateInMyResources}
+                      />
+                    ))
+                    : tabResources.map((r) => (
+                      <ResourceCard
+                        key={r.id}
+                        resource={r}
+                        reviewNote={reviewNotes[r.id]}
+                        stylesMod={styles}
+                        isStatusUpdateTab={false}
+                        onMarkAsRead={markStatusUpdateAsRead}
+                        onOpenInMyResources={openStatusUpdateInMyResources}
+                      />
+                    ))}
                 </div>
               )}
             </div>

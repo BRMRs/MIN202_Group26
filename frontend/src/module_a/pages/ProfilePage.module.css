@@ -238,7 +238,7 @@
 
 .statsRow {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -248,19 +248,17 @@
   border-radius: 12px;
   padding: 18px 14px;
   text-align: center;
-  cursor: pointer;
+  cursor: default;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+  transition: box-shadow 0.15s;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .statCard:hover {
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-  transform: translateY(-1px);
-  border-color: #2d6a4f;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .statValue {
@@ -322,9 +320,14 @@
   gap: 7px;
   transition: color 0.15s, border-color 0.15s;
   margin-bottom: -1px;
+  position: relative;
 }
 
 .tabBtn:hover { color: #2d6a4f; }
+
+.tabBtnNotice {
+  padding-right: 34px;
+}
 
 .tabBtnActive {
   color: #2d6a4f;
@@ -340,6 +343,34 @@
   border-radius: 999px;
   min-width: 18px;
   text-align: center;
+}
+
+.tabAlertDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e53935;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.tabAlertDotTop {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+}
+
+.tabNoticeBadge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tabCountAlert {
+  background: #dc2626;
+  color: #fff;
 }
 
 .tabContent {
@@ -433,6 +464,7 @@
 .statusDraft    { background: #dbeafe; color: #1e40af; }
 .statusPending  { background: #fef9c3; color: #92400e; }
 .statusApproved { background: #dcfce7; color: #15803d; }
+.statusRepublished { background: #ecfeff; color: #0f766e; }
 .statusRejected { background: #fee2e2; color: #991b1b; }
 .statusUnpublished { background: #dbeafe; color: #1d4ed8; }
 .statusArchived { background: #f3f4f6; color: #6b7280; }
