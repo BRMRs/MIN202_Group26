@@ -34,12 +34,13 @@ public class ResourceService {
 
     private static final int TITLE_MAX_LENGTH = 30;
     private static final int DESCRIPTION_MAX_LENGTH = 2000;
+    private static final int MAX_TAGS = 5;
     private static final long MAX_FILE_BYTES = 50L * 1024 * 1024;
     private static final int MAX_FILES = 5;
     private static final List<String> ALLOWED_FILE_EXTENSIONS = List.of(
             ".docx", ".pdf", ".txt",
             ".png", ".jpg", ".jpeg",
-            ".mov", ".mp3"
+            ".mov", ".mp4", ".mp3"
     );
     private static final List<String> PLACES = List.of("北京", "上海", "广州", "成都", "西安");
     private static final List<String> RECOMMENDED_TAGS = List.of(
@@ -50,11 +51,11 @@ public class ResourceService {
             "Artifact"
     );
     private static final List<String> COPYRIGHT_OPTIONS = List.of(
-            "原创授权，可用于文化遗产研究与展示",
-            "仅限教育与非商业传播，需署名",
-            "社区共创内容，引用需注明来源与贡献者",
-            "受访者授权发布，禁止二次改编",
-            "馆藏资料数字化版本，受馆方版权政策约束"
+            "Original work authorized for cultural heritage research and exhibition",
+            "For educational and non-commercial distribution only, attribution required",
+            "Community co-created content, citations must include source and contributors",
+            "Published with interviewee authorization, no derivative adaptations allowed",
+            "Digitized collection material, subject to the institution's copyright policy"
     );
 
     private final ResourceRepository repository;
@@ -350,7 +351,7 @@ public class ResourceService {
         if (payload == null) return;
         applyCategoryFields(resource, payload.getCategoryId());
         validatePlace(payload.getPlace());
-        validateChoice(payload.getCopyrightDeclaration(), COPYRIGHT_OPTIONS, "版权声明");
+        validateChoice(payload.getCopyrightDeclaration(), COPYRIGHT_OPTIONS, "Copyright declaration");
         validateExternalLinks(payload.getExternalLinks());
         if (!isBlank(payload.getTitle()) && payload.getTitle().length() > TITLE_MAX_LENGTH) {
             throw new IllegalStateException("标题不能超过30字");
@@ -422,6 +423,9 @@ public class ResourceService {
         clearResourceTags(resourceId);
 
         List<String> tagNames = parseTagNames(tagInput);
+        if (tagNames.size() > MAX_TAGS) {
+            throw new IllegalStateException("最多可填写5个标签");
+        }
         if (tagNames.isEmpty()) return;
 
         for (String name : tagNames) {
@@ -441,15 +445,16 @@ public class ResourceService {
 
     private List<String> parseTagNames(String input) {
         if (isBlank(input)) return Collections.emptyList();
-        String[] parts = input.trim().split("\\s+");
+        String raw = input.trim();
         List<String> result = new ArrayList<>();
-        for (String part : parts) {
-            String value = part.trim();
-            if (value.isEmpty()) continue;
-            if (value.startsWith("#")) {
-                value = value.substring(1).trim();
+        if (!raw.contains("#")) {
+            result.add(raw);
+        } else {
+            String[] parts = raw.split("#");
+            for (int i = 1; i < parts.length; i++) {
+                String value = parts[i].trim();
+                if (!value.isEmpty()) result.add(value);
             }
-            if (!value.isEmpty()) result.add(value);
         }
         return result.stream()
                 .map(String::trim)
@@ -485,14 +490,14 @@ public class ResourceService {
         String lower = filename.toLowerCase(Locale.ROOT);
         boolean allowed = ALLOWED_FILE_EXTENSIONS.stream().anyMatch(lower::endsWith);
         if (!allowed) {
-            throw new IllegalStateException("文件类型仅支持 docx、pdf、txt、png、jpg、jpeg、mov、mp3");
+            throw new IllegalStateException("文件类型仅支持 docx、pdf、txt、png、jpg、jpeg、mov、mp4、mp3");
         }
     }
 
     private MediaType resolveMediaType(String filename) {
         String lower = filename.toLowerCase(Locale.ROOT);
         if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return MediaType.DETAIL;
-        if (lower.endsWith(".mov")) return MediaType.VIDEO;
+        if (lower.endsWith(".mov") || lower.endsWith(".mp4")) return MediaType.VIDEO;
         if (lower.endsWith(".mp3")) return MediaType.AUDIO;
         return MediaType.DOCUMENT;
     }

@@ -7,6 +7,17 @@ import { parseApiError } from '../../common/utils/apiError'
 import { formStateFromDraftRow } from '../utils/draftFormState'
 import { pickLatestRejectionText } from '../utils/reviewFeedback'
 
+const parseTags = (input) => {
+  const raw = String(input || '').trim()
+  if (!raw) return []
+  if (!raw.includes('#')) return [raw]
+  return raw
+    .split('#')
+    .slice(1)
+    .map(tag => tag.trim())
+    .filter(Boolean)
+}
+
 export default function DraftBoxPage() {
   const [drafts, setDrafts] = useState([])
   const [options, setOptions] = useState(null)
@@ -106,7 +117,7 @@ export default function DraftBoxPage() {
   }
 
   const showTagError = (id) => {
-    setTagErrors(prev => ({ ...prev, [id]: 'Tags must start with #' }))
+    setTagErrors(prev => ({ ...prev, [id]: 'Up to 5 tags only.' }))
     if (tagErrorTimerRef.current[id]) clearTimeout(tagErrorTimerRef.current[id])
     tagErrorTimerRef.current[id] = setTimeout(() => {
       setTagErrors(prev => {
@@ -122,7 +133,8 @@ export default function DraftBoxPage() {
       showExternalLinkError(id)
       return
     }
-    if (forms[id]?.tags && !forms[id].tags.trim().startsWith('#')) {
+    const tagCount = parseTags(forms[id]?.tags).length
+    if (tagCount > 5) {
       showTagError(id)
       return
     }
@@ -147,7 +159,8 @@ export default function DraftBoxPage() {
       showExternalLinkError(id)
       return
     }
-    if (forms[id]?.tags && !forms[id].tags.trim().startsWith('#')) {
+    const tagCount = parseTags(forms[id]?.tags).length
+    if (tagCount > 5) {
       showTagError(id)
       return
     }

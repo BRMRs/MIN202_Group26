@@ -117,8 +117,34 @@
 }
 
 /* ── File upload ── */
-.fileInput {
+.filePickerRow {
   margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filePickerButton {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.filePickerButton:hover {
+  border-color: #9ca3af;
+}
+
+.filePickerText {
+  font-size: 14px;
+  color: #374151;
+}
+
+.fileInputHidden {
+  display: none;
 }
 
 .fileError {

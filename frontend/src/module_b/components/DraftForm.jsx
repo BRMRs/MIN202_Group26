@@ -15,6 +15,16 @@ const CATEGORY_TRANSLATIONS = {
 }
 
 const translateCategoryName = name => CATEGORY_TRANSLATIONS[name] || name
+const parseTags = (input) => {
+  const raw = String(input || '').trim()
+  if (!raw) return []
+  if (!raw.includes('#')) return [raw]
+  return raw
+    .split('#')
+    .slice(1)
+    .map(tag => tag.trim())
+    .filter(Boolean)
+}
 
 export default function DraftForm({ form, setForm, options, files, setFiles, serverMedia, fileInputResetKey = 0, externalLinkError, tagSubmitError }) {
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
@@ -35,7 +45,11 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
     if (!incoming || incoming.length === 0) return
     const current = files || []
     const next = [...current]
-    for (const file of Array.from(incoming)) {
+    const selectedFiles = Array.from(incoming)
+    if (current.length + selectedFiles.length > maxFiles) {
+      showFileError(`You can upload up to ${maxFiles} files only.`)
+    }
+    for (const file of selectedFiles) {
       if (next.length >= maxFiles) break
       if (file.size > maxFileSizeBytes) {
         showFileError('File exceeds 50MB. Upload failed.')
@@ -70,10 +84,11 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
     set('externalLinks', next)
   }
 
-  const fileHint = allowedExt.length > 0 ? allowedExt.join(' / ') : '.docx / .pdf / .txt / .png / .jpg / .jpeg / .mov / .mp3'
+  const fileHint = allowedExt.length > 0 ? allowedExt.join(' / ') : '.docx / .pdf / .txt / .png / .jpg / .jpeg / .mov / .mp4 / .mp3'
   const [tagError, setTagError] = useState('')
   const [fileError, setFileError] = useState('')
   const fileErrorTimerRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   const showFileError = message => {
     setFileError(message)
@@ -81,9 +96,13 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
     fileErrorTimerRef.current = setTimeout(() => setFileError(''), 2000)
   }
 
+  const selectedFileSummary = (files?.length || 0) > 0
+    ? `${files.length} file(s) selected`
+    : 'No file selected'
+
   const addTagSlot = () => {
     const current = form.tags || ''
-    const parts = current.split(' ').filter(Boolean)
+    const parts = parseTags(current)
     if (parts.length >= 5) {
       setTagError('Up to 5 tags only.')
       return
@@ -97,13 +116,14 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
 
   const addRecommendedTag = (tag) => {
     const current = (form.tags || '').trim()
-    const parts = current.split(/\s+/).filter(Boolean)
+    const parts = parseTags(current)
     const normalized = tag.startsWith('#') ? tag : `#${tag}`
+    const normalizedName = normalized.replace(/^#/, '').trim()
     if (parts.length >= 5) {
       setTagError('Up to 5 tags only.')
       return
     }
-    if (parts.includes(normalized)) return
+    if (parts.some(item => item.toLowerCase() === normalizedName.toLowerCase())) return
     const next = current ? `${current} ${normalized}` : normalized
     set('tags', next)
     setTagError('')
@@ -225,7 +245,7 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
         <div className={styles.field}>
           <div className={styles.labelRow}>
             <label className={styles.label}>
-              Tags <span className={styles.req}>*</span>
+              Tags
               {options.recommendedTags?.length > 0 && (
                 <span className={styles.muted}> — suggested: {options.recommendedTags.join(', ')}</span>
               )}
@@ -284,6 +304,7 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
             Files
             <span className={styles.muted}> — {fileHint}, up to {maxFiles} files, ≤50MB each</span>
           </label>
+          <div className={styles.muted}>You can upload up to {maxFiles} files. The first image will be used as the cover.</div>
           {fileError && <div className={styles.fileError}>{fileError}</div>}
           {serverMedia?.length > 0 && (
             <div className={styles.fileList}>
@@ -301,14 +322,25 @@ export default function DraftForm({ form, setForm, options, files, setFiles, ser
               ))}
             </div>
           )}
-          <input
-            key={`file-input-${fileInputResetKey}`}
-            type="file"
-            accept={allowedExt.join(',')}
-            multiple
-            onChange={e => addFiles(e.target.files)}
-            className={styles.fileInput}
-          />
+          <div className={styles.filePickerRow}>
+            <button
+              type="button"
+              className={styles.filePickerButton}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose files
+            </button>
+            <span className={styles.filePickerText}>{selectedFileSummary}</span>
+            <input
+              key={`file-input-${fileInputResetKey}`}
+              ref={fileInputRef}
+              type="file"
+              accept={allowedExt.join(',')}
+              multiple
+              onChange={e => addFiles(e.target.files)}
+              className={styles.fileInputHidden}
+            />
+          </div>
           {files?.length > 0 && (
             <div className={styles.fileList}>
               {previews.map(({ file, url }, index) => (

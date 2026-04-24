@@ -17,6 +17,17 @@ const emptyForm = () => ({
   province: ''
 })
 
+const parseTags = (input) => {
+  const raw = String(input || '').trim()
+  if (!raw) return []
+  if (!raw.includes('#')) return [raw]
+  return raw
+    .split('#')
+    .slice(1)
+    .map(tag => tag.trim())
+    .filter(Boolean)
+}
+
 export default function ResourceSubmissionPage() {
   const { isAuthenticated } = useAuthContext()
   const [options, setOptions] = useState(null)
@@ -44,12 +55,12 @@ export default function ResourceSubmissionPage() {
     if (form.categoryId === '' || form.categoryId == null) errs.push('Category')
     if (!form.place) errs.push('Place')
     if (!form.description.trim()) errs.push('Description')
-    if (!form.tags.trim()) errs.push('Tags')
     if (!form.copyrightDeclaration) errs.push('Copyright Declaration')
     const links = form.externalLinks || []
     const invalidLinks = links.filter(link => link && !/^https?:\/\//i.test(link))
     if (invalidLinks.length > 0) errs.push('External Link')
-    if (form.tags && !form.tags.trim().startsWith('#')) errs.push('Tag Prefix')
+    const tagCount = parseTags(form.tags).length
+    if (tagCount > 5) errs.push('Tag Count')
     const validLinks = links.filter(link => link && /^https?:\/\//i.test(link))
     if ((files?.length || 0) === 0 && validLinks.length === 0) errs.push('File or External Link')
     return errs
@@ -62,7 +73,7 @@ export default function ResourceSubmissionPage() {
   }
 
   const showTagSubmitError = () => {
-    setTagSubmitError('Tags must start with #')
+    setTagSubmitError('Up to 5 tags only.')
     if (tagErrorTimerRef.current) clearTimeout(tagErrorTimerRef.current)
     tagErrorTimerRef.current = setTimeout(() => setTagSubmitError(''), 2000)
   }
@@ -81,7 +92,7 @@ export default function ResourceSubmissionPage() {
     if (errs.length > 0) {
       setErrors(errs)
       if (errs.includes('External Link')) showExternalLinkError()
-      if (errs.includes('Tag Prefix')) showTagSubmitError()
+      if (errs.includes('Tag Count')) showTagSubmitError()
       return
     }
     setErrors([])
@@ -106,7 +117,7 @@ export default function ResourceSubmissionPage() {
       showExternalLinkError()
       return
     }
-    if (errs.includes('Tag Prefix')) {
+    if (errs.includes('Tag Count')) {
       showTagSubmitError()
       return
     }
