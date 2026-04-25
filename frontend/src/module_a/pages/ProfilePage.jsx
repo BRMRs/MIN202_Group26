@@ -303,7 +303,7 @@ function EmptyState({ tabId, isContributor, stylesMod }) {
   if (!isContributor) {
     return (
       <div className={stylesMod.emptyPanel}>
-        <span className={stylesMod.emptyIcon}>🌿</span>
+
         <h3 className={stylesMod.emptyTitle}>Become a Contributor</h3>
         <p className={stylesMod.emptySubtitle}>
           Apply for contributor access to start sharing heritage resources with the community.

@@ -142,7 +142,7 @@ function ContributorApplyPage() {
 
         {/* Contributor benefits info panel */}
         <div className={styles.infoPanel}>
-          <span className={styles.infoIcon}>🏛️</span>
+
           <div className={styles.infoText}>
             <strong>Contributor access</strong> lets you submit heritage resources, save drafts,
             and track your submissions through the review process.
