@@ -5,9 +5,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class ContributorApplyRequest {
-
-    @NotBlank(message = "Reason is required")
-    @Size(max = 2000, message = "Reason must not exceed 2000 characters")
+public class ContributorRejectRequest {
+    @NotBlank(message = "Reject reason is required")
+    @Size(max = 1000, message = "Reject reason must not exceed 1000 characters")
     private String reason;
 }

@@ -3,13 +3,16 @@ package com.group26.heritage.module_a.controller;
 import com.group26.heritage.common.dto.ApiResponse;
 import com.group26.heritage.entity.ContributorApplication;
 import com.group26.heritage.entity.User;
-import com.group26.heritage.module_a.dto.ContributorApplyRequest;
 import com.group26.heritage.module_a.dto.ProfileUpdateRequest;
 import com.group26.heritage.module_a.dto.UserProfileResponse;
 import com.group26.heritage.module_a.service.UserService;
-import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -34,10 +37,11 @@ public class UserController {
         return ApiResponse.success("Profile updated", updated);
     }
 
-    @PostMapping("/apply-contributor")
+    @PostMapping(value = "/apply-contributor", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ContributorApplication> applyForContributor(@AuthenticationPrincipal User user,
-                                                                    @Valid @RequestBody ContributorApplyRequest request) {
-        ContributorApplication app = userService.applyForContributor(user.getId(), request.getReason());
+                                                                     @RequestParam("reason") String reason,
+                                                                     @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
+        ContributorApplication app = userService.applyForContributor(user.getId(), reason, files);
         return ApiResponse.success("Application submitted", app);
     }
 }

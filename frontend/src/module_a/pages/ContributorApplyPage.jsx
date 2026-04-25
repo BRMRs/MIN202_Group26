@@ -5,16 +5,21 @@ import { applyForContributor } from '../api/userApi';
 import { APPLICATION_STATUS } from '../../common/utils/constants';
 import styles from './ContributorApplyPage.module.css';
 
-const MAX_REASON_LENGTH = 100;
+const MAX_REASON_LENGTH = 2000;
+const MAX_EVIDENCE_FILES = 5;
+const MAX_EVIDENCE_FILE_SIZE = 50 * 1024 * 1024;
+const ALLOWED_EVIDENCE_EXTENSIONS = ['.docx', '.pdf', '.txt', '.png', '.jpg', '.jpeg', '.mov', '.mp4', '.mp3'];
 
 function ContributorApplyPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState(null); // null | 'PENDING' | 'success' | 'error'
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState('');
   const [reasonError, setReasonError] = useState('');
+  const [files, setFiles] = useState([]);
+  const [fileError, setFileError] = useState('');
 
   // Already a contributor or admin — nothing to do here
   if (user && user.role !== 'VIEWER') {
@@ -36,25 +41,63 @@ function ContributorApplyPage() {
     );
   }
 
-  if (status === APPLICATION_STATUS.PENDING) {
+  const existingApplicationStatus = user?.contributorApplicationStatus ?? user?.applicationStatus ?? null;
+  const applicationRejectReason = user?.applicationRejectReason ?? user?.contributorApplicationRejectReason ?? '';
+  const isApplicationPending = status === APPLICATION_STATUS.PENDING || existingApplicationStatus === APPLICATION_STATUS.PENDING;
+
+  if (isApplicationPending) {
     return (
       <div className={styles.page}>
         <div className={styles.container}>
           <div className={styles.stateCard}>
             <span className={styles.stateIcon}>🕐</span>
-            <h2 className={styles.stateTitle}>Application submitted</h2>
+            <h2 className={styles.stateTitle}>Application Pending</h2>
             <p className={styles.stateText}>
-              Your application is <strong>pending review</strong> by an administrator.
+              You have already applied to become a contributor, and your application is <strong>pending review</strong> by an administrator.
             </p>
-            <p className={styles.stateText}>You will be notified once a decision has been made.</p>
+            <p className={styles.stateText}>You cannot submit another application until an administrator approves or rejects this one.</p>
             <button className={styles.btnAction} onClick={() => navigate('/profile')}>
-              Back to Profile
+              View My Status
             </button>
           </div>
         </div>
       </div>
     );
   }
+
+  const handleFilesChange = (event) => {
+    setFileError('');
+    const selected = Array.from(event.target.files || []);
+    const next = [...files];
+    for (const file of selected) {
+      if (next.length >= MAX_EVIDENCE_FILES) break;
+      const lowerName = file.name.toLowerCase();
+      const allowed = ALLOWED_EVIDENCE_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+      if (!allowed) {
+        setFileError('Evidence files support docx, pdf, txt, png, jpg, jpeg, mov, mp4, and mp3 only.');
+        continue;
+      }
+      if (file.size > MAX_EVIDENCE_FILE_SIZE) {
+        setFileError('Each evidence file must not exceed 50MB.');
+        continue;
+      }
+      const alreadySelected = next.some((item) => (
+        item.name === file.name && item.size === file.size && item.lastModified === file.lastModified
+      ));
+      if (alreadySelected) continue;
+      next.push(file);
+    }
+    if (files.length + selected.length > MAX_EVIDENCE_FILES) {
+      setFileError(`You can upload up to ${MAX_EVIDENCE_FILES} evidence files.`);
+    }
+    setFiles(next);
+    event.target.value = '';
+  };
+
+  const removeFile = (index) => {
+    setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index));
+    setFileError('');
+  };
 
   const handleApply = async () => {
     setReasonError('');
@@ -70,8 +113,9 @@ function ContributorApplyPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await applyForContributor(reason.trim());
+      const res = await applyForContributor(reason.trim(), files);
       setStatus(res.data.data.status);
+      await refreshProfile?.();
     } catch (err) {
       const msg = err.response?.data?.message || 'Application failed. Please try again.';
       if (msg.includes('already pending')) {
@@ -111,6 +155,13 @@ function ContributorApplyPage() {
           <p className={styles.sectionLabel}>Application Details</p>
 
           {error && <div className={styles.errorAlert}>{error}</div>}
+          {existingApplicationStatus === APPLICATION_STATUS.REJECTED && applicationRejectReason && (
+            <div className={styles.rejectFeedback}>
+              <strong>Your previous application was rejected for this reason:</strong>
+              <p>{applicationRejectReason}</p>
+              <span>Please revise your new application to address this feedback directly.</span>
+            </div>
+          )}
 
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor="reason">
@@ -135,6 +186,36 @@ function ContributorApplyPage() {
                 {reason.length}/{MAX_REASON_LENGTH}
               </span>
             </div>
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor="evidence">
+              Supporting Materials <span className={styles.optional}>(optional)</span>
+            </label>
+            <input
+              id="evidence"
+              className={styles.fileInput}
+              type="file"
+              multiple
+              accept={ALLOWED_EVIDENCE_EXTENSIONS.join(',')}
+              onChange={handleFilesChange}
+            />
+            <p className={styles.fileHint}>
+              Upload up to {MAX_EVIDENCE_FILES} files. Supported: {ALLOWED_EVIDENCE_EXTENSIONS.join(' / ')}. Max 50MB each.
+            </p>
+            {fileError && <span className={styles.fieldError}>{fileError}</span>}
+            {files.length > 0 && (
+              <ul className={styles.fileList}>
+                {files.map((file, index) => (
+                  <li key={`${file.name}-${file.size}-${file.lastModified}`}>
+                    <span>{file.name}</span>
+                    <button type="button" className={styles.fileRemoveBtn} onClick={() => removeFile(index)}>
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className={styles.actions}>

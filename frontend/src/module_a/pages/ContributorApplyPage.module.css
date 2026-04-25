@@ -136,6 +136,11 @@
   margin-left: 2px;
 }
 
+.optional {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
 .textarea {
   width: 100%;
   padding: 12px 14px;
@@ -179,6 +184,67 @@
   color: #dc2626;
 }
 
+.fileInput {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 14px;
+}
+
+.fileHint {
+  margin: 4px 0 0;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.fileList {
+  margin: 10px 0 0;
+  padding: 0;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.6;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fileList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.fileList span {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.fileRemoveBtn {
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.fileRemoveBtn:hover {
+  background: #fee2e2;
+}
+
 /* ── Alerts ── */
 .errorAlert {
   background: #fef2f2;
@@ -188,6 +254,34 @@
   margin-bottom: 20px;
   color: #b91c1c;
   font-size: 14px;
+}
+
+.rejectFeedback {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  color: #7c2d12;
+  font-size: 13.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.rejectFeedback strong {
+  display: block;
+  color: #9a3412;
+  margin-bottom: 6px;
+}
+
+.rejectFeedback p {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+
+.rejectFeedback span {
+  color: #92400e;
 }
 
 /* ── Actions ── */

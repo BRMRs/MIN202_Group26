@@ -489,7 +489,7 @@ function EditProfileModal({ user, onSave, onCancel, stylesMod }) {
 // ── Main ProfilePage ──────────────────────────────────────────────────────────
 
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [success, setSuccess] = useState('');
 
@@ -508,7 +508,12 @@ function ProfilePage() {
 
   const appStatus = user?.contributorApplicationStatus ?? user?.applicationStatus ?? null;
   const appReviewedAt = user?.applicationReviewedAt ?? user?.contributorApplicationReviewedAt ?? null;
+  const appRejectReason = user?.applicationRejectReason ?? user?.contributorApplicationRejectReason ?? '';
   const rejectionReadStoreKey = `heritage-rejection-read:${user?.id ?? user?.username ?? 'anonymous'}`;
+
+  useEffect(() => {
+    refreshProfile?.();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!user || user.role !== USER_ROLES.VIEWER || appStatus !== 'REJECTED') return;
@@ -754,10 +759,21 @@ function ProfilePage() {
                   ? 'Your previous application was not approved. You may reapply with more details.'
                   : 'Apply to become a contributor and start sharing cultural and community heritage resources with the world.'}
               </p>
+              {appStatus === 'REJECTED' && appRejectReason && (
+                <div className={styles.viewerRejectReason}>
+                  <strong>Admin feedback:</strong>
+                  <span>{appRejectReason}</span>
+                </div>
+              )}
             </div>
             {appStatus !== 'PENDING' && (
               <Link to="/apply-contributor" className={styles.viewerPanelCta}>
                 {appStatus === 'REJECTED' ? 'Reapply' : 'Apply Now'}
+              </Link>
+            )}
+            {appStatus === 'PENDING' && (
+              <Link to="/apply-contributor" className={styles.viewerPanelCtaMuted}>
+                View Pending Status
               </Link>
             )}
           </div>
@@ -886,6 +902,12 @@ function ProfilePage() {
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Application</span>
                 <span className={styles.infoValue}>{appStatus}</span>
+              </div>
+            )}
+            {appStatus === 'REJECTED' && appRejectReason && (
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Reject Reason</span>
+                <span className={styles.infoValue}>{appRejectReason}</span>
               </div>
             )}
           </div>
