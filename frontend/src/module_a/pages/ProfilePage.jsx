@@ -749,7 +749,7 @@ function ProfilePage() {
         {/* ── Viewer guidance (not yet contributor) ──────────────── */}
         {!isContributor && !isAdmin && (
           <div className={styles.viewerPanel}>
-            <div className={styles.viewerPanelIcon}>🌿</div>
+
             <div className={styles.viewerPanelBody}>
               <strong>Want to share heritage resources?</strong>
               <p>
