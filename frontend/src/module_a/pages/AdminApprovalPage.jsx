@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getApplications, approveApplication, rejectApplication } from '../api/userApi';
+import { useNavigate } from 'react-router-dom';
+import { getApplications } from '../api/userApi';
 
 function AdminApprovalPage() {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [actionLoading, setActionLoading] = useState(null);
   const [filterStatus, setFilterStatus] = useState('ALL');
 
   const fetchApplications = () => {
@@ -19,32 +20,6 @@ function AdminApprovalPage() {
   useEffect(() => {
     fetchApplications();
   }, []);
-
-  const handleApprove = async (id) => {
-    if (!window.confirm('Approve this application? The user will become a Contributor.')) return;
-    setActionLoading(id);
-    try {
-      await approveApplication(id);
-      fetchApplications();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to approve.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleReject = async (id) => {
-    if (!window.confirm('Reject this application?')) return;
-    setActionLoading(id);
-    try {
-      await rejectApplication(id);
-      fetchApplications();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reject.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   const pendingCount  = applications.filter((a) => a.status === 'PENDING').length;
   const approvedCount = applications.filter((a) => a.status === 'APPROVED').length;
@@ -116,10 +91,10 @@ function AdminApprovalPage() {
                 <thead>
                   <tr>
                     <th style={{ ...styles.th, width: 64 }}>ID</th>
-                    <th style={styles.th}>User ID</th>
+                    <th style={styles.th}>Applicant</th>
                     <th style={styles.th}>Applied At</th>
                     <th style={{ ...styles.th, width: 120 }}>Status</th>
-                    <th style={{ ...styles.th, width: 180 }}>Actions</th>
+                    <th style={{ ...styles.th, width: 140 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,7 +115,10 @@ function AdminApprovalPage() {
                         onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}
                       >
                         <td style={styles.tdMono}>{app.id}</td>
-                        <td style={styles.td}>{app.userId}</td>
+                        <td style={styles.td}>
+                          <div style={{ fontWeight: 600, color: '#111827', marginBottom: 2 }}>{app.username || 'Unknown'}</div>
+                          <div style={{ fontSize: 12, color: '#6b7280' }}>ID: {app.userId}</div>
+                        </td>
                         <td style={styles.td}>
                           {app.appliedAt ? new Date(app.appliedAt).toLocaleString() : '—'}
                         </td>
@@ -160,32 +138,12 @@ function AdminApprovalPage() {
                         </td>
                         <td style={styles.td}>
                           <div style={styles.actions}>
-                            {app.status === 'PENDING' && (
-                              <>
-                                <button
-                                  onClick={() => handleApprove(app.id)}
-                                  disabled={actionLoading === app.id}
-                                  style={{
-                                    ...styles.actionBtn,
-                                    ...styles.approveBtn,
-                                    ...(actionLoading === app.id ? styles.actionBtnDisabled : {}),
-                                  }}
-                                >
-                                  {actionLoading === app.id ? '…' : 'Approve'}
-                                </button>
-                                <button
-                                  onClick={() => handleReject(app.id)}
-                                  disabled={actionLoading === app.id}
-                                  style={{
-                                    ...styles.actionBtn,
-                                    ...styles.rejectBtn,
-                                    ...(actionLoading === app.id ? styles.actionBtnDisabled : {}),
-                                  }}
-                                >
-                                  {actionLoading === app.id ? '…' : 'Reject'}
-                                </button>
-                              </>
-                            )}
+                            <button
+                              onClick={() => navigate(`/admin/users/applications/${app.id}`)}
+                              style={{ ...styles.actionBtn, ...styles.viewBtn }}
+                            >
+                              View
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -422,19 +380,10 @@ const styles = {
     cursor: 'pointer',
     border: '1.5px solid transparent',
   },
-  approveBtn: {
-    background: '#f0fdf4',
-    color: '#166534',
-    borderColor: '#86efac',
-  },
-  rejectBtn: {
-    background: '#fff1f2',
-    color: '#b91c1c',
-    borderColor: '#fca5a5',
-  },
-  actionBtnDisabled: {
-    opacity: 0.5,
-    cursor: 'not-allowed',
+  viewBtn: {
+    background: '#eff6ff',
+    color: '#1e40af',
+    borderColor: '#bfdbfe',
   },
 };
 

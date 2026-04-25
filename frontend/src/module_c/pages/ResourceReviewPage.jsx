@@ -489,16 +489,16 @@ function ResourceReviewPage() {
         {history.length > 0 && (
           <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginTop: 4 }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
-               Audit Trail — Review History
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h2 style={{ margin: 0, fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
+                 Audit Trail — Review History
+              </h2>
               {priorRejections.length > 0 && (
-                <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, padding: '2px 8px',
-                  borderRadius: 10, background: '#fff0f0', color: '#c0392b',
-                  border: '1px solid #e74c3c' }}>
-                  {priorRejections.length} rejection(s) on record
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>
+                  {priorRejections.length} previous rejection(s)
                 </span>
               )}
-            </h2>
+            </div>
             {history.map((fb, i) => {
               const isRejected = fb.decision === 'REJECTED';
               return (
@@ -525,8 +525,7 @@ function ResourceReviewPage() {
                     {fb.feedbackText && (
                       <div style={{ fontSize: 13, color: '#555', padding: '8px 12px',
                         background: isRejected ? '#fff0f0' : '#f8f8f8',
-                        borderRadius: 6, lineHeight: 1.6,
-                        borderLeft: `3px solid ${isRejected ? '#dc3545' : '#2d6a4f'}` }}>
+                        borderRadius: 6, lineHeight: 1.6 }}>
                         {fb.feedbackText}
                       </div>
                     )}

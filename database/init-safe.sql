@@ -1,7 +1,9 @@
 -- ============================================================
--- Heritage Platform — Database Initialization Script
+-- Heritage Platform — Database Safe Initialization Script
 -- MySQL 8.0+ | Character Set: utf8mb4 | Engine: InnoDB
--- Run via MySQL CLI: mysql -u root -p heritage_db < init.sql
+-- 
+-- 特点：只创建不存在的表，不会删除已有数据
+-- 适用：日常启动，保留现有数据
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS heritage_db
@@ -14,42 +16,9 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ============================================================
--- Drop legacy stub tables
--- ============================================================
-DROP TABLE IF EXISTS heritage_audit;
-DROP TABLE IF EXISTS heritage_settings;
-DROP TABLE IF EXISTS heritage_permissions;
-DROP TABLE IF EXISTS heritage_assignments;
-DROP TABLE IF EXISTS heritage_logs;
-DROP TABLE IF EXISTS heritage_tasks;
-DROP TABLE IF EXISTS heritage_projects;
-DROP TABLE IF EXISTS heritage_roles;
-DROP TABLE IF EXISTS heritage_users;
-
--- Drop any trigger from previous schema versions
-DROP TRIGGER IF EXISTS trg_before_delete_category;
-
--- ============================================================
--- Drop new tables in reverse dependency order (safe re-run)
--- ============================================================
-DROP TABLE IF EXISTS reports;
-DROP TABLE IF EXISTS contributor_application_files;
-DROP TABLE IF EXISTS contributor_applications;
-DROP TABLE IF EXISTS review_feedback;
-DROP TABLE IF EXISTS resource_tags;
-DROP TABLE IF EXISTS likes;
-DROP TABLE IF EXISTS comments;
-DROP TABLE IF EXISTS resource_media;
-DROP TABLE IF EXISTS resources;
-DROP TABLE IF EXISTS tags;
-DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS users;
-
--- ============================================================
 -- 1. users
--- Stores all user accounts.
 -- ============================================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id                 BIGINT       NOT NULL AUTO_INCREMENT,
     username           VARCHAR(50)  NOT NULL,
     email              VARCHAR(100) NOT NULL,
@@ -68,14 +37,8 @@ CREATE TABLE users (
 
 -- ============================================================
 -- 2. categories
--- Flat (non-hierarchical) resource categories.
--- Deletion policy: LOGICAL DELETE ONLY — never physically deleted.
---   Set status = 'INACTIVE' to deactivate a category.
---   INACTIVE categories cannot be used for new/edited resources.
---   A category can be deactivated only after all resources are migrated
---   to other ACTIVE categories. Deactivation does not change resource status.
 -- ============================================================
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     name        VARCHAR(100) NOT NULL,
     description TEXT         NULL,
@@ -87,8 +50,8 @@ CREATE TABLE categories (
     UNIQUE KEY uq_categories_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Default heritage categories (aligned with DefaultCategoryBootstrap)
-INSERT INTO categories (name, description, status, is_default, created_at) VALUES
+-- 插入默认分类（如果不存在）
+INSERT IGNORE INTO categories (name, description, status, is_default, created_at) VALUES
 ('Traditional Craftsmanship', 'Handmade techniques, traditional crafts, and related artifacts', 'ACTIVE', TRUE, NOW()),
 ('Folk Customs', 'Festivals, rituals, temple fairs, and life customs', 'ACTIVE', TRUE, NOW()),
 ('Folk Literature & Oral History', 'Myths, legends, epics, ballads, and oral traditions', 'ACTIVE', TRUE, NOW()),
@@ -100,18 +63,8 @@ INSERT INTO categories (name, description, status, is_default, created_at) VALUE
 
 -- ============================================================
 -- 3. resources
--- Core table: cultural heritage resources.
---
--- category_id = NULL means the contributor is requesting a new
--- category; in that case requested_category_name and
--- category_request_reason are required.
--- The admin must assign or create a category before approving.
---
--- Deletion rules:
---   contributor_id → RESTRICT (cannot delete a user who has resources)
---   category_id    → RESTRICT (categories are never physically deleted)
 -- ============================================================
-CREATE TABLE resources (
+CREATE TABLE IF NOT EXISTS resources (
     id                       BIGINT       NOT NULL AUTO_INCREMENT,
     title                    VARCHAR(200) NOT NULL,
     description              TEXT         NULL,
@@ -143,10 +96,8 @@ CREATE TABLE resources (
 
 -- ============================================================
 -- 4. resource_media
--- Stores images, videos, audio, and documents attached to a resource.
--- Special rule: each resource must have exactly one COVER media entry.
 -- ============================================================
-CREATE TABLE resource_media (
+CREATE TABLE IF NOT EXISTS resource_media (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     resource_id BIGINT       NOT NULL,
     media_type  ENUM('COVER','DETAIL','VIDEO','AUDIO','DOCUMENT') NOT NULL,
@@ -163,12 +114,8 @@ CREATE TABLE resource_media (
 
 -- ============================================================
 -- 5. tags
--- Deletion policy: SOFT DELETE — set is_deleted = TRUE.
---   Soft-deleted tags: not shown in UI, cannot be applied to resources.
---   The resource_tags rows for the deleted tag are removed,
---   but the tag row itself is kept for historical queries.
 -- ============================================================
-CREATE TABLE tags (
+CREATE TABLE IF NOT EXISTS tags (
     id         BIGINT      NOT NULL AUTO_INCREMENT,
     name       VARCHAR(50) NOT NULL,
     created_at DATETIME    NULL,
@@ -178,9 +125,9 @@ CREATE TABLE tags (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- 6. resource_tags  (resources ↔ tags, many-to-many)
+-- 6. resource_tags
 -- ============================================================
-CREATE TABLE resource_tags (
+CREATE TABLE IF NOT EXISTS resource_tags (
     resource_id BIGINT NOT NULL,
     tag_id      BIGINT NOT NULL,
     PRIMARY KEY (resource_id, tag_id),
@@ -192,9 +139,8 @@ CREATE TABLE resource_tags (
 
 -- ============================================================
 -- 7. comments
--- Deletion rules: user deleted → CASCADE; resource deleted → CASCADE
 -- ============================================================
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     resource_id BIGINT       NOT NULL,
     user_id     BIGINT       NOT NULL,
@@ -209,10 +155,8 @@ CREATE TABLE comments (
 
 -- ============================================================
 -- 8. likes
--- Unique constraint on (user_id, resource_id) prevents duplicate likes.
--- Deletion rules: user deleted → CASCADE; resource deleted → CASCADE
 -- ============================================================
-CREATE TABLE likes (
+CREATE TABLE IF NOT EXISTS likes (
     id          BIGINT   NOT NULL AUTO_INCREMENT,
     user_id     BIGINT   NOT NULL,
     resource_id BIGINT   NOT NULL,
@@ -227,12 +171,8 @@ CREATE TABLE likes (
 
 -- ============================================================
 -- 9. review_feedback
--- Audit log for every resource review action.
--- Deletion rules:
---   resource deleted  → CASCADE  (audit entries follow the resource)
---   reviewer deleted  → RESTRICT (audit logs must be preserved)
 -- ============================================================
-CREATE TABLE review_feedback (
+CREATE TABLE IF NOT EXISTS review_feedback (
     id              BIGINT   NOT NULL AUTO_INCREMENT,
     resource_id     BIGINT   NOT NULL,
     reviewer_id     BIGINT   NOT NULL,
@@ -250,13 +190,8 @@ CREATE TABLE review_feedback (
 
 -- ============================================================
 -- 10. contributor_applications
--- Tracks VIEWER → CONTRIBUTOR upgrade requests.
--- user_id is NOT unique: rejected applicants may reapply.
--- Deletion rules:
---   applicant (user_id) deleted → CASCADE
---   admin (admin_id)    deleted → SET NULL
 -- ============================================================
-CREATE TABLE contributor_applications (
+CREATE TABLE IF NOT EXISTS contributor_applications (
     id          BIGINT   NOT NULL AUTO_INCREMENT,
     user_id     BIGINT   NOT NULL,
     status      ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
@@ -272,7 +207,7 @@ CREATE TABLE contributor_applications (
         FOREIGN KEY (admin_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE contributor_application_files (
+CREATE TABLE IF NOT EXISTS contributor_application_files (
     id             BIGINT       NOT NULL AUTO_INCREMENT,
     application_id BIGINT       NOT NULL,
     file_url       VARCHAR(500) NOT NULL,
@@ -288,10 +223,8 @@ CREATE TABLE contributor_application_files (
 
 -- ============================================================
 -- 11. reports
--- Pre-generated statistical reports for administrators.
--- Deletion rule: creator (created_by) deleted → RESTRICT
 -- ============================================================
-CREATE TABLE reports (
+CREATE TABLE IF NOT EXISTS reports (
     id                 BIGINT      NOT NULL AUTO_INCREMENT,
     report_type        VARCHAR(50) NOT NULL COMMENT 'e.g. RESOURCE_STATS, CATEGORY_DISTRIBUTION',
     from_date          DATE        NOT NULL,
@@ -308,88 +241,40 @@ CREATE TABLE reports (
         FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-SET FOREIGN_KEY_CHECKS = 1;
-
 -- ============================================================
--- Initial Data
+-- 12. china_cities (中国城市数据)
 -- ============================================================
-
--- Default admin account
--- Username : admin
--- Password : admin123
-INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
-VALUES (
-    'admin',
-    'admin@heritage.org',
-    '$2b$10$bkTyuuBfW3LZZ9NIOLqUaehjTh8XpyNeWbqwjtM27ybnfxr6ZIoCq',
-    'ADMIN',
-    TRUE,
-    NOW(),
-    NOW()
-);
-
--- Additional admin account
--- Username : admin2
--- Password : admin246
-INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
-VALUES (
-    'admin2',
-    'admin2@heritage.org',
-    '$2a$10$/c3TA3BeNlyChidDmivCy.Av00xH3x1xV3973aVyBpaqaMmEluaUO',
-    'ADMIN',
-    TRUE,
-    NOW(),
-    NOW()
-);
-
--- Additional admin account
--- Username : admin3
--- Password : admin369
-INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
-VALUES (
-    'admin3',
-    'admin3@heritage.org',
-    '$2a$10$rh8lTt2DIX6945/e3FosLeydvYLh3g1QnR1F9LInGkhJYWM9PKn8C',
-    'ADMIN',
-    TRUE,
-    NOW(),
-    NOW()
-);
-
--- Additional admin account
--- Username : admin4
--- Password : admin4812
-INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
-VALUES (
-    'admin4',
-    'admin4@heritage.org',
-    '$2a$10$2SzP2GH2xHFIR2gktn6qOeQemM63AVln.RqoAbn0tRzbM9aZtm8ny',
-    'ADMIN',
-    TRUE,
-    NOW(),
-    NOW()
-);
-
--- Demo contributor account
--- Username : contributor_demo
--- Password : demo123
-INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
-VALUES (
-    'contributor_demo',
-    'contributor@heritage.org',
-    '$2b$10$CuGOqM.Zb4HhOJLK753hRuIDxSpekpcX4lliubMWcgzMILlxeRImG',
-    'CONTRIBUTOR',
-    TRUE,
-    NOW(),
-    NOW()
-);
-
-
-
-USE heritage_db;
-
-CREATE TABLE china_cities (
+CREATE TABLE IF NOT EXISTS china_cities (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     province VARCHAR(100) NOT NULL,
     city VARCHAR(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+-- 默认账户（如果不存在则插入）
+-- 使用 INSERT IGNORE 避免重复插入报错
+-- ============================================================
+
+-- Default admin account (admin / admin123)
+INSERT IGNORE INTO users (id, username, email, password, role, email_verified, created_at, updated_at)
+VALUES (
+    1, 'admin', 'admin@heritage.org',
+    '$2b$10$bkTyuuBfW3LZZ9NIOLqUaehjTh8XpyNeWbqwjtM27ybnfxr6ZIoCq',
+    'ADMIN', TRUE, NOW(), NOW()
+);
+
+-- Additional admin accounts
+INSERT IGNORE INTO users (id, username, email, password, role, email_verified, created_at, updated_at) VALUES
+(2, 'admin2', 'admin2@heritage.org', '$2a$10$/c3TA3BeNlyChidDmivCy.Av00xH3x1xV3973aVyBpaqaMmEluaUO', 'ADMIN', TRUE, NOW(), NOW()),
+(3, 'admin3', 'admin3@heritage.org', '$2a$10$rh8lTt2DIX6945/e3FosLeydvYLh3g1QnR1F9LInGkhJYWM9PKn8C', 'ADMIN', TRUE, NOW(), NOW()),
+(4, 'admin4', 'admin4@heritage.org', '$2a$10$2SzP2GH2xHFIR2gktn6qOeQemM63AVln.RqoAbn0tRzbM9aZtm8ny', 'ADMIN', TRUE, NOW(), NOW());
+
+-- Demo contributor account (contributor_demo / demo123)
+INSERT IGNORE INTO users (id, username, email, password, role, email_verified, created_at, updated_at)
+VALUES (
+    5, 'contributor_demo', 'contributor@heritage.org',
+    '$2b$10$CuGOqM.Zb4HhOJLK753hRuIDxSpekpcX4lliubMWcgzMILlxeRImG',
+    'CONTRIBUTOR', TRUE, NOW(), NOW()
+);

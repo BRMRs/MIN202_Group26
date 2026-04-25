@@ -25,6 +25,13 @@ export function AuthProvider({ children }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const refreshProfile = async () => {
+    if (!token) return null;
+    const res = await getProfile();
+    setUser(res.data.data);
+    return res.data.data;
+  };
+
   const login = async (credentials) => {
     const res = await authApi.login(credentials);
     const { token: jwt, ...userData } = res.data.data;
@@ -56,6 +63,7 @@ export function AuthProvider({ children }) {
     token,
     isAuthenticated: !!token,
     loading,
+    refreshProfile,
     login,
     logout,
     register,

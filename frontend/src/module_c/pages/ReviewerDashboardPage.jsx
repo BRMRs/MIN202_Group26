@@ -47,31 +47,6 @@ function StatusBadge({ status }) {
   );
 }
 
-// PBI 3.4 — Audit Trail badge: shown when a PENDING_REVIEW item has been rejected before
-function ResubmissionBadge({ rejectionCount }) {
-  if (!rejectionCount || rejectionCount < 1) return null;
-  return (
-    <span
-      title={`Previously rejected ${rejectionCount} time(s) — audit trail available on detail page`}
-      style={{
-        marginLeft: 6,
-        padding: '2px 8px',
-        borderRadius: 999,
-        fontSize: 11,
-        fontWeight: 700,
-        background: '#fee2e2',
-        color: '#b91c1c',
-        border: '1px solid #fca5a5',
-        verticalAlign: 'middle',
-        cursor: 'default',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      ↩ Resubmission ×{rejectionCount}
-    </span>
-  );
-}
-
 function ReviewerDashboardPage() {
   const navigate = useNavigate();
 
@@ -131,12 +106,6 @@ function ReviewerDashboardPage() {
             <p style={styles.subtitle}>
               Review submitted resources, approve or reject contributions, and manage publication status.
             </p>
-          </div>
-
-          {/* Testing mode notice — PBI 3.1 */}
-          <div style={styles.testingNotice}>
-            <strong>Testing Mode:</strong> Requests are sent as Admin (ID=1).
-            Replace with JWT auth once Module A is complete.
           </div>
 
           {/* Filter + sort card */}
@@ -219,17 +188,7 @@ function ReviewerDashboardPage() {
                           <div style={styles.titleCell}>
                             <div style={styles.titleText}>
                               {r.title}
-                              {/* PBI 3.4 — show resubmission badge inline with title */}
-                              <ResubmissionBadge rejectionCount={r.rejectionCount} />
                             </div>
-                            {r.coverUrl && (
-                              <img
-                                src={r.coverUrl}
-                                alt=""
-                                style={styles.coverThumb}
-                                onError={e => { e.target.style.display = 'none'; }}
-                              />
-                            )}
                           </div>
                         </td>
                         <td style={styles.td}>{r.contributorName || '—'}</td>
@@ -318,18 +277,6 @@ const styles = {
     color: '#6b7280',
     fontSize: 14,
     lineHeight: 1.6,
-  },
-
-  /* ── Testing notice ── */
-  testingNotice: {
-    marginBottom: 16,
-    padding: '10px 14px',
-    borderRadius: 10,
-    border: '1px solid #fde68a',
-    background: '#fef9c3',
-    color: '#92400e',
-    fontSize: 13,
-    lineHeight: 1.5,
   },
 
   /* ── Filter card ── */

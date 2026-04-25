@@ -39,8 +39,11 @@ public class ContributorApplication {
     @Column(name = "admin_id")
     private Long adminId;
 
-    @Column(length = 100)
+    @Column(columnDefinition = "TEXT")
     private String reason;
+
+    @Column(name = "reject_reason", length = 1000)
+    private String rejectReason;
 
     // TODO: @ManyToOne @JoinColumn(name = "user_id", insertable = false, updatable = false) private User applicant;
     // TODO: @ManyToOne @JoinColumn(name = "admin_id", insertable = false, updatable = false) private User admin;

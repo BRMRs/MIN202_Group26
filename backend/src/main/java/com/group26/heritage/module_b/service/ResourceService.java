@@ -42,7 +42,7 @@ public class ResourceService {
             ".png", ".jpg", ".jpeg",
             ".mov", ".mp4", ".mp3"
     );
-    private static final List<String> PLACES = List.of("北京", "上海", "广州", "成都", "西安");
+    private static final List<String> PLACES = List.of("Beijing", "Shanghai", "Guangzhou", "Chengdu", "Xi'an");
     private static final List<String> RECOMMENDED_TAGS = List.of(
             "Intangible Heritage",
             "Oral History",

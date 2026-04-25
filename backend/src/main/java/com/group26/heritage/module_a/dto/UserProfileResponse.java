@@ -25,8 +25,9 @@ public class UserProfileResponse {
     // Application status fields
     private ApplicationStatus applicationStatus;
     private LocalDateTime applicationReviewedAt;
+    private String applicationRejectReason;
 
-    public static UserProfileResponse fromUser(User user, ApplicationStatus appStatus, LocalDateTime reviewedAt) {
+    public static UserProfileResponse fromUser(User user, ApplicationStatus appStatus, LocalDateTime reviewedAt, String rejectReason) {
         UserProfileResponse response = new UserProfileResponse();
         response.setId(user.getId());
         response.setUsername(user.getUsername());
@@ -39,6 +40,7 @@ public class UserProfileResponse {
         response.setUpdatedAt(user.getUpdatedAt());
         response.setApplicationStatus(appStatus);
         response.setApplicationReviewedAt(reviewedAt);
+        response.setApplicationRejectReason(rejectReason);
         return response;
     }
 }
