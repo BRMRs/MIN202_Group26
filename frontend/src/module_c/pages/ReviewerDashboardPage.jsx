@@ -103,9 +103,6 @@ function ReviewerDashboardPage() {
           {/* Page header */}
           <div style={styles.pageHeader}>
             <h1 style={styles.title}>Resource Review</h1>
-            <p style={styles.subtitle}>
-              Review submitted resources, approve or reject contributions, and manage publication status.
-            </p>
           </div>
 
           {/* Filter + sort card */}
