@@ -353,10 +353,6 @@ function CategoryManagementPage() {
             <div style={styles.headerRow}>
               <div>
                 <h1 style={styles.title}>Category Management</h1>
-                <p style={styles.subtitle}>
-                  Manage flat categories. Deactivate instead of deleting. Inactive categories stay listed for history;
-                  contributor pickers only show ACTIVE. Categories with resources must be migrated before deactivation.
-                </p>
               </div>
               <button type="button" onClick={openCreateModal} style={styles.primaryButton} disabled={loading}>
                 + New Category
