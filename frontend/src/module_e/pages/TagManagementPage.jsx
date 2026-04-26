@@ -301,7 +301,7 @@ function TagManagementPage() {
                   id="tag-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name…"
+                  placeholder="Search by name..."
                   style={styles.searchInput}
                   disabled={loading}
                 />
@@ -330,7 +330,7 @@ function TagManagementPage() {
           <div style={styles.card}>
             <div style={styles.cardHeader}>
               <span style={styles.cardTitle}>Tags</span>
-              {loading ? <span style={styles.loadingText}>Loading…</span> : null}
+              {loading ? <span style={styles.loadingText}>Loading...</span> : null}
             </div>
 
             <div style={styles.tableWrap}>
@@ -403,7 +403,7 @@ function TagManagementPage() {
                 <div style={styles.modalTitle}>Details</div>
               </div>
               <button type="button" onClick={closeModal} style={styles.iconButton} aria-label="Close" disabled={loading}>
-                ✕
+                x
               </button>
             </div>
 
@@ -483,7 +483,7 @@ const styles = {
     position: "relative",
   },
 
-  /* ── Toast ── */
+  /* Toast */
   toast: {
     position: "sticky",
     top: 8,
@@ -503,7 +503,7 @@ const styles = {
     color: "#166534",
   },
 
-  /* ── Page header ── */
+  /* Page header */
   pageHeader: {
     marginBottom: 20,
   },
@@ -530,7 +530,7 @@ const styles = {
     maxWidth: 680,
   },
 
-  /* ── Search toolbar ── */
+  /* Search toolbar */
   toolbar: {
     display: "flex",
     alignItems: "center",
@@ -577,7 +577,7 @@ const styles = {
   },
   metaStrong: { color: "#374151", fontWeight: 700 },
 
-  /* ── Error banner ── */
+  /* Error banner */
   errorBanner: {
     marginTop: 12,
     padding: "10px 14px",
@@ -589,7 +589,7 @@ const styles = {
     lineHeight: 1.5,
   },
 
-  /* ── Table card ── */
+  /* Table card */
   card: {
     background: "#fff",
     borderRadius: 14,
@@ -617,7 +617,7 @@ const styles = {
     color: "#9ca3af",
   },
 
-  /* ── Table ── */
+  /* Table */
   tableWrap: { overflowX: "auto" },
   table: {
     width: "100%",
@@ -664,7 +664,7 @@ const styles = {
   nameCell: { display: "flex", alignItems: "center", gap: 10 },
   nameText: { fontWeight: 600, color: "#1a2e1f" },
 
-  /* ── Action buttons ── */
+  /* Action buttons */
   actions: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
   primaryButton: {
     padding: "9px 16px",
@@ -714,7 +714,7 @@ const styles = {
     color: "#b91c1c",
   },
 
-  /* ── Modal overlay ── */
+  /* Modal overlay */
   modalOverlay: {
     position: "fixed",
     inset: 0,
@@ -790,7 +790,7 @@ const styles = {
     justifyContent: "center",
   },
 
-  /* ── Form ── */
+  /* Form */
   form: { padding: "16px 20px 20px" },
   formRow: { marginBottom: 16 },
   label: {
@@ -837,7 +837,7 @@ const styles = {
     paddingTop: 8,
   },
 
-  /* ── Accessibility ── */
+  /* Accessibility */
   srOnly: {
     position: "absolute",
     width: 1,
