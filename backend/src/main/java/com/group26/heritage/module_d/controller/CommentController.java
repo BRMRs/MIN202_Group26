@@ -10,10 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Comment Controller — Module D
- * D-PBI 5: Basic Commenting and Feedback
- */
+// -------------------------------------------------------------------
+// PBI 4.5 — comments, like/unlike, liked state (unauthenticated: liked=false)
+// -------------------------------------------------------------------
 @RestController
 @RequestMapping("/api/comments")
 public class CommentController {
@@ -24,18 +23,11 @@ public class CommentController {
         this.commentService = commentService;
     }
 
-    /**
-     * GET /api/comments/resource/{resourceId}
-     */
     @GetMapping("/resource/{resourceId}")
     public List<CommentResponseDto> getComments(@PathVariable Long resourceId) {
         return commentService.getCommentsForResource(resourceId);
     }
 
-    /**
-     * POST /api/comments/resource/{resourceId}
-     * Requires Authorization: Bearer (Module A JWT).
-     */
     @PostMapping("/resource/{resourceId}")
     public ResponseEntity<Map<String, Object>> addComment(
             @PathVariable Long resourceId,
@@ -47,9 +39,6 @@ public class CommentController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * POST /api/comments/{resourceId}/like
-     */
     @PostMapping("/{resourceId}/like")
     public ResponseEntity<Map<String, String>> like(@PathVariable Long resourceId) {
         Long userId = CommentService.requireCurrentUserId();
@@ -57,9 +46,6 @@ public class CommentController {
         return ResponseEntity.ok(Map.of("message", "Liked"));
     }
 
-    /**
-     * DELETE /api/comments/{resourceId}/unlike
-     */
     @DeleteMapping("/{resourceId}/unlike")
     public ResponseEntity<Map<String, String>> unlike(@PathVariable Long resourceId) {
         Long userId = CommentService.requireCurrentUserId();
@@ -67,9 +53,6 @@ public class CommentController {
         return ResponseEntity.ok(Map.of("message", "Unliked"));
     }
 
-    /**
-     * GET /api/comments/{resourceId}/liked — whether current user liked (no auth → liked=false).
-     */
     @GetMapping("/{resourceId}/liked")
     public Map<String, Object> likedState(@PathVariable Long resourceId) {
         return CommentService.optionalCurrentUserId()

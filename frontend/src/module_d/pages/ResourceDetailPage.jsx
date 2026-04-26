@@ -1,3 +1,15 @@
+/**
+ * Resource Detail Page — Module D
+ * PBI 4.4: Task: "Detail page UI for title, description, metadata, and media files"
+ *          Task: "Implement interactive image viewer (enlarge and switch multiple images)"
+ *          Task: "Configure external links to open in a new browser tab"
+ *          Task: "Handle empty fields by displaying 'Not provided' and add network error states"
+ *          Task: "Implement state retention logic for the 'Back' button to preserve search/filter states"
+ * PBI 4.5: Task: "Comment section UI development (text area, 'Send' button, like icon)"
+ *          Task: "Create POST API for comments, storing username and timestamp"
+ *          Task: "Implement input validation (prevent empty comments, enforce 500-character limit)"
+ *          Task: "Add backend check to prevent commenting if the resource status changes to 'Archived'"
+ */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getResourceDetail } from '../api/discoverApi';
@@ -18,7 +30,6 @@ function hrefForExternalLink(url) {
   return `https://${u}`;
 }
 
-/** Generic 2×2 grid icon for category badge (replaces folder emoji). */
 function CategoryGridIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style={{ flexShrink: 0, display: 'block', opacity: 0.88 }}>
@@ -30,7 +41,6 @@ function CategoryGridIcon() {
   );
 }
 
-/** Map / nav app style: inverted teardrop with inner disk (same look as common map UIs). */
 function MapPinIcon({ size = 18, innerFill = '#ffffff' }) {
   return (
     <svg
@@ -167,7 +177,6 @@ function toPreviewAbsoluteUrl(pathOrUrl) {
   return `${window.location.origin}${path}`;
 }
 
-/** Types browsers often show inline in a new tab; others go straight to download. */
 function isLikelyBrowserPreviewable(file) {
   const name = String(file?.fileName || file?.fileUrl || '').toLowerCase();
   if (/\.(pdf|png|jpe?g|gif|webp|svg|txt)$/i.test(name)) return true;
@@ -178,10 +187,7 @@ function isLikelyBrowserPreviewable(file) {
   return false;
 }
 
-/**
- * One "查看" action: open new tab when the browser can usually preview; otherwise download.
- * Note: with noopener, window.open may return null even on success — do not treat that as failure or show alerts.
- */
+// PBI 4.4 — external links / attachments: preview in new tab when possible, else download (noopener may yield null; ignore)
 function viewAttachment(file) {
   const url = file?.fileUrl;
   if (!url) return;
@@ -201,7 +207,7 @@ function formatCommentWhen(c) {
   return Number.isNaN(d.getTime()) ? String(raw) : d.toLocaleString();
 }
 
-/** Interactive Image Viewer Modal — press-drag to move image; release to stop. */
+// PBI 4.4 — full-screen image viewer: zoom, drag, prev/next
 function ImageZoomModal({ imageUrl, onClose, onPrev, onNext, hasMultiple }) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -480,6 +486,7 @@ function ImageZoomModal({ imageUrl, onClose, onPrev, onNext, hasMultiple }) {
   );
 }
 
+// PBI 4.4 — image gallery, zoom, multi-image
 function ImageGallery({ mediaFiles, fallbackCoverUrl = DEFAULT_RESOURCE_COVER }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
@@ -728,7 +735,7 @@ function ResourceDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  /** 'like' | 'comment' — center modal when action requires login */
+  // PBI 4.5 — sign-in required modal: 'like' | 'comment'
   const [loginPrompt, setLoginPrompt] = useState(null);
   const [showEmptyModal, setShowEmptyModal] = useState(false);
 
@@ -922,10 +929,11 @@ function ResourceDetailPage() {
     );
   };
 
-  /** Black section: full strip + top-right chamfer. */
+  // -------------------------------------------------------------------
+  // PBI 4.4 — Task: "Detail page UI" (Our Mission strip: clip paths)
+  // -------------------------------------------------------------------
   const missionClip =
     'polygon(0 0, calc(100% - 108px) 0, 100% 108px, 100% 100%, 0 100%)';
-  /** Deep green: fill chamfer + upper band; bottom edge lower than before so cut corner is not white. */
   const missionGreenClip =
     'polygon(0 0, calc(100% - 108px) 0, 100% 108px, 100% 56%, 0 56%)';
 
@@ -1297,7 +1305,7 @@ function ResourceDetailPage() {
         zIndex: 0,
         isolation: 'isolate',
         overflow: 'hidden',
-        /* Base shows as white in the cut corner (like the reference). */
+        /* PBI 4.4 */
         background: '#ffffff',
       }}
     >
@@ -1316,7 +1324,7 @@ function ResourceDetailPage() {
           zIndex: 1,
         }}
       />
-      {/* Brightest tip: small triangle at (100%,0) — on top of green, below black mask */}
+      {/* PBI 4.4 — mission strip (white corner) */}
       <div
         aria-hidden
         style={{
@@ -1336,7 +1344,7 @@ function ResourceDetailPage() {
         style={{
           position: 'relative',
           zIndex: 3,
-          /* Solid black; missionClip cuts off top-right — layers below show white tip + green */
+          /* PBI 4.4 */
           background: '#000',
           color: '#fff',
           clipPath: missionClip,

@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 /**
- * 详情页与列表共享：评论条数、点赞数、当前会话内用户是否已点赞。
+ * Resource stats context — Module D
+ * PBI 4.4 / 4.5: comment count, like count, and per-resource liked state (detail + list)
  */
 const ResourceStatsContext = createContext(null);
 
