@@ -369,7 +369,7 @@ function CategoryManagementPage() {
                   id="category-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name or description…"
+                  placeholder="Search by name or description..."
                   style={styles.searchInput}
                   disabled={loading}
                 />
@@ -395,7 +395,7 @@ function CategoryManagementPage() {
           <div style={styles.card}>
             <div style={styles.cardHeader}>
               <span style={styles.cardTitle}>Categories</span>
-              {loading ? <span style={styles.loadingText}>Loading…</span> : null}
+              {loading ? <span style={styles.loadingText}>Loading...</span> : null}
             </div>
 
             <div style={styles.tableWrap}>
@@ -436,11 +436,11 @@ function CategoryManagementPage() {
                           </td>
                           <td style={styles.td}>
                             {isPreset ? (
-                              <span style={{ ...styles.badge, ...styles.badgePreset }} title="系统预置分类">
+                              <span style={{ ...styles.badge, ...styles.badgePreset }} title="System preset category">
                                 DEFAULT
                               </span>
                             ) : (
-                              <span style={styles.muted}>—</span>
+                              <span style={styles.muted}>-</span>
                             )}
                           </td>
                           <td style={styles.td}>
@@ -500,7 +500,7 @@ function CategoryManagementPage() {
                 <div style={styles.modalTitle}>Details</div>
               </div>
               <button type="button" onClick={closeModal} style={styles.iconButton} aria-label="Close" disabled={loading}>
-                ✕
+                x
               </button>
             </div>
 
@@ -634,7 +634,7 @@ function CategoryManagementPage() {
                           <div style={styles.resourceSummary}>
                             <span style={styles.resourceTitle}>{resource.title}</span>
                             <span style={styles.resourceMeta}>
-                              #{resource.id} · {resource.status}
+                              #{resource.id} / {resource.status}
                             </span>
                           </div>
                           <select
@@ -695,7 +695,7 @@ const styles = {
     position: "relative",
   },
 
-  /* ── Toast ── */
+  /* Toast */
   toast: {
     position: "sticky",
     top: 8,
@@ -715,7 +715,7 @@ const styles = {
     color: "#166534",
   },
 
-  /* ── Page header ── */
+  /* Page header */
   pageHeader: {
     marginBottom: 20,
   },
@@ -742,7 +742,7 @@ const styles = {
     maxWidth: 680,
   },
 
-  /* ── Search toolbar ── */
+  /* Search toolbar */
   toolbar: {
     display: "flex",
     alignItems: "center",
@@ -784,7 +784,7 @@ const styles = {
   },
   metaStrong: { color: "#374151", fontWeight: 700 },
 
-  /* ── Error banner ── */
+  /* Error banner */
   errorBanner: {
     marginTop: 12,
     padding: "10px 14px",
@@ -796,7 +796,7 @@ const styles = {
     lineHeight: 1.5,
   },
 
-  /* ── Table card ── */
+  /* Table card */
   card: {
     background: "#fff",
     borderRadius: 14,
@@ -824,7 +824,7 @@ const styles = {
     color: "#9ca3af",
   },
 
-  /* ── Table ── */
+  /* Table */
   tableWrap: { overflowX: "auto" },
   table: {
     width: "100%",
@@ -880,7 +880,7 @@ const styles = {
   },
   muted: { color: "#9ca3af" },
 
-  /* ── Status badges ── */
+  /* Status badges */
   badge: {
     display: "inline-flex",
     alignItems: "center",
@@ -907,7 +907,7 @@ const styles = {
     borderColor: "rgba(120, 200, 255, 0.28)",
   },
 
-  /* ── Action buttons ── */
+  /* Action buttons */
   actions: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" },
   primaryButton: {
     padding: "9px 16px",
@@ -962,7 +962,7 @@ const styles = {
     color: "#166534",
   },
 
-  /* ── Modal overlay ── */
+  /* Modal overlay */
   modalOverlay: {
     position: "fixed",
     inset: 0,
@@ -1048,7 +1048,7 @@ const styles = {
     justifyContent: "center",
   },
 
-  /* ── Form ── */
+  /* Form */
   form: { padding: "16px 20px 20px" },
   formRow: { marginBottom: 16 },
   label: {
@@ -1107,7 +1107,7 @@ const styles = {
     paddingTop: 8,
   },
 
-  /* ── Accessibility ── */
+  /* Accessibility */
   /* Migration modal */
   bulkRow: {
     display: "grid",
