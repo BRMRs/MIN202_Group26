@@ -174,9 +174,6 @@ function AdminDashboardPage() {
             <div style={styles.headerRow}>
               <div>
                 <h1 style={styles.title}>Reports</h1>
-                <p style={styles.subtitle}>
-                  Track pending review pressure, status distribution, category coverage, top tags, and contributor activity.
-                </p>
               </div>
               <button type="button" onClick={refreshDashboard} style={styles.primaryButton} disabled={loading}>
                 {loading ? "Refreshing..." : "Refresh"}
