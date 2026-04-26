@@ -727,6 +727,9 @@ function ResourceDetailPage() {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  /** 'like' | 'comment' — center modal when action requires login */
+  const [loginPrompt, setLoginPrompt] = useState(null);
   const [showEmptyModal, setShowEmptyModal] = useState(false);
 
   useEffect(() => {
@@ -743,6 +746,8 @@ function ResourceDetailPage() {
       setComments([]);
       setNewComment('');
       setIsLiked(false);
+      setIsAuthenticated(false);
+      setLoginPrompt(null);
       setLoading(true);
       setError(null);
       try {
@@ -758,6 +763,7 @@ function ResourceDetailPage() {
         setComments(list);
         setCommentCountForResource(id, list.length);
         seedLikeCountIfAbsent(id, resData?.likeCount ?? 0);
+        setIsAuthenticated(Boolean(likedPayload?.authenticated));
         if (likedPayload?.authenticated) {
           setUserLikedForResource(id, Boolean(likedPayload.liked));
           setIsLiked(Boolean(likedPayload.liked));
@@ -794,6 +800,10 @@ function ResourceDetailPage() {
   }, [resource?.tags]);
 
   const handleSendComment = async () => {
+    if (!isAuthenticated) {
+      setLoginPrompt('comment');
+      return;
+    }
     if (!newComment.trim()) {
       setShowEmptyModal(true);
       return;
@@ -821,7 +831,8 @@ function ResourceDetailPage() {
     } catch (err) {
       const status = err.response?.status;
       if (status === 401) {
-        alert('Please log in to post a comment.');
+        setIsAuthenticated(false);
+        setLoginPrompt('comment');
       } else {
         alert(readAxiosError(err, 'Failed to post comment.'));
       }
@@ -831,6 +842,10 @@ function ResourceDetailPage() {
   };
 
   const handleToggleLike = async () => {
+    if (!isAuthenticated) {
+      setLoginPrompt('like');
+      return;
+    }
     const base = getEffectiveLikeCount(resource, likeCountByResourceId);
     try {
       if (isLiked) {
@@ -848,7 +863,8 @@ function ResourceDetailPage() {
       }
     } catch (err) {
       if (err.response?.status === 401) {
-        alert('Please log in to like resources.');
+        setIsAuthenticated(false);
+        setLoginPrompt('like');
       } else {
         alert(readAxiosError(err, 'Could not update like.'));
       }
@@ -1399,6 +1415,83 @@ function ResourceDetailPage() {
             <button type="button" className="d-button" onClick={() => setShowEmptyModal(false)} style={{ padding: '10px 36px' }}>
               OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {loginPrompt && (
+        <div
+          role="presentation"
+          onClick={() => setLoginPrompt(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            backdropFilter: 'blur(2px)',
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-live="polite"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              padding: '32px',
+              borderRadius: '12px',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+              textAlign: 'center',
+              maxWidth: '380px',
+              width: '90%',
+              borderTop: '4px solid #2d6a4f',
+            }}
+          >
+            <div
+              style={{
+                marginBottom: '12px',
+                display: 'flex',
+                justifyContent: 'center',
+                color: loginPrompt === 'like' ? '#ff4d4f' : '#166534',
+              }}
+            >
+              {loginPrompt === 'like' ? <HeartOutlineIcon size={40} /> : <ChatBubbleIcon size={40} />}
+            </div>
+            <h3 style={{ margin: '0 0 10px', color: '#333' }}>Sign in required</h3>
+            <p style={{ color: '#666', margin: '0 0 22px', fontSize: '0.9em' }}>
+              {loginPrompt === 'like'
+                ? 'You need to be signed in to like this resource.'
+                : 'You need to be signed in to post a comment.'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="d-button"
+                onClick={() => {
+                  setLoginPrompt(null);
+                  navigate('/login');
+                }}
+                style={{ padding: '10px 28px' }}
+              >
+                Log in
+              </button>
+              <button
+                type="button"
+                className="d-button"
+                onClick={() => setLoginPrompt(null)}
+                style={{
+                  padding: '10px 28px',
+                  background: '#fff',
+                  color: '#333',
+                  border: '1px solid #dee2e6',
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
