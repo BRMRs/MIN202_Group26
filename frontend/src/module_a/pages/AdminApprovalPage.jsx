@@ -43,7 +43,6 @@ function AdminApprovalPage() {
           {/* Page header */}
           <div style={styles.pageHeader}>
             <h1 style={styles.title}>Contributor Applications</h1>
-            <p style={styles.subtitle}>Review and manage contributor access requests.</p>
           </div>
 
           {/* Summary stats */}
