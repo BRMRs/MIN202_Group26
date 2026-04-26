@@ -285,10 +285,6 @@ function TagManagementPage() {
             <div style={styles.headerRow}>
               <div>
                 <h1 style={styles.title}>Tag Management</h1>
-                <p style={styles.subtitle}>
-                  Manage reusable tags for admin workflows. Tag deletion is always a soft delete and the page mirrors the
-                  same experience as Category Management.
-                </p>
               </div>
               <button type="button" onClick={openCreateModal} style={styles.primaryButton} disabled={loading}>
                 + New Tag
