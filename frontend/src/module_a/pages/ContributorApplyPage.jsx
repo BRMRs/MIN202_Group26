@@ -50,7 +50,7 @@ function ContributorApplyPage() {
       <div className={styles.page}>
         <div className={styles.container}>
           <div className={styles.stateCard}>
-            <span className={styles.stateIcon}>🕐</span>
+
             <h2 className={styles.stateTitle}>Application Pending</h2>
             <p className={styles.stateText}>
               You have already applied to become a contributor, and your application is <strong>pending review</strong> by an administrator.

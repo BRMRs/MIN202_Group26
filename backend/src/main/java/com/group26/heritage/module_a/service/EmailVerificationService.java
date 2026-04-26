@@ -73,4 +73,22 @@ public class EmailVerificationService {
         String stored = resetCodes.get(email);
         return stored != null && stored.equals(code);
     }
+
+    public void sendApplicationApprovedEmail(String email) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromEmail);
+        msg.setTo(email);
+        msg.setSubject("Heritage Platform — Contributor Application Result");
+        msg.setText("Congratulations! Your Contributor application has been approved.");
+        mailSender.send(msg);
+    }
+
+    public void sendApplicationRejectedEmail(String email) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromEmail);
+        msg.setTo(email);
+        msg.setSubject("Heritage Platform — Contributor Application Result");
+        msg.setText("Your application has been reviewed and was not approved at this time.");
+        mailSender.send(msg);
+    }
 }
