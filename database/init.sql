@@ -1,8 +1,6 @@
--- ============================================================
--- Heritage Platform — Database Initialization Script
+-- Heritage Platform - Database Initialization Script
 -- MySQL 8.0+ | Character Set: utf8mb4 | Engine: InnoDB
 -- Run via MySQL CLI: mysql -u root -p heritage_db < init.sql
--- ============================================================
 
 CREATE DATABASE IF NOT EXISTS heritage_db
     DEFAULT CHARACTER SET utf8mb4
@@ -13,9 +11,7 @@ USE heritage_db;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- ============================================================
 -- Drop legacy stub tables
--- ============================================================
 DROP TABLE IF EXISTS heritage_audit;
 DROP TABLE IF EXISTS heritage_settings;
 DROP TABLE IF EXISTS heritage_permissions;
@@ -29,9 +25,7 @@ DROP TABLE IF EXISTS heritage_users;
 -- Drop any trigger from previous schema versions
 DROP TRIGGER IF EXISTS trg_before_delete_category;
 
--- ============================================================
 -- Drop new tables in reverse dependency order (safe re-run)
--- ============================================================
 DROP TABLE IF EXISTS reports;
 DROP TABLE IF EXISTS contributor_application_files;
 DROP TABLE IF EXISTS contributor_applications;
@@ -45,10 +39,8 @@ DROP TABLE IF EXISTS tags;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS users;
 
--- ============================================================
 -- 1. users
 -- Stores all user accounts.
--- ============================================================
 CREATE TABLE users (
     id                 BIGINT       NOT NULL AUTO_INCREMENT,
     username           VARCHAR(50)  NOT NULL,
@@ -66,22 +58,20 @@ CREATE TABLE users (
     UNIQUE KEY uq_users_email    (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 2. categories
 -- Flat (non-hierarchical) resource categories.
--- Deletion policy: LOGICAL DELETE ONLY — never physically deleted.
+-- Deletion policy: soft delete only - never physically deleted.
 --   Set status = 'INACTIVE' to deactivate a category.
 --   INACTIVE categories cannot be used for new/edited resources.
 --   A category can be deactivated only after all resources are migrated
 --   to other ACTIVE categories. Deactivation does not change resource status.
--- ============================================================
 CREATE TABLE categories (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     name        VARCHAR(100) NOT NULL,
     description TEXT         NULL,
     status      ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
     is_default  BOOLEAN      NOT NULL DEFAULT FALSE
-                             COMMENT '系统预置分类；管理员新建为 FALSE',
+                             COMMENT 'Built-in category; admin-created categories use FALSE',
     created_at  DATETIME     NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uq_categories_name (name)
@@ -98,19 +88,15 @@ INSERT INTO categories (name, description, status, is_default, created_at) VALUE
 ('Traditional Sports & Games', 'Martial arts, dragon boat, traditional board games, and folk games', 'ACTIVE', TRUE, NOW()),
 ('Intangible Heritage Cuisine & Foodways', 'Food-making techniques and related customs', 'ACTIVE', TRUE, NOW());
 
--- ============================================================
 -- 3. resources
 -- Core table: cultural heritage resources.
---
 -- category_id = NULL means the contributor is requesting a new
 -- category; in that case requested_category_name and
 -- category_request_reason are required.
 -- The admin must assign or create a category before approving.
---
 -- Deletion rules:
---   contributor_id → RESTRICT (cannot delete a user who has resources)
---   category_id    → RESTRICT (categories are never physically deleted)
--- ============================================================
+--   contributor_id -> RESTRICT (cannot delete a user who has resources)
+--   category_id    -> RESTRICT (categories are never physically deleted)
 CREATE TABLE resources (
     id                       BIGINT       NOT NULL AUTO_INCREMENT,
     title                    VARCHAR(200) NOT NULL,
@@ -141,11 +127,9 @@ CREATE TABLE resources (
         FOREIGN KEY (contributor_id) REFERENCES users (id)      ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 4. resource_media
 -- Stores images, videos, audio, and documents attached to a resource.
 -- Special rule: each resource must have exactly one COVER media entry.
--- ============================================================
 CREATE TABLE resource_media (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     resource_id BIGINT       NOT NULL,
@@ -161,13 +145,11 @@ CREATE TABLE resource_media (
         FOREIGN KEY (resource_id) REFERENCES resources (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 5. tags
--- Deletion policy: SOFT DELETE — set is_deleted = TRUE.
+-- Deletion policy: soft delete - set is_deleted = TRUE.
 --   Soft-deleted tags: not shown in UI, cannot be applied to resources.
 --   The resource_tags rows for the deleted tag are removed,
 --   but the tag row itself is kept for historical queries.
--- ============================================================
 CREATE TABLE tags (
     id         BIGINT      NOT NULL AUTO_INCREMENT,
     name       VARCHAR(50) NOT NULL,
@@ -177,9 +159,7 @@ CREATE TABLE tags (
     UNIQUE KEY uq_tags_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
--- 6. resource_tags  (resources ↔ tags, many-to-many)
--- ============================================================
+-- 6. resource_tags  (resources <-> tags, many-to-many)
 CREATE TABLE resource_tags (
     resource_id BIGINT NOT NULL,
     tag_id      BIGINT NOT NULL,
@@ -190,10 +170,8 @@ CREATE TABLE resource_tags (
         FOREIGN KEY (tag_id)      REFERENCES tags (id)      ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 7. comments
--- Deletion rules: user deleted → CASCADE; resource deleted → CASCADE
--- ============================================================
+-- Deletion rules: user deleted -> CASCADE; resource deleted -> CASCADE
 CREATE TABLE comments (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     resource_id BIGINT       NOT NULL,
@@ -207,11 +185,9 @@ CREATE TABLE comments (
         FOREIGN KEY (user_id)     REFERENCES users (id)     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 8. likes
 -- Unique constraint on (user_id, resource_id) prevents duplicate likes.
--- Deletion rules: user deleted → CASCADE; resource deleted → CASCADE
--- ============================================================
+-- Deletion rules: user deleted -> CASCADE; resource deleted -> CASCADE
 CREATE TABLE likes (
     id          BIGINT   NOT NULL AUTO_INCREMENT,
     user_id     BIGINT   NOT NULL,
@@ -225,13 +201,11 @@ CREATE TABLE likes (
         FOREIGN KEY (resource_id) REFERENCES resources (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 9. review_feedback
 -- Audit log for every resource review action.
 -- Deletion rules:
---   resource deleted  → CASCADE  (audit entries follow the resource)
---   reviewer deleted  → RESTRICT (audit logs must be preserved)
--- ============================================================
+--   resource deleted  -> CASCADE  (audit entries follow the resource)
+--   reviewer deleted  -> RESTRICT (audit logs must be preserved)
 CREATE TABLE review_feedback (
     id              BIGINT   NOT NULL AUTO_INCREMENT,
     resource_id     BIGINT   NOT NULL,
@@ -248,14 +222,12 @@ CREATE TABLE review_feedback (
         FOREIGN KEY (reviewer_id) REFERENCES users (id)     ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 10. contributor_applications
--- Tracks VIEWER → CONTRIBUTOR upgrade requests.
--- user_id is NOT unique: rejected applicants may reapply.
+-- Tracks VIEWER -> CONTRIBUTOR upgrade requests.
+-- user_id is not unique: rejected applicants may reapply.
 -- Deletion rules:
---   applicant (user_id) deleted → CASCADE
---   admin (admin_id)    deleted → SET NULL
--- ============================================================
+--   applicant (user_id) deleted -> CASCADE
+--   admin (admin_id)    deleted -> SET NULL
 CREATE TABLE contributor_applications (
     id          BIGINT   NOT NULL AUTO_INCREMENT,
     user_id     BIGINT   NOT NULL,
@@ -286,11 +258,9 @@ CREATE TABLE contributor_application_files (
         FOREIGN KEY (application_id) REFERENCES contributor_applications (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
 -- 11. reports
 -- Pre-generated statistical reports for administrators.
--- Deletion rule: creator (created_by) deleted → RESTRICT
--- ============================================================
+-- Deletion rule: creator (created_by) deleted -> RESTRICT
 CREATE TABLE reports (
     id                 BIGINT      NOT NULL AUTO_INCREMENT,
     report_type        VARCHAR(50) NOT NULL COMMENT 'e.g. RESOURCE_STATS, CATEGORY_DISTRIBUTION',
@@ -310,9 +280,7 @@ CREATE TABLE reports (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ============================================================
 -- Initial Data
--- ============================================================
 
 -- Default admin account
 -- Username : admin

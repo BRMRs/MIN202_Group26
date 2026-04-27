@@ -404,7 +404,6 @@ function CategoryManagementPage() {
                   <tr>
                     <th style={{ ...styles.th, width: 110 }}>Category ID</th>
                     <th style={styles.th}>Name</th>
-                    <th style={{ ...styles.th, width: 100 }}>Default</th>
                     <th style={styles.th}>Description</th>
                     <th style={{ ...styles.th, width: 120 }}>Status</th>
                     <th style={{ ...styles.th, width: 220 }}>Actions</th>
@@ -413,14 +412,13 @@ function CategoryManagementPage() {
                 <tbody>
                   {!loading && filteredCategories.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={styles.emptyCell}>
+                      <td colSpan={5} style={styles.emptyCell}>
                         No categories found.
                       </td>
                     </tr>
                   ) : (
                     filteredCategories.map((category) => {
                       const status = category?.status === "INACTIVE" ? "INACTIVE" : "ACTIVE";
-                      const isPreset = category?.is_default === true;
                       return (
                         <tr
                           key={category.id}
@@ -433,15 +431,6 @@ function CategoryManagementPage() {
                             <div style={styles.nameCell}>
                               <span style={styles.nameText}>{category.name}</span>
                             </div>
-                          </td>
-                          <td style={styles.td}>
-                            {isPreset ? (
-                              <span style={{ ...styles.badge, ...styles.badgePreset }} title="System preset category">
-                                DEFAULT
-                              </span>
-                            ) : (
-                              <span style={styles.muted}>-</span>
-                            )}
                           </td>
                           <td style={styles.td}>
                             <span title={category.description || ""} style={styles.descText}>

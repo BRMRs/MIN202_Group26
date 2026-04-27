@@ -1,11 +1,9 @@
 USE heritage_db;
 
--- ============================================================
 -- Rich seed data for Resource Management integration testing
 -- Safe to run multiple times.
--- ============================================================
 
--- 1) Reuse existing users (avoid assumptions about custom NOT NULL columns in users table)
+-- 1. Reuse existing users (avoid assumptions about custom NOT NULL columns in users table)
 SET @seed_user_1 = COALESCE(
     (SELECT id FROM users WHERE role = 'CONTRIBUTOR' ORDER BY id LIMIT 1),
     (SELECT id FROM users ORDER BY id LIMIT 1)
@@ -16,7 +14,7 @@ SET @seed_user_2 = COALESCE(
     @seed_user_1
 );
 
--- 2) Ensure categories (Music remains INACTIVE for republish-category test)
+-- 2. Ensure categories (Music remains INACTIVE for republish-category test)
 INSERT INTO categories (name, description, status, is_default, created_at)
 VALUES
   ('Textile', 'Traditional textile resources', 'ACTIVE', FALSE, NOW()),
@@ -30,7 +28,7 @@ ON DUPLICATE KEY UPDATE
   description = VALUES(description),
   status = VALUES(status);
 
--- 3) Ensure tags
+-- 3. Ensure tags
 INSERT INTO tags (name, created_at, is_deleted)
 VALUES
   ('Architecture', NOW(), FALSE),
@@ -46,7 +44,7 @@ VALUES
 ON DUPLICATE KEY UPDATE
   is_deleted = VALUES(is_deleted);
 
--- 4) Recover baseline resources to testable states (if they already exist)
+-- 4. Recover baseline resources to testable states (if they already exist)
 UPDATE resources r
 JOIN categories c ON c.name = 'Textile'
 SET r.status = 'APPROVED',
@@ -79,7 +77,7 @@ SET r.status = 'APPROVED',
     r.updated_at = NOW()
 WHERE r.title = 'Temple Fair Oral History';
 
--- 5) Insert missing baseline resources
+-- 5. Insert missing baseline resources
 INSERT INTO resources (title, description, category_id, contributor_id, status, place, created_at, updated_at)
 SELECT 'Suzhou Silk Weaving Field Notes',
        'Admin demo resource for archive/unpublish flow',
@@ -136,7 +134,7 @@ JOIN (SELECT @seed_user_1 AS id) u
 WHERE c.name = 'Oral History'
   AND NOT EXISTS (SELECT 1 FROM resources WHERE title = 'Temple Fair Oral History');
 
--- 6) More resources for broader scenario testing
+-- 6. More resources for broader scenario testing
 INSERT INTO resources (title, description, category_id, contributor_id, status, place, archive_reason, created_at, updated_at)
 SELECT 'Ancient Opera Costume Registry',
        'Archived sample with reason',
@@ -222,14 +220,14 @@ JOIN (SELECT @seed_user_1 AS id) u
 WHERE c.name = 'Textile'
   AND NOT EXISTS (SELECT 1 FROM resources WHERE title = 'Embroidery Pattern Draft Book');
 
--- 7) Ensure deterministic archive reason for archived sample
+-- 7. Ensure deterministic archive reason for archived sample
 UPDATE resources
 SET archive_reason = 'Outdated metadata and duplicate file set',
     updated_at = NOW()
 WHERE title = 'Ancient Opera Costume Registry'
   AND status = 'ARCHIVED';
 
--- 8) Tag linking for all key resources
+-- 8. Tag linking for all key resources
 INSERT IGNORE INTO resource_tags (resource_id, tag_id)
 SELECT r.id, t.id
 FROM resources r
