@@ -1,11 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { sendVerificationCode, verifyCodeAndRegister } from '../api/authApi';
-import { VALIDATION } from '../../common/utils/constants';
+import PasswordRequirements, { isPasswordValid } from '../components/PasswordRequirements';
 import Toast from '../../common/components/Toast';
 import '../styles/auth.css';
 
-const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
 const CODE_TTL_SECONDS = 5 * 60;
 const RESEND_WAIT_SECONDS = 60;
 
@@ -55,10 +54,8 @@ function RegisterPage() {
       showToast('Please enter a valid email address.');
       return;
     }
-    if (!PASSWORD_REGEX.test(form.password)) {
-      showToast(
-        `Password must be at least ${VALIDATION.MIN_PASSWORD_LENGTH} characters and include an uppercase letter, a number, and a special character (!@#$%^&*).`
-      );
+    if (!isPasswordValid(form.password)) {
+      showToast('Please complete all password requirements.');
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -204,9 +201,7 @@ function RegisterPage() {
                     value={form.password}
                     onChange={handleChange}
                   />
-                  <div className="field-hint">
-                    Minimum {VALIDATION.MIN_PASSWORD_LENGTH} characters, must include uppercase, number and special character (!@#$%^&*)
-                  </div>
+                  <PasswordRequirements password={form.password} />
                 </div>
 
                 <div className="auth-field">

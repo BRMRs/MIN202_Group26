@@ -339,16 +339,14 @@ function EmptyState({ tabId, isContributor, stylesMod }) {
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, accent, stylesMod, onClick }) {
+function StatCard({ label, value, accent, stylesMod }) {
   return (
-    <button
-      type="button"
+    <div
       className={`${stylesMod.statCard} ${accent ? stylesMod[`statAccent_${accent}`] : ''}`}
-      onClick={onClick}
     >
       <span className={stylesMod.statValue}>{value}</span>
       <span className={stylesMod.statLabel}>{label}</span>
-    </button>
+    </div>
   );
 }
 
@@ -436,8 +434,8 @@ function EditProfileModal({ user, onSave, onCancel, stylesMod }) {
     }
     setLoading(true);
     try {
-      await updateProfile(form);
-      onSave(form);
+      const res = await updateProfile(form);
+      await onSave(res.data?.data || form);
     } catch (err) {
       setError(err.response?.data?.message || 'Update failed. Please try again.');
     } finally {
@@ -517,7 +515,7 @@ function EditProfileModal({ user, onSave, onCancel, stylesMod }) {
 // ── Main ProfilePage ──────────────────────────────────────────────────────────
 
 function ProfilePage() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, updateCurrentUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [success, setSuccess] = useState('');
 
@@ -699,11 +697,16 @@ function ProfilePage() {
     total:    allResources.length,
   };
 
-  const handleSave = () => {
+  const handleSave = async (updatedProfile) => {
+    updateCurrentUser?.(updatedProfile);
     setEditing(false);
     setSuccess('Profile updated successfully.');
     setTimeout(() => setSuccess(''), 4000);
-    refreshProfile?.();
+    try {
+      await refreshProfile?.();
+    } catch {
+      // Local update is already applied; keep the page responsive if refresh fails.
+    }
   };
 
   if (!user) return <div style={{ padding: '2rem' }}>Loading…</div>;
@@ -809,18 +812,11 @@ function ProfilePage() {
         {/* ── Quick Stats (contributor only) ────────────────────── */}
         {isContributor && (
           <div className={styles.statsRow}>
-            <StatCard label="Total"          value={stats.total}    stylesMod={styles} onClick={() => setActiveTab('all')} />
-            <StatCard label="Drafts"         value={stats.drafts}   stylesMod={styles} onClick={() => setActiveTab('draft')} />
-            <StatCard label="Pending Review" value={stats.pending}  stylesMod={styles} onClick={() => setActiveTab('pending')} />
-            <StatCard label="Approved"       value={stats.approved} accent="approved"  stylesMod={styles} onClick={() => setActiveTab('approved')} />
-            <StatCard label="Rejected"       value={stats.rejected} accent="rejected"  stylesMod={styles} onClick={() => setActiveTab('rejected')} />
-            <StatCard
-              label="Status Updates"
-              value={stats.statusUpdates}
-              accent="statusUpdates"
-              stylesMod={styles}
-              onClick={() => setActiveTab('statusUpdates')}
-            />
+            <StatCard label="Total"          value={stats.total}    stylesMod={styles} />
+            <StatCard label="Drafts"         value={stats.drafts}   stylesMod={styles} />
+            <StatCard label="Pending Review" value={stats.pending}  stylesMod={styles} />
+            <StatCard label="Approved"       value={stats.approved} accent="approved"  stylesMod={styles} />
+            <StatCard label="Rejected"       value={stats.rejected} accent="rejected"  stylesMod={styles} />
           </div>
         )}
 

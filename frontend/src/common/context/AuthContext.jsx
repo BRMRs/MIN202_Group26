@@ -32,6 +32,10 @@ export function AuthProvider({ children }) {
     return res.data.data;
   };
 
+  const updateCurrentUser = (patch) => {
+    setUser((current) => (current ? { ...current, ...patch } : current));
+  };
+
   const login = async (credentials) => {
     const res = await authApi.login(credentials);
     const { token: jwt, ...userData } = res.data.data;
@@ -64,6 +68,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!token,
     loading,
     refreshProfile,
+    updateCurrentUser,
     login,
     logout,
     register,

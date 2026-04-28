@@ -200,7 +200,11 @@ function Navbar() {
               <Link to="/profile" className="hn-profile-link" title="View profile">
                 <span style={{ position: 'relative', display: 'inline-flex' }}>
                   <span className="hn-avatar">
-                    {user?.username?.[0]?.toUpperCase() || 'U'}
+                    {user?.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="avatar" className="hn-avatar-img" />
+                    ) : (
+                      user?.username?.[0]?.toUpperCase() || 'U'
+                    )}
                   </span>
                   {((user?.role === 'CONTRIBUTOR' && unseenStatusNoticeCount > 0)
                     || (user?.role === 'VIEWER' && hasRejectedApplication)) && (

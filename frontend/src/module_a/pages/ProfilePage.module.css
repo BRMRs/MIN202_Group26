@@ -296,11 +296,6 @@
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  transition: box-shadow 0.15s;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-
-.statCard:hover {
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
@@ -325,9 +320,6 @@
 
 .statAccent_rejected { border-top: 3px solid #ef4444; }
 .statAccent_rejected .statValue { color: #b91c1c; }
-
-.statAccent_statusUpdates { border-top: 3px solid #2563eb; }
-.statAccent_statusUpdates .statValue { color: #1d4ed8; }
 
 /* ── Tabs section ───────────────────────────────────────────────────────── */
 

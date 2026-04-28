@@ -2,11 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
 import { sendResetCode, verifyResetCode, resetPassword } from '../api/authApi';
-import { VALIDATION } from '../../common/utils/constants';
+import PasswordRequirements, { isPasswordValid } from '../components/PasswordRequirements';
 import Toast from '../../common/components/Toast';
 import '../styles/auth.css';
 
-const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
 const CODE_TTL_SECONDS = 5 * 60;
 const RESEND_WAIT_SECONDS = 60;
 
@@ -157,10 +156,8 @@ function LoginPage() {
   // --- New password: submit ---
   const handleNewPasswordSubmit = async (e) => {
     e.preventDefault();
-    if (!PASSWORD_REGEX.test(newPassword)) {
-      showToast(
-        `Password must be at least ${VALIDATION.MIN_PASSWORD_LENGTH} characters and include an uppercase letter, a number, and a special character (!@#$%^&*).`
-      );
+    if (!isPasswordValid(newPassword)) {
+      showToast('Please complete all password requirements.');
       return;
     }
     if (newPassword !== confirmPassword) { showToast('Passwords do not match.'); return; }
@@ -305,9 +302,7 @@ function LoginPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoFocus
                 />
-                <div className="field-hint">
-                  Minimum {VALIDATION.MIN_PASSWORD_LENGTH} characters, must include uppercase, number and special character (!@#$%^&*)
-                </div>
+                <PasswordRequirements password={newPassword} />
               </div>
               <div className="auth-field">
                 <label htmlFor="confirm-password">Confirm new password</label>

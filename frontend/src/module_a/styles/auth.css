@@ -135,6 +135,40 @@
   color: #b00;
 }
 
+/* Password checklist */
+.password-requirements {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: #666;
+  line-height: 1.45;
+}
+
+.password-requirements-title {
+  margin-bottom: 0.2rem;
+  color: #555;
+  font-weight: 600;
+}
+
+.password-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.password-rule-icon {
+  width: 1rem;
+  display: inline-block;
+  font-weight: 700;
+}
+
+.password-rule.valid {
+  color: #2e7d32;
+}
+
+.password-rule.invalid {
+  color: #777;
+}
+
 /* Checkbox row */
 .auth-checkbox {
   display: flex;
