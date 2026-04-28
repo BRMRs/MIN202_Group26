@@ -184,7 +184,6 @@ export default function AdminApplicationDetailPage() {
               <a key={file.id} href={file.fileUrl} target="_blank" rel="noopener noreferrer" style={styles.fileCard}>
                 <span style={styles.fileIcon}>📎</span>
                 <span style={styles.fileName}>{file.fileName}</span>
-                <span style={styles.fileMeta}>{file.mimeType || 'File'} · {formatSize(file.fileSize)}</span>
               </a>
             ))}
           </div>
@@ -325,8 +324,9 @@ const styles = {
   fileGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 },
   fileCard: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
     textDecoration: 'none',
     color: '#1f2937',
     border: '1px solid #e5e7eb',
@@ -334,8 +334,8 @@ const styles = {
     padding: 14,
     background: '#fafafa',
   },
-  fileIcon: { fontSize: 20 },
-  fileName: { fontWeight: 700, wordBreak: 'break-all', overflowWrap: 'break-word', overflow: 'hidden' },
+  fileIcon: { fontSize: 20, flexShrink: 0 },
+  fileName: { fontWeight: 700, wordBreak: 'break-word', overflowWrap: 'break-word', overflow: 'hidden', lineHeight: 1.4 },
   fileMeta: { color: '#9ca3af', fontSize: 12 },
   errorBanner: {
     background: '#fef2f2',
