@@ -219,3 +219,54 @@
   min-width: 300px;
   text-align: center;
 }
+
+/* Verification code input row */
+.auth-code-row {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.auth-code-digit {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border: 1px solid #999;
+  border-radius: 0;
+  outline: none;
+  color: #1a1a1a;
+  background: #fff;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.auth-code-digit:focus {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 2px rgba(21,101,192,0.15);
+}
+
+/* Resend link */
+.auth-resend {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 1.25rem;
+}
+
+.auth-resend-btn {
+  background: none;
+  border: none;
+  color: #1565c0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.auth-resend-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

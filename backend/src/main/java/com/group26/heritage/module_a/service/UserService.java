@@ -45,15 +45,18 @@ public class UserService {
     private final UserRepository userRepository;
     private final ContributorApplicationRepository applicationRepository;
     private final ContributorApplicationFileRepository applicationFileRepository;
+    private final EmailVerificationService emailVerificationService;
     private final Path uploadDir;
 
     public UserService(UserRepository userRepository,
                        ContributorApplicationRepository applicationRepository,
                        ContributorApplicationFileRepository applicationFileRepository,
+                       EmailVerificationService emailVerificationService,
                        @Value("${app.upload-dir}") String uploadDir) throws IOException {
         this.userRepository = userRepository;
         this.applicationRepository = applicationRepository;
         this.applicationFileRepository = applicationFileRepository;
+        this.emailVerificationService = emailVerificationService;
         this.uploadDir = Paths.get(uploadDir);
         Files.createDirectories(this.uploadDir);
     }
@@ -162,6 +165,7 @@ public class UserService {
         app.setAdminId(adminId);
         app.setRejectReason(null);
         applicationRepository.save(app);
+        emailVerificationService.sendApplicationApprovedEmail(user.getEmail());
     }
 
     @Transactional
@@ -169,11 +173,14 @@ public class UserService {
         ContributorApplication app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
         ensurePending(app);
+        User user = userRepository.findById(app.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         app.setStatus(ApplicationStatus.REJECTED);
         app.setReviewedAt(LocalDateTime.now());
         app.setAdminId(adminId);
         app.setRejectReason(cleanReason(rejectReason, REJECT_REASON_MAX_LENGTH, "Reject reason"));
         applicationRepository.save(app);
+        emailVerificationService.sendApplicationRejectedEmail(user.getEmail());
     }
 
     private void saveEvidenceFiles(Long applicationId, List<MultipartFile> files) throws IOException {

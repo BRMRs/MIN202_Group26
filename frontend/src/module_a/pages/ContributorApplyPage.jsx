@@ -50,7 +50,7 @@ function ContributorApplyPage() {
       <div className={styles.page}>
         <div className={styles.container}>
           <div className={styles.stateCard}>
-            <span className={styles.stateIcon}>🕐</span>
+
             <h2 className={styles.stateTitle}>Application Pending</h2>
             <p className={styles.stateText}>
               You have already applied to become a contributor, and your application is <strong>pending review</strong> by an administrator.
@@ -142,7 +142,7 @@ function ContributorApplyPage() {
 
         {/* Contributor benefits info panel */}
         <div className={styles.infoPanel}>
-          <span className={styles.infoIcon}>🏛️</span>
+
           <div className={styles.infoText}>
             <strong>Contributor access</strong> lets you submit heritage resources, save drafts,
             and track your submissions through the review process.
