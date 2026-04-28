@@ -453,21 +453,6 @@
   display: block;
 }
 
-.cardNoImage {
-  width: 100%;
-  height: 100%;
-  min-height: 140px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: #f0ebe2;
-}
-
-.cardNoImageIcon { font-size: 26px; opacity: 0.45; }
-.cardNoImageLabel { font-size: 11px; color: #b8a99a; }
-
 .cardBodyCol {
   flex: 1;
   padding: 16px 20px;

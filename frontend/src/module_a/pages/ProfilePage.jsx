@@ -96,24 +96,16 @@ function fmtDateTimeMinute(str) {
 }
 
 function CoverOrPlaceholder({ url, title, stylesMod }) {
-  if (url) {
-    return (
-      <img
-        src={imageSrcOrDefault(url)}
-        alt={title || ''}
-        className={stylesMod.cardCover}
-        onError={(e) => {
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = DEFAULT_RESOURCE_COVER;
-        }}
-      />
-    );
-  }
   return (
-    <div className={stylesMod.cardNoImage}>
-      <span className={stylesMod.cardNoImageIcon}>🏛</span>
-      <span className={stylesMod.cardNoImageLabel}>No image</span>
-    </div>
+    <img
+      src={imageSrcOrDefault(url)}
+      alt={title || ''}
+      className={stylesMod.cardCover}
+      onError={(e) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = DEFAULT_RESOURCE_COVER;
+      }}
+    />
   );
 }
 
