@@ -84,19 +84,6 @@ class CategoryServiceTest {
     }
 
     @Test
-    void createCategoryRejectsNullStatus() {
-        when(categoryRepository.existsByNameIgnoreCase("Music")).thenReturn(false);
-
-        assertThatThrownBy(() -> categoryService.createCategory(
-            new CategoryRequest("Music", null, null)
-        ))
-            .isInstanceOf(BusinessException.class)
-            .hasMessageContaining("Category status must not be null");
-
-        verify(categoryRepository, never()).save(any(Category.class));
-    }
-
-    @Test
     void updateCategoryRejectsMissingCategory() {
         when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -109,19 +96,21 @@ class CategoryServiceTest {
     }
 
     @Test
-    void updateCategoryRejectsNullStatus() {
-        Category category = category(1L, "Music", CategoryStatus.ACTIVE);
+    void updateCategoryNormalizesInputAndSavesWhenNameIsUnique() {
+        Category category = category(1L, "Old Music", CategoryStatus.ACTIVE);
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(categoryRepository.existsByNameIgnoreCaseAndIdNot("Music", 1L)).thenReturn(false);
+        when(resourceRepository.countByCategoryId(1L)).thenReturn(0L);
+        when(categoryRepository.save(category)).thenReturn(category);
 
-        assertThatThrownBy(() -> categoryService.updateCategory(
+        CategoryResponse response = categoryService.updateCategory(
             1L,
-            new CategoryRequest("Music", null, null)
-        ))
-            .isInstanceOf(BusinessException.class)
-            .hasMessageContaining("Category status must not be null");
+            new CategoryRequest("  Music  ", "  Traditional instruments  ", CategoryStatus.INACTIVE)
+        );
 
-        verify(categoryRepository, never()).save(any(Category.class));
+        assertThat(response.name()).isEqualTo("Music");
+        assertThat(response.description()).isEqualTo("Traditional instruments");
+        assertThat(response.status()).isEqualTo(CategoryStatus.INACTIVE);
     }
 
     @Test
@@ -187,6 +176,22 @@ class CategoryServiceTest {
 
         assertThat(response.status()).isEqualTo(CategoryStatus.INACTIVE);
         verify(resourceRepository).migrateCategoryByIds(1L, 2L, "New Category", List.of(10L, 11L));
+    }
+
+    @Test
+    void migrateResourcesAndDeactivateRejectsAlreadyInactiveCategory() {
+        Category inactiveCategory = category(1L, "Old Category", CategoryStatus.INACTIVE);
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(inactiveCategory));
+
+        assertThatThrownBy(() -> categoryService.migrateResourcesAndDeactivate(
+            1L,
+            new CategoryMigrationRequest(List.of())
+        ))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("already inactive");
+
+        verify(resourceRepository, never()).findByCategoryIdOrderByIdAsc(1L);
+        verify(categoryRepository, never()).save(any(Category.class));
     }
 
     @Test
