@@ -140,6 +140,20 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.message").value("Username already exists"));
     }
 
+    @Test
+    @DisplayName("deleteAccount - should return 200 when account is deleted")
+    void deleteAccount_ShouldReturn200_WhenAccountDeleted() throws Exception {
+        doNothing().when(userService).deleteAccount(1L);
+
+        mockMvc.perform(delete("/api/users/me")
+                        .with(user(authenticatedUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Account deleted successfully."));
+
+        verify(userService).deleteAccount(1L);
+    }
+
     // contributor apply api
 
     @Test

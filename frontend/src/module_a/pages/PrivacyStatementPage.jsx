@@ -167,9 +167,9 @@ function PrivacyStatementPage() {
           <h2 className={styles.sectionTitle}>12. User rights and choices</h2>
           <p>
             Users may request access, correction, or deletion of their account data where technically
-            possible. Users may stop using the platform or ask the project team about account
-            removal. Some records may need to remain temporarily for security, debugging, review
-            history, or project integrity.
+            possible. Logged-in users can delete their own account from the Profile page. Some
+            records may need to remain temporarily for security, debugging, review history, or
+            project integrity.
           </p>
         </section>
 

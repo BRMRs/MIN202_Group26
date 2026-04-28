@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import * as authApi from '../../module_a/api/authApi';
-import { getProfile } from '../../module_a/api/userApi';
+import { deleteAccount as deleteAccountRequest, getProfile } from '../../module_a/api/userApi';
 
 const AuthContext = createContext(null);
 
@@ -60,6 +60,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const deleteAccount = async () => {
+    await deleteAccountRequest();
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+  };
+
   const register = (data) => authApi.register(data);
 
   const value = {
@@ -71,6 +78,7 @@ export function AuthProvider({ children }) {
     updateCurrentUser,
     login,
     logout,
+    deleteAccount,
     register,
   };
 

@@ -1,6 +1,7 @@
 import axiosInstance from '../../common/api/axiosInstance';
 
 export const getProfile = () => axiosInstance.get('/users/me');
+export const deleteAccount = () => axiosInstance.delete('/users/me');
 export const updateProfile = (data) => axiosInstance.put('/users/profile', data);
 export const uploadAvatar = (file) => {
   const form = new FormData();

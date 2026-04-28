@@ -793,6 +793,25 @@
 
 .modal form { padding: 24px 28px; }
 
+.confirmBody {
+  padding: 24px 28px;
+}
+
+.confirmText {
+  margin: 0 0 10px;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.confirmHelp {
+  margin: 0 0 18px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .modalActions {
   display: flex;
   gap: 12px;
@@ -958,6 +977,51 @@
 
 .btnSecondary:hover { border-color: #2d6a4f; color: #2d6a4f; }
 
+.btnDanger {
+  background: #b91c1c;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btnDanger:hover:not(:disabled) { background: #991b1b; }
+.btnDanger:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.dangerCard {
+  margin-top: 18px;
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.dangerTitle {
+  margin: 0 0 6px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dangerText {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 680px) {
@@ -984,6 +1048,11 @@
   .tabBtn {
     padding: 12px 12px 10px;
     font-size: 12.5px;
+  }
+
+  .dangerCard {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

@@ -505,12 +505,54 @@ function EditProfileModal({ user, onSave, onCancel, stylesMod }) {
   );
 }
 
+function DeleteAccountModal({ onConfirm, onCancel, loading, error, stylesMod }) {
+  return (
+    <div className={stylesMod.modalOverlay} onClick={(e) => e.target === e.currentTarget && !loading && onCancel()}>
+      <div className={stylesMod.modal}>
+        <div className={stylesMod.modalHeader}>
+          <h2 className={stylesMod.modalTitle}>Delete account</h2>
+          <button
+            type="button"
+            className={stylesMod.modalClose}
+            onClick={onCancel}
+            disabled={loading}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+        <div className={stylesMod.confirmBody}>
+          {error && <div className={stylesMod.errorAlert}>{error}</div>}
+          <p className={stylesMod.confirmText}>
+            Are you sure you want to delete your account? This action cannot be undone.
+          </p>
+          <p className={stylesMod.confirmHelp}>
+            Log out only signs you out. Delete account removes your account and your related platform data.
+          </p>
+          <div className={stylesMod.modalActions}>
+            <button type="button" className={stylesMod.btnSecondary} onClick={onCancel} disabled={loading}>
+              Cancel
+            </button>
+            <button type="button" className={stylesMod.btnDanger} onClick={onConfirm} disabled={loading}>
+              {loading ? 'Deleting...' : 'Delete account'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ProfilePage ──────────────────────────────────────────────────────────
 
 function ProfilePage() {
-  const { user, refreshProfile, updateCurrentUser } = useAuth();
+  const { user, refreshProfile, updateCurrentUser, deleteAccount } = useAuth();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [success, setSuccess] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Content state (contributor only)
   const [allResources, setAllResources]   = useState([]);
@@ -702,6 +744,20 @@ function ProfilePage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleteError('');
+    setDeleteLoading(true);
+    try {
+      await deleteAccount();
+      window.alert('Account deleted successfully.');
+      navigate('/', { replace: true });
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   if (!user) return <div style={{ padding: '2rem' }}>Loading…</div>;
 
   const initials = user.username?.[0]?.toUpperCase() || 'U';
@@ -713,6 +769,19 @@ function ProfilePage() {
           user={user}
           onSave={handleSave}
           onCancel={() => setEditing(false)}
+          stylesMod={styles}
+        />
+      )}
+      {deleteModalOpen && (
+        <DeleteAccountModal
+          onConfirm={handleDeleteAccount}
+          onCancel={() => {
+            if (deleteLoading) return;
+            setDeleteModalOpen(false);
+            setDeleteError('');
+          }}
+          loading={deleteLoading}
+          error={deleteError}
           stylesMod={styles}
         />
       )}
@@ -927,6 +996,26 @@ function ProfilePage() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className={styles.dangerCard}>
+          <div>
+            <p className={styles.dangerTitle}>Danger zone</p>
+            <p className={styles.dangerText}>
+              Delete account permanently removes your account. This is different from logging out,
+              which only ends the current session.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={styles.btnDanger}
+            onClick={() => {
+              setDeleteError('');
+              setDeleteModalOpen(true);
+            }}
+          >
+            Delete account
+          </button>
         </div>
 
       </div>

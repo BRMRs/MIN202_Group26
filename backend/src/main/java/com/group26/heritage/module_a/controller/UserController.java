@@ -51,4 +51,10 @@ public class UserController {
         ContributorApplication app = userService.applyForContributor(user.getId(), reason, files);
         return ApiResponse.success("Application submitted", app);
     }
+
+    @DeleteMapping("/me")
+    public ApiResponse<Void> deleteAccount(@AuthenticationPrincipal User user) {
+        userService.deleteAccount(user.getId());
+        return ApiResponse.success("Account deleted successfully.", null);
+    }
 }

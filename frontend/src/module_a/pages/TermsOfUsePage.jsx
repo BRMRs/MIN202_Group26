@@ -73,6 +73,10 @@ function TermsOfUsePage() {
             misleading, or security-threatening activity. Administrator accounts must only be used
             for legitimate project review and maintenance tasks.
           </p>
+          <p>
+            Logged-in users can delete their own account from the Profile page. Deleting an account
+            is different from logging out and cannot be undone.
+          </p>
         </section>
 
         <section className={styles.section}>

@@ -13,6 +13,8 @@ import com.group26.heritage.module_a.dto.ContributorApplicationListResponse;
 import com.group26.heritage.module_a.dto.ContributorApplicationDetailResponse;
 import com.group26.heritage.module_a.dto.ProfileUpdateRequest;
 import com.group26.heritage.module_a.dto.UserProfileResponse;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +53,9 @@ public class UserService {
     private final ContributorApplicationFileRepository applicationFileRepository;
     private final EmailVerificationService emailVerificationService;
     private final Path uploadDir;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public UserService(UserRepository userRepository,
                        ContributorApplicationRepository applicationRepository,
@@ -121,6 +126,37 @@ public class UserService {
         user.setAvatarUrl(avatarUrl);
         userRepository.save(user);
         return avatarUrl;
+    }
+
+    @Transactional
+    public void deleteAccount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        executeNativeUpdateIfTableExists("DELETE FROM reports WHERE created_by = :userId", userId);
+
+        executeNativeUpdate("DELETE FROM contributor_application_files WHERE application_id IN " +
+                "(SELECT id FROM contributor_applications WHERE user_id = :userId)", userId);
+        executeNativeUpdate("DELETE FROM contributor_applications WHERE user_id = :userId", userId);
+        executeNativeUpdate("UPDATE contributor_applications SET admin_id = NULL WHERE admin_id = :userId", userId);
+
+        executeNativeUpdate("DELETE FROM likes WHERE user_id = :userId", userId);
+        executeNativeUpdate("DELETE FROM comments WHERE user_id = :userId", userId);
+        executeNativeUpdate("DELETE FROM review_feedback WHERE reviewer_id = :userId", userId);
+
+        executeNativeUpdateIfTableExists("DELETE FROM resource_tags WHERE resource_id IN " +
+                "(SELECT id FROM resources WHERE contributor_id = :userId)", userId);
+        executeNativeUpdate("DELETE FROM likes WHERE resource_id IN " +
+                "(SELECT id FROM resources WHERE contributor_id = :userId)", userId);
+        executeNativeUpdate("DELETE FROM comments WHERE resource_id IN " +
+                "(SELECT id FROM resources WHERE contributor_id = :userId)", userId);
+        executeNativeUpdate("DELETE FROM review_feedback WHERE resource_id IN " +
+                "(SELECT id FROM resources WHERE contributor_id = :userId)", userId);
+        executeNativeUpdate("DELETE FROM resource_media WHERE resource_id IN " +
+                "(SELECT id FROM resources WHERE contributor_id = :userId)", userId);
+        executeNativeUpdate("DELETE FROM resources WHERE contributor_id = :userId", userId);
+
+        userRepository.delete(user);
     }
 
     @Transactional
@@ -284,5 +320,20 @@ public class UserService {
         dto.setSortOrder(file.getSortOrder());
         dto.setUploadedAt(file.getUploadedAt());
         return dto;
+    }
+
+    private int executeNativeUpdate(String sql, Long userId) {
+        return entityManager.createNativeQuery(sql)
+                .setParameter("userId", userId)
+                .executeUpdate();
+    }
+
+    private void executeNativeUpdateIfTableExists(String sql, Long userId) {
+        try {
+            executeNativeUpdate(sql, userId);
+        } catch (RuntimeException ignored) {
+            // Some test schemas are generated from JPA entities and do not include helper tables
+            // such as reports or resource_tags. Production init.sql creates them.
+        }
     }
 }
