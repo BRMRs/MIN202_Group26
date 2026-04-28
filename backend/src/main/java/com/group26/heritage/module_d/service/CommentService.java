@@ -100,6 +100,7 @@ public class CommentService {
         Map<String, Object> userMap = new LinkedHashMap<>();
         userMap.put("id", u.getId());
         userMap.put("username", u.getUsername());
+        userMap.put("avatarUrl", u.getAvatarUrl());
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", comment.getId());

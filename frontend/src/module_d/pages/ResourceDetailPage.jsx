@@ -1246,9 +1246,18 @@ function ResourceDetailPage() {
                     justifyContent: 'center',
                     fontSize: '1.1em',
                     color: '#2d6a4f',
+                    overflow: 'hidden',
                   }}
                 >
-                  {(c.user?.username || '?')[0].toUpperCase()}
+                  {c.user?.avatarUrl ? (
+                    <img
+                      src={c.user.avatarUrl}
+                      alt={`${c.user?.username || 'User'} avatar`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    (c.user?.username || '?')[0].toUpperCase()
+                  )}
                 </div>
                 <div className="d-comment-body">
                   <div
