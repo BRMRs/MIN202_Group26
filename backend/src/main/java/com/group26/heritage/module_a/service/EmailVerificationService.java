@@ -22,7 +22,6 @@ public class EmailVerificationService {
     private final Map<String, Long> pendingCodeCreatedAt = new ConcurrentHashMap<>();
     private final Map<String, Long> resetCodeCreatedAt = new ConcurrentHashMap<>();
     private long codeTtlMillis = 5 * 60 * 1000;
-    private long resendCooldownMillis = 60 * 1000;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -31,7 +30,6 @@ public class EmailVerificationService {
     }
 
     public void sendCode(String email) {
-        ensureCanSend(pendingCodeCreatedAt.get(email));
         String code = String.format("%06d", random.nextInt(1_000_000));
         pendingCodes.put(email, code);
         pendingCodeCreatedAt.put(email, System.currentTimeMillis());
@@ -40,9 +38,7 @@ public class EmailVerificationService {
         msg.setFrom(fromEmail);
         msg.setTo(email);
         msg.setSubject("Heritage Platform — Email Verification Code");
-        msg.setText("Your verification code is: " + code
-                + "\n\nEnter this code to complete your registration."
-                + "\nThis code is valid for 5 minutes.");
+        msg.setText("Your verification code is: " + code + "\n\nEnter this code to complete your registration.");
         mailSender.send(msg);
     }
 
@@ -63,7 +59,6 @@ public class EmailVerificationService {
     }
 
     public void sendResetCode(String email) {
-        ensureCanSend(resetCodeCreatedAt.get(email));
         String code = String.format("%06d", random.nextInt(1_000_000));
         resetCodes.put(email, code);
         resetCodeCreatedAt.put(email, System.currentTimeMillis());
@@ -72,9 +67,7 @@ public class EmailVerificationService {
         msg.setFrom(fromEmail);
         msg.setTo(email);
         msg.setSubject("Heritage Platform — Password Reset Code");
-        msg.setText("Your password reset code is: " + code
-                + "\n\nEnter this code to set a new password."
-                + "\nThis code is valid for 5 minutes.");
+        msg.setText("Your password reset code is: " + code + "\n\nEnter this code to set a new password.");
         mailSender.send(msg);
     }
 
@@ -94,7 +87,7 @@ public class EmailVerificationService {
         return false;
     }
 
-    /** Check the reset code is correct without consuming it. */
+    //Check the reset code is correct without consuming it. 
     public boolean peekResetCode(String email, String code) {
         String stored = resetCodes.get(email);
         Long createdAt = resetCodeCreatedAt.get(email);
@@ -108,12 +101,6 @@ public class EmailVerificationService {
 
     private boolean isExpired(Long createdAt) {
         return createdAt == null || System.currentTimeMillis() - createdAt > codeTtlMillis;
-    }
-
-    private void ensureCanSend(Long lastSentAt) {
-        if (lastSentAt != null && System.currentTimeMillis() - lastSentAt < resendCooldownMillis) {
-            throw new IllegalArgumentException("Please wait before requesting another code.");
-        }
     }
 
     public void sendApplicationApprovedEmail(String email) {
