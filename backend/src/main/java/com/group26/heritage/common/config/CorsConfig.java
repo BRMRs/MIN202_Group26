@@ -1,15 +1,32 @@
 package com.group26.heritage.common.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * CORS Configuration
- * TODO: Allow origins: http://localhost:5173 (Vite dev server)
- * TODO: Allow methods: GET, POST, PUT, DELETE, OPTIONS
- * TODO: Allow headers: Authorization, Content-Type
- * TODO: Allow credentials: true
- */
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 public class CorsConfig {
-    // TODO: implement CORS configuration
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173",
+            "http://120.27.225.94",
+            "http://120.27.225.94:80"
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }
