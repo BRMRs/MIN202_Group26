@@ -1,4 +1,4 @@
-import defaultCoverSrc from '../assets/default_image.jpg';
+import defaultCoverSrc from '../assets/default-resource-cover.png';
 
 /** Shown when a resource has no image thumbnails (lists + detail). */
 export const DEFAULT_RESOURCE_COVER = defaultCoverSrc;
