@@ -177,6 +177,9 @@
   color: #2d6a4f;
   cursor: pointer;
   font-size: 14px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  overflow: hidden;
 }
 
 .fileMeta {

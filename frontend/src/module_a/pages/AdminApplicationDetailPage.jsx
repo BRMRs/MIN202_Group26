@@ -335,7 +335,7 @@ const styles = {
     background: '#fafafa',
   },
   fileIcon: { fontSize: 20 },
-  fileName: { fontWeight: 700, wordBreak: 'break-word' },
+  fileName: { fontWeight: 700, wordBreak: 'break-all', overflowWrap: 'break-word', overflow: 'hidden' },
   fileMeta: { color: '#9ca3af', fontSize: 12 },
   errorBanner: {
     background: '#fef2f2',

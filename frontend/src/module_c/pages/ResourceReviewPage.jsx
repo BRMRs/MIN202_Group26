@@ -438,7 +438,7 @@ function ResourceReviewPage() {
                       </span>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#333', overflow: 'hidden', wordBreak: 'break-all', overflowWrap: 'break-word' }}>
                             {m.fileName || 'Unnamed file'}
                           </span>
                           {coverMedia?.id === m.id && (
