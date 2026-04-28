@@ -248,6 +248,17 @@
   box-shadow: 0 0 0 2px rgba(21,101,192,0.15);
 }
 
+.auth-code-timer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin: 0.75rem 0 0;
+}
+
+.auth-code-timer.expired {
+  color: #b91c1c;
+}
+
 /* Resend link */
 .auth-resend {
   text-align: center;

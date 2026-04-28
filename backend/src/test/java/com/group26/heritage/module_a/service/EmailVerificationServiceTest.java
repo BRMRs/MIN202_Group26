@@ -43,6 +43,16 @@ class EmailVerificationServiceTest {
     }
 
     @Test
+    @DisplayName("sendCode - should reject repeated requests within cooldown")
+    void sendCode_ShouldThrow_WhenRequestedTooSoon() {
+        emailVerificationService.sendCode("user@example.com");
+
+        assertThatThrownBy(() -> emailVerificationService.sendCode("user@example.com"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Please wait");
+    }
+
+    @Test
     @DisplayName("verifyCode - should return true when code is correct")
     void verifyCode_ShouldReturnTrue_WhenCodeIsCorrect() {
         emailVerificationService.sendCode("user@example.com");
@@ -79,6 +89,18 @@ class EmailVerificationServiceTest {
     }
 
     @Test
+    @DisplayName("verifyCode - should reject expired verification code")
+    void verifyCode_ShouldReturnFalse_WhenCodeIsExpired() throws InterruptedException {
+        ReflectionTestUtils.setField(emailVerificationService, "codeTtlMillis", 1L);
+        emailVerificationService.sendCode("user@example.com");
+        String code = captureLastSentCode();
+
+        Thread.sleep(5);
+
+        assertThat(emailVerificationService.verifyCode("user@example.com", code)).isFalse();
+    }
+
+    @Test
     @DisplayName("sendResetCode - should send email with 6-digit reset code")
     void sendResetCode_ShouldSendEmail_WithSixDigitCode() {
         emailVerificationService.sendResetCode("user@example.com");
@@ -89,6 +111,16 @@ class EmailVerificationServiceTest {
         assertThat(sent.getTo()).containsExactly("user@example.com");
         assertThat(sent.getSubject()).contains("Reset");
         assertThat(sent.getText()).matches("(?s).*\\d{6}.*");
+    }
+
+    @Test
+    @DisplayName("sendResetCode - should reject repeated requests within cooldown")
+    void sendResetCode_ShouldThrow_WhenRequestedTooSoon() {
+        emailVerificationService.sendResetCode("user@example.com");
+
+        assertThatThrownBy(() -> emailVerificationService.sendResetCode("user@example.com"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Please wait");
     }
 
     @Test

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
 import { sendResetCode, verifyResetCode, resetPassword } from '../api/authApi';
@@ -7,16 +7,8 @@ import Toast from '../../common/components/Toast';
 import '../styles/auth.css';
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
-
-const Logo = () => (
-  <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="20" cy="20" r="18" stroke="#1a1a1a" strokeWidth="2.5" fill="none"/>
-    <ellipse cx="20" cy="20" rx="8" ry="18" stroke="#1a1a1a" strokeWidth="2" fill="none"/>
-    <line x1="2" y1="20" x2="38" y2="20" stroke="#1a1a1a" strokeWidth="2"/>
-    <line x1="5" y1="12" x2="35" y2="12" stroke="#1a1a1a" strokeWidth="1.5"/>
-    <line x1="5" y1="28" x2="35" y2="28" stroke="#1a1a1a" strokeWidth="1.5"/>
-  </svg>
-);
+const CODE_TTL_SECONDS = 5 * 60;
+const RESEND_WAIT_SECONDS = 60;
 
 function LoginPage() {
   const { login } = useAuth();
@@ -35,6 +27,8 @@ function LoginPage() {
   const [codeDigits, setCodeDigits] = useState(['', '', '', '', '', '']);
   const digitRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
   const [verifiedCode, setVerifiedCode] = useState('');
+  const [codeExpiresIn, setCodeExpiresIn] = useState(0);
+  const [resendIn, setResendIn] = useState(0);
 
   // new-password step
   const [newPassword, setNewPassword] = useState('');
@@ -44,6 +38,24 @@ function LoginPage() {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const goTo = (v) => { setView(v); setToast(null); };
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const rest = (seconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${rest}`;
+  };
+  const startCodeTimers = () => {
+    setCodeExpiresIn(CODE_TTL_SECONDS);
+    setResendIn(RESEND_WAIT_SECONDS);
+  };
+
+  useEffect(() => {
+    if (view !== 'verify-code') return undefined;
+    const timer = setInterval(() => {
+      setCodeExpiresIn((seconds) => Math.max(seconds - 1, 0));
+      setResendIn((seconds) => Math.max(seconds - 1, 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [view]);
 
   // --- Login ---
   const handleLoginSubmit = async (e) => {
@@ -74,6 +86,7 @@ function LoginPage() {
       await sendResetCode(forgotEmail);
       setCodeDigits(['', '', '', '', '', '']);
       setVerifiedCode('');
+      startCodeTimers();
       goTo('verify-code');
     } catch (err) {
       showToast(err.response?.data?.message || 'No account found with that email.');
@@ -112,6 +125,7 @@ function LoginPage() {
       await sendResetCode(forgotEmail);
       showToast('A new code has been sent to your email.', 'success');
       setCodeDigits(['', '', '', '', '', '']);
+      startCodeTimers();
       digitRefs[0].current?.focus();
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to resend code.');
@@ -124,6 +138,7 @@ function LoginPage() {
   const handleVerifyCodeSubmit = async (e) => {
     e.preventDefault();
     const code = codeDigits.join('');
+    if (codeExpiresIn <= 0) { showToast('This code has expired. Please request a new one.'); return; }
     if (code.length < 6) { showToast('Please enter the 6-digit code.'); return; }
     setLoading(true);
     try {
@@ -173,7 +188,7 @@ function LoginPage() {
       <div className="auth-page">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         <div className="auth-card">
-          <div className="auth-logo"><Logo /> Heritage Platform</div>
+          <div className="auth-logo">Heritage Platform</div>
           <div className="auth-tabs">
             <span className="auth-tab active">Forgot password</span>
           </div>
@@ -213,14 +228,19 @@ function LoginPage() {
       <div className="auth-page">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         <div className="auth-card">
-          <div className="auth-logo"><Logo /> Heritage Platform</div>
+          <div className="auth-logo">Heritage Platform</div>
           <div className="auth-tabs">
             <span className="auth-tab active">Verify code</span>
           </div>
           <div className="auth-body">
             <h1 className="auth-title">Enter verification code</h1>
             <p className="auth-subtitle">
-              We sent a 6-digit code to <strong>{forgotEmail}</strong>. Enter it below to continue.
+              We sent a 6-digit code to <strong>{forgotEmail}</strong>. It is valid for 5 minutes.
+            </p>
+            <p className={`auth-code-timer ${codeExpiresIn === 0 ? 'expired' : ''}`}>
+              {codeExpiresIn > 0
+                ? `Code expires in ${formatTime(codeExpiresIn)}`
+                : 'Code expired. Please request a new one.'}
             </p>
             <form onSubmit={handleVerifyCodeSubmit}>
               <div className="auth-code-row">
@@ -244,14 +264,14 @@ function LoginPage() {
                 <button type="button" className="btn-secondary" onClick={() => goTo('forgot')} disabled={loading}>
                   BACK
                 </button>
-                <button type="submit" className="btn-primary" disabled={loading}>
+                <button type="submit" className="btn-primary" disabled={loading || codeExpiresIn === 0}>
                   {loading ? 'VERIFYING...' : 'VERIFY'}
                 </button>
               </div>
               <p className="auth-resend">
                 Didn't receive the code?{' '}
-                <button type="button" className="auth-resend-btn" onClick={handleResendReset} disabled={loading}>
-                  Resend
+                <button type="button" className="auth-resend-btn" onClick={handleResendReset} disabled={loading || resendIn > 0}>
+                  {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend'}
                 </button>
               </p>
             </form>
@@ -266,7 +286,7 @@ function LoginPage() {
       <div className="auth-page">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         <div className="auth-card">
-          <div className="auth-logo"><Logo /> Heritage Platform</div>
+          <div className="auth-logo">Heritage Platform</div>
           <div className="auth-tabs">
             <span className="auth-tab active">Reset password</span>
           </div>
@@ -317,16 +337,16 @@ function LoginPage() {
     <div className="auth-page">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="auth-card">
-        <div className="auth-logo"><Logo /> Heritage Platform</div>
+        <div className="auth-logo">Heritage Platform</div>
         <div className="auth-tabs">
-          <span className="auth-tab active">Log in &nbsp;登录</span>
-          <Link to="/register" className="auth-tab">Join &nbsp;加入</Link>
+          <span className="auth-tab active">Log in</span>
+          <Link to="/register" className="auth-tab">Join</Link>
         </div>
         <div className="auth-body">
-          <h1 className="auth-title">Log in &nbsp;登录</h1>
+          <h1 className="auth-title">Log in</h1>
           <form onSubmit={handleLoginSubmit}>
             <div className="auth-field">
-              <label htmlFor="username">Email or username &nbsp;邮箱或用户名</label>
+              <label htmlFor="username">Email or username</label>
               <input
                 id="username"
                 name="username"
@@ -337,7 +357,7 @@ function LoginPage() {
               />
             </div>
             <div className="auth-field">
-              <label htmlFor="password">Password &nbsp;密码</label>
+              <label htmlFor="password">Password</label>
               <input
                 id="password"
                 name="password"
@@ -348,7 +368,7 @@ function LoginPage() {
             </div>
             <div className="auth-actions">
               <button type="button" className="btn-secondary" onClick={() => goTo('forgot')}>
-                FORGOT PASSWORD &nbsp;忘记密码
+                FORGOT PASSWORD
               </button>
               <button type="submit" className="btn-primary" disabled={loading}>
                 {loading ? 'LOGGING IN...' : 'LOG IN'}
