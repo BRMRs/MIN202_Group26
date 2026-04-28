@@ -262,37 +262,31 @@ function ResourceCard({
 
 const EMPTY_CONFIG = {
   all: {
-    icon: '📂',
     title: "You haven't created any resources yet",
     sub: "Start contributing by creating your first heritage resource.",
     action: { label: 'Create Resource', to: '/module-b/submit' },
   },
   draft: {
-    icon: '✏️',
     title: "You don't have any drafts yet",
     sub: "Create a new resource and save it as a draft to continue later.",
     action: { label: 'Create Resource', to: '/module-b/submit' },
   },
   pending: {
-    icon: '⏳',
     title: 'No resources are waiting for review',
     sub: "Resources you submit for review will appear here while awaiting approval.",
     action: { label: 'Go to Drafts', to: '/module-b/drafts' },
   },
   approved: {
-    icon: '✅',
     title: "You haven't published any resources yet",
     sub: "Once an administrator approves your submission it will appear here.",
     action: { label: 'Browse Resources', to: '/' },
   },
   rejected: {
-    icon: '🔄',
     title: 'No rejected resources',
     sub: "Rejected resources that need revision will appear here.",
     action: { label: 'View All Resources', to: '/profile' },
   },
   statusUpdates: {
-    icon: '🔔',
     title: 'No resource status notifications yet',
     sub: 'Approval and admin status-change notifications will appear here.',
     action: { label: 'View All Resources', to: '/profile' },
@@ -323,7 +317,6 @@ function EmptyState({ tabId, isContributor, stylesMod }) {
   const cfg = EMPTY_CONFIG[tabId] || EMPTY_CONFIG.all;
   return (
     <div className={stylesMod.emptyPanel}>
-      <span className={stylesMod.emptyIcon}>{cfg.icon}</span>
       <h3 className={stylesMod.emptyTitle}>{cfg.title}</h3>
       <p className={stylesMod.emptySubtitle}>{cfg.sub}</p>
       <div className={stylesMod.emptyActions}>

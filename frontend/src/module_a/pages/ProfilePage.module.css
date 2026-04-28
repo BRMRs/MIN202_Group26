@@ -657,13 +657,6 @@
   margin: 0 auto;
 }
 
-.emptyIcon {
-  font-size: 44px;
-  display: block;
-  margin-bottom: 14px;
-  opacity: 0.5;
-}
-
 .emptyTitle {
   font-size: 16px;
   font-weight: 700;
