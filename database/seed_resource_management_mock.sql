@@ -1,6 +1,6 @@
 USE heritage_db;
 
--- 1) Ensure one contributor exists for mock resources
+-- 1. Ensure one contributor exists for mock resources
 INSERT INTO users (username, email, password, role, email_verified, created_at, updated_at)
 SELECT 'contributor_demo',
        'contributor_demo@heritage.org',
@@ -13,7 +13,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE username = 'contributor_demo'
 );
 
--- 2) Mock categories (mixed ACTIVE/INACTIVE for linkage tests)
+-- 2. Mock categories (mixed ACTIVE/INACTIVE for linkage tests)
 INSERT INTO categories (name, description, status, is_default, created_at)
 VALUES
   ('Textile', 'Traditional textile resources', 'ACTIVE', FALSE, NOW()),
@@ -25,7 +25,7 @@ ON DUPLICATE KEY UPDATE
   description = VALUES(description),
   status = VALUES(status);
 
--- 3) Mock tags
+-- 3. Mock tags
 INSERT INTO tags (name, created_at, is_deleted)
 VALUES
   ('Architecture', NOW(), FALSE),
@@ -36,7 +36,7 @@ VALUES
 ON DUPLICATE KEY UPDATE
   is_deleted = VALUES(is_deleted);
 
--- 4) Mock resources (for APPROVED/UNPUBLISHED/ARCHIVED transitions)
+-- 4. Mock resources (for APPROVED/UNPUBLISHED/ARCHIVED transitions)
 INSERT INTO resources (title, description, category_id, contributor_id, status, place, created_at, updated_at)
 SELECT 'Suzhou Silk Weaving Field Notes',
        'Admin demo resource for archive/unpublish flow',
@@ -93,7 +93,7 @@ JOIN users u ON u.username = 'contributor_demo'
 WHERE c.name = 'Oral History'
   AND NOT EXISTS (SELECT 1 FROM resources WHERE title = 'Temple Fair Oral History');
 
--- 5) Link resource_tags (many-to-many)
+-- 5. Link resource_tags (many-to-many)
 INSERT IGNORE INTO resource_tags (resource_id, tag_id)
 SELECT r.id, t.id
 FROM resources r

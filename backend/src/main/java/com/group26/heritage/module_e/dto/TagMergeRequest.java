@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.util.List;
 
-/** Tag merge request DTO — Summary E-PBI 2 */
+/** Tag merge request DTO - Summary E-PBI 2 */
 @Data
 public class TagMergeRequest {
     private List<Long> sourceTagIds;
