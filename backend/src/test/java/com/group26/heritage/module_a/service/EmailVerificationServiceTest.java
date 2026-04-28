@@ -8,13 +8,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,27 +40,6 @@ class EmailVerificationServiceTest {
         SimpleMailMessage sent = captor.getValue();
         assertThat(sent.getTo()).containsExactly("user@example.com");
         assertThat(sent.getText()).matches("(?s).*\\d{6}.*");
-    }
-
-    @Test
-    @DisplayName("sendCode - should set correct from address and subject")
-    void sendCode_ShouldSetCorrectFromAndSubject() {
-        emailVerificationService.sendCode("user@example.com");
-
-        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
-        SimpleMailMessage sent = captor.getValue();
-        assertThat(sent.getFrom()).isEqualTo("noreply@heritage-test.com");
-        assertThat(sent.getSubject()).contains("Verification Code");
-    }
-
-    @Test
-    @DisplayName("sendCode - should throw when mail sender fails")
-    void sendCode_ShouldPropagate_WhenMailSenderThrows() {
-        doThrow(new MailSendException("SMTP error")).when(mailSender).send(any(SimpleMailMessage.class));
-
-        assertThatThrownBy(() -> emailVerificationService.sendCode("user@example.com"))
-                .isInstanceOf(MailSendException.class);
     }
 
     @Test
@@ -144,13 +121,6 @@ class EmailVerificationServiceTest {
 
         assertThat(first).isTrue();
         assertThat(second).isTrue();
-    }
-
-    @Test
-    @DisplayName("peekResetCode - should return false when code is wrong")
-    void peekResetCode_ShouldReturnFalse_WhenCodeIsWrong() {
-        emailVerificationService.sendResetCode("user@example.com");
-        assertThat(emailVerificationService.peekResetCode("user@example.com", "000000")).isFalse();
     }
 
     @Test

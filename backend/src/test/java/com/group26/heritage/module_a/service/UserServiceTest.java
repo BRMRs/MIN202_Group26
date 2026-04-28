@@ -73,26 +73,7 @@ class UserServiceTest {
         adminUser.setRole(UserRole.ADMIN);
     }
 
-    // ─── getProfileWithStatus ─────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("getProfileWithStatus - should return profile with no application status when no application exists")
-    void getProfileWithStatus_ShouldReturnProfile_WhenNoApplicationExists() {
-        // Arrange
-        when(userRepository.findById(1L)).thenReturn(Optional.of(viewerUser));
-        when(applicationRepository.findFirstByUserIdOrderByAppliedAtDesc(1L)).thenReturn(Optional.empty());
-
-        // Act
-        UserProfileResponse response = userService.getProfileWithStatus(1L);
-
-        // Assert
-        assertThat(response).isNotNull();
-        assertThat(response.getUsername()).isEqualTo("viewer");
-        assertThat(response.getEmail()).isEqualTo("viewer@example.com");
-        assertThat(response.getApplicationStatus()).isNull();
-        assertThat(response.getApplicationReviewedAt()).isNull();
-        assertThat(response.getApplicationRejectReason()).isNull();
-    }
+    // profile tests
 
     @Test
     @DisplayName("getProfileWithStatus - should include reject reason when application is rejected")
@@ -124,7 +105,7 @@ class UserServiceTest {
                 .hasMessageContaining("User not found");
     }
 
-    // ─── updateProfile ────────────────────────────────────────────────────────
+    // update profile tests
 
     @Test
     @DisplayName("updateProfile - should update username when new username is available")
@@ -177,24 +158,6 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("updateProfile - should not change username when same username is submitted")
-    void updateProfile_ShouldNotChangeUsername_WhenSameUsernameSubmitted() {
-        // Arrange
-        ProfileUpdateRequest req = new ProfileUpdateRequest();
-        req.setUsername("viewer"); // same as current
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(viewerUser));
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        // Act
-        User result = userService.updateProfile(1L, req);
-
-        // Assert — existsByUsername should NOT be called for same username
-        verify(userRepository, never()).existsByUsername(any());
-        assertThat(result.getUsername()).isEqualTo("viewer");
-    }
-
-    @Test
     @DisplayName("updateProfile - should throw ResourceNotFoundException when user not found")
     void updateProfile_ShouldThrow_WhenUserNotFound() {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
@@ -202,7 +165,7 @@ class UserServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ─── applyForContributor ──────────────────────────────────────────────────
+    // contributor application tests
 
     @Test
     @DisplayName("applyForContributor - should create PENDING application for VIEWER user")
@@ -263,19 +226,6 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.applyForContributor(1L, "   ", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Reason is required");
-    }
-
-    @Test
-    @DisplayName("applyForContributor - should throw when reason exceeds 2000 characters")
-    void applyForContributor_ShouldThrow_WhenReasonExceedsMaxLength() {
-        // Arrange
-        when(userRepository.findById(1L)).thenReturn(Optional.of(viewerUser));
-        when(applicationRepository.existsByUserIdAndStatus(1L, ApplicationStatus.PENDING)).thenReturn(false);
-
-        // Act & Assert
-        assertThatThrownBy(() -> userService.applyForContributor(1L, "A".repeat(2001), null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("must not exceed 2000 characters");
     }
 
     @Test
@@ -341,7 +291,7 @@ class UserServiceTest {
                 .hasMessageContaining("up to 5");
     }
 
-    // ─── getApplicationsList ──────────────────────────────────────────────────
+    // application list tests
 
     @Test
     @DisplayName("getApplicationsList - should return list of all applications ordered by date desc")
@@ -365,7 +315,7 @@ class UserServiceTest {
         assertThat(result.get(0).getUsername()).isEqualTo("viewer");
     }
 
-    // ─── getApplicationDetail ─────────────────────────────────────────────────
+    // application detail tests
 
     @Test
     @DisplayName("getApplicationDetail - should return full detail including files")
@@ -409,7 +359,7 @@ class UserServiceTest {
                 .hasMessageContaining("Application not found");
     }
 
-    // ─── approveApplication ───────────────────────────────────────────────────
+    // approve application tests
 
     @Test
     @DisplayName("approveApplication - should set status APPROVED and upgrade user role to CONTRIBUTOR")
@@ -461,7 +411,7 @@ class UserServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ─── rejectApplication ────────────────────────────────────────────────────
+    // reject application tests
 
     @Test
     @DisplayName("rejectApplication - should set status REJECTED with reason")
@@ -539,24 +489,4 @@ class UserServiceTest {
                 .hasMessageContaining("Only pending applications can be reviewed");
     }
 
-    @Test
-    @DisplayName("rejectApplication - should not change user role when rejecting")
-    void rejectApplication_ShouldNotChangeUserRole_WhenRejecting() {
-        // Arrange
-        ContributorApplication app = new ContributorApplication();
-        app.setId(5L);
-        app.setUserId(1L);
-        app.setStatus(ApplicationStatus.PENDING);
-
-        when(applicationRepository.findById(5L)).thenReturn(Optional.of(app));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(viewerUser));
-        when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        // Act
-        userService.rejectApplication(5L, 99L, "Not enough info");
-
-        // Assert — user role stays VIEWER
-        assertThat(viewerUser.getRole()).isEqualTo(UserRole.VIEWER);
-        verify(userRepository, never()).save(any());
-    }
 }

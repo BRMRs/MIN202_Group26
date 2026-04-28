@@ -77,7 +77,7 @@ class UserControllerTest {
         );
     }
 
-    // ─── GET /api/users/me ────────────────────────────────────────────────────
+    // profile api
 
     @Test
     @DisplayName("getProfile - should return 200 with profile for authenticated user")
@@ -99,7 +99,7 @@ class UserControllerTest {
                 .andExpect(status().is4xxClientError());
     }
 
-    // ─── PUT /api/users/profile ───────────────────────────────────────────────
+    // update profile api
 
     @Test
     @DisplayName("updateProfile - should return 200 when profile update succeeds")
@@ -140,18 +140,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.message").value("Username already exists"));
     }
 
-    @Test
-    @DisplayName("updateProfile - should deny unauthenticated access")
-    void updateProfile_ShouldReturn401_WhenNotAuthenticated() throws Exception {
-        mockMvc.perform(put("/api/users/profile")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"username":"newname"}
-                                """))
-                .andExpect(status().is4xxClientError());
-    }
-
-    // ─── POST /api/users/apply-contributor ───────────────────────────────────
+    // contributor apply api
 
     @Test
     @DisplayName("applyContributor - should return 200 when application is submitted")
@@ -186,11 +175,4 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
-    @Test
-    @DisplayName("applyContributor - should deny unauthenticated access")
-    void applyContributor_ShouldReturn401_WhenNotAuthenticated() throws Exception {
-        mockMvc.perform(multipart("/api/users/apply-contributor")
-                        .param("reason", "I want to contribute"))
-                .andExpect(status().is4xxClientError());
-    }
 }

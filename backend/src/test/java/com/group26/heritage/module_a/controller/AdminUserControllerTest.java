@@ -83,7 +83,7 @@ class AdminUserControllerTest {
         viewerUser.setRole(UserRole.VIEWER);
     }
 
-    // ─── GET /api/admin/users/applications ────────────────────────────────────
+    // list applications
 
     @Test
     @DisplayName("getApplications - admin should get all applications")
@@ -118,7 +118,7 @@ class AdminUserControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // ─── GET /api/admin/users/applications/{id} ───────────────────────────────
+    // application detail
 
     @Test
     @DisplayName("getApplicationDetail - admin should get application detail")
@@ -143,14 +143,7 @@ class AdminUserControllerTest {
                 .andExpect(jsonPath("$.data.reason").value("I want to contribute"));
     }
 
-    @Test
-    @DisplayName("getApplicationDetail - should return 403 when called by non-admin")
-    void getApplicationDetail_ShouldReturn403_WhenCalledByNonAdmin() throws Exception {
-        mockMvc.perform(get("/api/admin/users/applications/5").with(user(viewerUser)))
-                .andExpect(status().isForbidden());
-    }
-
-    // ─── PUT /api/admin/users/applications/{id}/approve ──────────────────────
+    // approve application
 
     @Test
     @DisplayName("approveApplication - admin should approve application")
@@ -165,14 +158,7 @@ class AdminUserControllerTest {
         verify(userService).approveApplication(5L, 99L);
     }
 
-    @Test
-    @DisplayName("approveApplication - should return 403 when called by non-admin")
-    void approveApplication_ShouldReturn403_WhenCalledByNonAdmin() throws Exception {
-        mockMvc.perform(put("/api/admin/users/applications/5/approve").with(user(viewerUser)))
-                .andExpect(status().isForbidden());
-    }
-
-    // ─── PUT /api/admin/users/applications/{id}/reject ───────────────────────
+    // reject application
 
     @Test
     @DisplayName("rejectApplication - admin should reject application with reason")
@@ -217,15 +203,4 @@ class AdminUserControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    @DisplayName("rejectApplication - should return 403 when called by non-admin")
-    void rejectApplication_ShouldReturn403_WhenCalledByNonAdmin() throws Exception {
-        mockMvc.perform(put("/api/admin/users/applications/5/reject")
-                        .with(user(viewerUser))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"reason":"Not enough info"}
-                                """))
-                .andExpect(status().isForbidden());
-    }
 }

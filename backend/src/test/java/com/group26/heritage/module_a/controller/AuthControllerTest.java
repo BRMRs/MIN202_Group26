@@ -56,7 +56,7 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // Allow the mock filter to pass requests through to the controller
+        // let requests reach the controller in these mvc tests
         doAnswer(inv -> {
             jakarta.servlet.FilterChain chain = inv.getArgument(2);
             chain.doFilter(inv.getArgument(0), inv.getArgument(1));
@@ -72,7 +72,7 @@ class AuthControllerTest {
         savedUser.setEmailVerified(false);
     }
 
-    // ─── POST /api/auth/register ──────────────────────────────────────────────
+    // register api
 
     @Test
     @DisplayName("register - should return 200 when registration succeeds")
@@ -89,7 +89,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Registration successful"));
     }
 
-    // ─── POST /api/auth/login ─────────────────────────────────────────────────
+    // login api
 
     @Test
     @DisplayName("login - should return 200 with JWT token on valid credentials")
@@ -125,9 +125,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Invalid credentials"));
     }
 
-    // ─── GET /api/auth/verify-email ───────────────────────────────────────────
-
-    // ─── POST /api/auth/send-code ─────────────────────────────────────────────
+    // send code api
 
     @Test
     @DisplayName("sendCode - should return 200 when email is new")
@@ -170,7 +168,7 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ─── POST /api/auth/verify-code-and-register ─────────────────────────────
+    // register with code api
 
     @Test
     @DisplayName("verifyCodeAndRegister - should return 200 when code is correct")
@@ -202,11 +200,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
-    // ─── POST /api/auth/send-reset-code ──────────────────────────────────────
-
-    // ─── POST /api/auth/verify-reset-code ────────────────────────────────────
-
-    // ─── POST /api/auth/reset-password ───────────────────────────────────────
+    // reset password api
 
     @Test
     @DisplayName("resetPassword - should return 200 when code is valid and password is reset")
