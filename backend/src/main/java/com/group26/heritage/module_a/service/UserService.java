@@ -36,6 +36,10 @@ public class UserService {
     private static final int REJECT_REASON_MAX_LENGTH = 1000;
     private static final int MAX_EVIDENCE_FILES = 5;
     private static final long MAX_EVIDENCE_FILE_BYTES = 50L * 1024 * 1024;
+    private static final long MAX_AVATAR_FILE_BYTES = 5L * 1024 * 1024;
+    private static final List<String> ALLOWED_AVATAR_FILE_EXTENSIONS = List.of(
+            ".png", ".jpg", ".jpeg", ".webp", ".gif"
+    );
     private static final List<String> ALLOWED_EVIDENCE_FILE_EXTENSIONS = List.of(
             ".docx", ".pdf", ".txt",
             ".png", ".jpg", ".jpeg",
@@ -94,6 +98,29 @@ public class UserService {
             user.setAvatarUrl(request.getAvatarUrl());
         }
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public String uploadAvatar(Long userId, MultipartFile file) throws IOException {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Avatar file is required");
+        }
+        if (file.getSize() > MAX_AVATAR_FILE_BYTES) {
+            throw new IllegalArgumentException("Avatar image must not exceed 5MB.");
+        }
+        String originalName = Objects.requireNonNull(file.getOriginalFilename());
+        validateAvatarFileType(originalName);
+
+        String safeName = System.currentTimeMillis() + "_avatar_" + userId + "_" + originalName.replace(" ", "_");
+        Path target = uploadDir.resolve(safeName);
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        String avatarUrl = "/uploads/" + safeName;
+        user.setAvatarUrl(avatarUrl);
+        userRepository.save(user);
+        return avatarUrl;
     }
 
     @Transactional
@@ -236,6 +263,14 @@ public class UserService {
         boolean allowed = ALLOWED_EVIDENCE_FILE_EXTENSIONS.stream().anyMatch(lower::endsWith);
         if (!allowed) {
             throw new IllegalStateException("Evidence files support docx, pdf, txt, png, jpg, jpeg, mov, mp4, and mp3 only");
+        }
+    }
+
+    private void validateAvatarFileType(String filename) {
+        String lower = filename.toLowerCase(Locale.ROOT);
+        boolean allowed = ALLOWED_AVATAR_FILE_EXTENSIONS.stream().anyMatch(lower::endsWith);
+        if (!allowed) {
+            throw new IllegalArgumentException("Avatar image must be png, jpg, jpeg, webp, or gif.");
         }
     }
 

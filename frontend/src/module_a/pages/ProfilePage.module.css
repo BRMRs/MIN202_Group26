@@ -888,6 +888,52 @@
 
 /* ── Alerts ─────────────────────────────────────────────────────────────── */
 
+.avatarUploadRow {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.avatarPreview,
+.avatarPreviewFallback {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.avatarPreview {
+  object-fit: cover;
+  border: 2px solid #e8e3dc;
+}
+
+.avatarPreviewFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2d6a4f, #3d8a65);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.avatarUploadControls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fileInput {
+  font-size: 14px;
+  color: #374151;
+}
+
+.fileHint {
+  font-size: 12px;
+  color: #6b7280;
+}
+
 .successAlert {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;

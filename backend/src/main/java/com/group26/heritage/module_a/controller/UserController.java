@@ -37,6 +37,13 @@ public class UserController {
         return ApiResponse.success("Profile updated", updated);
     }
 
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<String> uploadAvatar(@AuthenticationPrincipal User user,
+                                            @RequestParam("file") MultipartFile file) throws IOException {
+        String avatarUrl = userService.uploadAvatar(user.getId(), file);
+        return ApiResponse.success("Avatar uploaded", avatarUrl);
+    }
+
     @PostMapping(value = "/apply-contributor", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ContributorApplication> applyForContributor(@AuthenticationPrincipal User user,
                                                                      @RequestParam("reason") String reason,

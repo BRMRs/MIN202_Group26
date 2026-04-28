@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../../common/hooks/useAuth';
-import { updateProfile } from '../api/userApi';
+import { updateProfile, uploadAvatar } from '../api/userApi';
 import { resourceApi } from '../../module_b/api/resourceApi';
 import { pickLatestDecisionTextByAny } from '../../module_b/utils/reviewFeedback';
 import { VALIDATION, USER_ROLES } from '../../common/utils/constants';
@@ -410,6 +410,22 @@ function EditProfileModal({ user, onSave, onCancel, stylesMod }) {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    setAvatarUploading(true);
+    try {
+      const res = await uploadAvatar(file);
+      setForm((current) => ({ ...current, avatarUrl: res.data?.data || '' }));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Avatar upload failed. Please try again.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -464,19 +480,31 @@ function EditProfileModal({ user, onSave, onCancel, stylesMod }) {
             />
           </div>
           <div className={stylesMod.fieldGroup}>
-            <label className={stylesMod.label} htmlFor="ep-avatar">Avatar URL</label>
-            <input
-              id="ep-avatar"
-              className={stylesMod.input}
-              name="avatarUrl"
-              value={form.avatarUrl}
-              onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })}
-              placeholder="https://example.com/avatar.jpg"
-            />
+            <label className={stylesMod.label} htmlFor="ep-avatar">Profile picture</label>
+            <div className={stylesMod.avatarUploadRow}>
+              {form.avatarUrl ? (
+                <img src={form.avatarUrl} alt="Profile preview" className={stylesMod.avatarPreview} />
+              ) : (
+                <div className={stylesMod.avatarPreviewFallback}>
+                  {(form.username || user.username || 'U')[0].toUpperCase()}
+                </div>
+              )}
+              <div className={stylesMod.avatarUploadControls}>
+                <input
+                  id="ep-avatar"
+                  className={stylesMod.fileInput}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleAvatarChange}
+                  disabled={avatarUploading || loading}
+                />
+                <div className={stylesMod.fileHint}>PNG, JPG, WEBP, or GIF. Max 5MB.</div>
+              </div>
+            </div>
           </div>
           <div className={stylesMod.modalActions}>
             <button type="button" className={stylesMod.btnSecondary} onClick={onCancel}>Cancel</button>
-            <button type="submit" className={stylesMod.btnPrimary} disabled={loading}>
+            <button type="submit" className={stylesMod.btnPrimary} disabled={loading || avatarUploading}>
               {loading ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
@@ -671,12 +699,11 @@ function ProfilePage() {
     total:    allResources.length,
   };
 
-  const handleSave = (updatedForm) => {
+  const handleSave = () => {
     setEditing(false);
     setSuccess('Profile updated successfully.');
     setTimeout(() => setSuccess(''), 4000);
-    // Note: full user re-fetch would need AuthContext refresh;
-    // for now we rely on next page load to reflect changes.
+    refreshProfile?.();
   };
 
   if (!user) return <div style={{ padding: '2rem' }}>Loading…</div>;
