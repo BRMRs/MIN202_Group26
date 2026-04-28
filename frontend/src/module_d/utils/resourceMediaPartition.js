@@ -1,6 +1,6 @@
 /**
- * Classify resource media for the public detail page (Module D).
- * Aligns with module B upload rules (.docx .pdf .txt .png .jpg .jpeg .mov .mp3) plus .mp4.
+ * Public resource detail — media split — Module D
+ * PBI 4.4: Task: "Detail page UI" (images vs files vs external links; aligns with module B file types)
  */
 
 const IMAGE_MEDIA_TYPES = new Set(['COVER', 'DETAIL']);
@@ -10,7 +10,7 @@ export function mediaTypeOf(m) {
   return String(m?.mediaType ?? m?.media_type ?? '').toUpperCase();
 }
 
-/** Last path segment, for extension checks on /api/discover/media/{id} URLs. */
+// Filename segment for /api/discover/media/{id} extension checks
 export function basenameForFileType(pathOrUrl) {
   const s = String(pathOrUrl ?? '');
   const noQuery = s.split('?')[0];
@@ -18,7 +18,7 @@ export function basenameForFileType(pathOrUrl) {
   return seg;
 }
 
-/** COVER/DETAIL rows: treat extension-less API URLs as images unless filename clearly names a non-image file. */
+// COVER/DETAIL: treat extension-less media URLs as images unless extension is clearly non-image
 function looksLikeGalleryImageForTypedRow(pathOrUrl) {
   const seg = basenameForFileType(pathOrUrl);
   if (!seg) return true;
@@ -29,10 +29,7 @@ function looksLikeGalleryImageForTypedRow(pathOrUrl) {
   return true;
 }
 
-/**
- * Legacy `resource.fileUrl` when media list is empty or only attachments: avoid putting a bare
- * /api/discover/media/{id} URL in the gallery when other rows exist (likely non-image blobs).
- */
+// Legacy resource.fileUrl: keep non-images out of the gallery when structured media exists
 function legacyFileUrlIsGalleryImage(pathOrUrl, hasStructuredMediaRows) {
   const seg = basenameForFileType(pathOrUrl);
   if (!seg) return !hasStructuredMediaRows;
@@ -45,9 +42,7 @@ function legacyFileUrlIsGalleryImage(pathOrUrl, hasStructuredMediaRows) {
   return true;
 }
 
-/**
- * Human-readable kind for the attachments list (replaces raw DOCUMENT / VIDEO in the UI).
- */
+// Attachment list label (document / video / audio / …)
 export function attachmentKindLabel(m) {
   const t = mediaTypeOf(m);
   const base = basenameForFileType(m?.fileName || m?.fileUrl || '');
@@ -61,9 +56,7 @@ export function attachmentKindLabel(m) {
   return t ? t.charAt(0) + t.slice(1).toLowerCase() : 'File';
 }
 
-/**
- * Splits API media rows into gallery images vs downloadable / previewable attachments.
- */
+// Gallery images vs attachments; external links from resource.externalLink
 export function partitionResourceDetailMedia(resource) {
   if (!resource) {
     return { imageMedia: [], attachmentMedia: [], externalLinks: [] };

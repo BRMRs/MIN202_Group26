@@ -25,11 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Comment & like actions — Module D (uses DB; no changes required in common repositories).
- */
 @Service
 public class CommentService {
+
+    // -------------------------------------------------------------------
+    // PBI 4.5 — Task: "Create POST API for comments, storing username and timestamp"
+    //           Task: "Implement input validation (prevent empty comments, enforce 500-character limit)"
+    //           Task: "Add backend check to prevent commenting if the resource status changes to 'Archived'"
+    // Likes: no like/comment on archived; duplicate likes ignored
+    // -------------------------------------------------------------------
 
     private static final int MAX_COMMENT_LENGTH = 500;
 

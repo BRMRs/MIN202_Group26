@@ -2,14 +2,14 @@ import axios from 'axios';
 
 /**
  * Discover API — Module D
- * Summary D-PBI 1 (Browse), D-PBI 2 (Search), D-PBI 3 (Filter), D-PBI 4 (Detail)
+ * PBI 4.1: Browse, PBI 4.2: Search, PBI 4.3: Filter
+ * PBI 4.4: Resource detail (GET /discover/resources/{id}), media, list load errors
  */
-
 const apiClient = axios.create({
   baseURL: '/api',
 });
 
-/** Shown when browse/search request fails (network or server error), not when the list is simply empty. */
+// List/browse failure: network or server (not an empty list)
 export const DISCOVER_LOAD_ERROR_MESSAGE = "We couldn't load this content.";
 
 const cleanParams = (params) =>
@@ -41,6 +41,6 @@ export const searchAndFilterResources = ({
 
 export const listCategories = () => apiClient.get('/discover/categories');
 export const listTags = () => apiClient.get('/discover/tags');
-/** Distinct place strings from approved resources (for place dropdown). */
+// Places (approved resources) for filter dropdown
 export const listPlaces = () => apiClient.get('/discover/places');
 export const getResourceDetail = (id) => apiClient.get(`/discover/resources/${id}`);
