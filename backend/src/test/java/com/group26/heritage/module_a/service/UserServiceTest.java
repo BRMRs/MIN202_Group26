@@ -13,6 +13,8 @@ import com.group26.heritage.module_a.dto.ContributorApplicationDetailResponse;
 import com.group26.heritage.module_a.dto.ContributorApplicationListResponse;
 import com.group26.heritage.module_a.dto.ProfileUpdateRequest;
 import com.group26.heritage.module_a.dto.UserProfileResponse;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -41,6 +44,8 @@ class UserServiceTest {
     @Mock private ContributorApplicationRepository applicationRepository;
     @Mock private ContributorApplicationFileRepository applicationFileRepository;
     @Mock private EmailVerificationService emailVerificationService;
+    @Mock private EntityManager entityManager;
+    @Mock private Query nativeQuery;
 
     @TempDir
     Path tempDir;
@@ -59,6 +64,11 @@ class UserServiceTest {
                 emailVerificationService,
                 tempDir.toString()
         );
+        ReflectionTestUtils.setField(userService, "entityManager", entityManager);
+
+        lenient().when(entityManager.createNativeQuery(anyString())).thenReturn(nativeQuery);
+        lenient().when(nativeQuery.setParameter(eq("userId"), any())).thenReturn(nativeQuery);
+        lenient().when(nativeQuery.executeUpdate()).thenReturn(0);
 
         viewerUser = new User();
         viewerUser.setId(1L);
@@ -166,6 +176,33 @@ class UserServiceTest {
     }
 
     // contributor application tests
+
+    @Test
+    @DisplayName("deleteAccount - should clean related data and delete user")
+    void deleteAccount_ShouldCleanRelatedData_AndDeleteUser() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(viewerUser));
+
+        userService.deleteAccount(1L);
+
+        verify(entityManager, atLeastOnce()).createNativeQuery(contains("DELETE FROM comments WHERE user_id"));
+        verify(entityManager, atLeastOnce()).createNativeQuery(contains("DELETE FROM resources WHERE contributor_id"));
+        verify(nativeQuery, atLeastOnce()).setParameter("userId", 1L);
+        verify(nativeQuery, atLeastOnce()).executeUpdate();
+        verify(userRepository).delete(viewerUser);
+    }
+
+    @Test
+    @DisplayName("deleteAccount - should throw ResourceNotFoundException when user not found")
+    void deleteAccount_ShouldThrow_WhenUserNotFound() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.deleteAccount(999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
+
+        verify(userRepository, never()).delete(any());
+        verifyNoInteractions(entityManager);
+    }
 
     @Test
     @DisplayName("applyForContributor - should create PENDING application for VIEWER user")
