@@ -467,7 +467,7 @@ function ResourceReviewPage() {
               <div style={{ background: 'white', borderRadius: 10, padding: '20px 24px',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
                 <h2 style={{ margin: '0 0 14px', fontSize: 16, color: '#2d6a4f', fontWeight: 700 }}>
-                  💬 Latest Review
+                   Latest Review
                 </h2>
                 <div style={{ fontSize: 13, color: '#555' }}>
                   <div><strong>Decision:</strong> <StatusBadge status={r.latestFeedback.decision} /></div>
@@ -903,7 +903,7 @@ function ResourceReviewPage() {
                 width: '80vw', maxWidth: 800, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '14px 20px', background: '#2d6a4f', color: 'white',
                   fontSize: 13, fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>📃 {previewMedia.fileName}</span>
+                  <span> {previewMedia.fileName}</span>
                   <span style={{ opacity: 0.7, fontWeight: 400 }}>
                     {previewMedia.fileSize ? `${(previewMedia.fileSize / 1024).toFixed(1)} KB` : ''}
                   </span>
