@@ -4,6 +4,11 @@ import useAuth from '../../common/hooks/useAuth';
 import { updateProfile, uploadAvatar } from '../api/userApi';
 import { resourceApi } from '../../module_b/api/resourceApi';
 import { pickLatestDecisionTextByAny } from '../../module_b/utils/reviewFeedback';
+import {
+  DEFAULT_RESOURCE_COVER,
+  firstImageMediaUrl,
+  imageSrcOrDefault,
+} from '../../module_d/utils/defaultResourceCover';
 import { VALIDATION, USER_ROLES } from '../../common/utils/constants';
 import {
   buildStatusNotifications,
@@ -92,7 +97,17 @@ function fmtDateTimeMinute(str) {
 
 function CoverOrPlaceholder({ url, title, stylesMod }) {
   if (url) {
-    return <img src={url} alt={title} className={stylesMod.cardCover} />;
+    return (
+      <img
+        src={imageSrcOrDefault(url)}
+        alt={title || ''}
+        className={stylesMod.cardCover}
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = DEFAULT_RESOURCE_COVER;
+        }}
+      />
+    );
   }
   return (
     <div className={stylesMod.cardNoImage}>
@@ -116,15 +131,8 @@ function ResourceCard({
   const status = resource.status;
   const eventTime = resource.statusChangedAt || resource.updatedAt || resource.createdAt;
   const mediaFiles = Array.isArray(resource.mediaFiles) ? resource.mediaFiles : [];
-  const explicitCover = mediaFiles.find((m) => m?.mediaType === 'COVER');
-  const firstMedia = mediaFiles[0];
-  const cover = explicitCover?.fileUrl
-    || explicitCover?.url
-    || firstMedia?.fileUrl
-    || firstMedia?.url
-    || resource.fileUrl
-    || resource.filePath
-    || null;
+  const cover = firstImageMediaUrl(mediaFiles)
+    || imageSrcOrDefault(resource.fileUrl || resource.filePath);
   const showReviewNote = decisionForStatus(status).length > 0;
   const noteClass = noteClassForStatus(status);
 
