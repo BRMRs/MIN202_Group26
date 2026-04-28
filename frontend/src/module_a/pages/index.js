@@ -4,3 +4,5 @@ export { default as ProfilePage } from './ProfilePage';
 export { default as ContributorApplyPage } from './ContributorApplyPage';
 export { default as AdminApprovalPage } from './AdminApprovalPage';
 export { default as AdminApplicationDetailPage } from './AdminApplicationDetailPage';
+export { default as TermsOfUsePage } from './TermsOfUsePage';
+export { default as PrivacyStatementPage } from './PrivacyStatementPage';

@@ -234,7 +234,7 @@ function RegisterPage() {
                   />
                   <label htmlFor="agreedTerms">
                     I confirm that I have read and accept the{' '}
-                    <a href="#terms">Terms of use</a> and <a href="#privacy">Privacy statement</a>
+                    <Link to="/terms-of-use">Terms of use</Link> and <Link to="/privacy-statement">Privacy statement</Link>
                   </label>
                 </div>
 

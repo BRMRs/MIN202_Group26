@@ -4,7 +4,16 @@ import Navbar from './common/components/Navbar';
 import Footer from './common/components/Footer';
 import ProtectedRoute from './common/components/ProtectedRoute';
 
-import { LoginPage, RegisterPage, ProfilePage, ContributorApplyPage, AdminApprovalPage, AdminApplicationDetailPage } from './module_a/pages';
+import {
+  LoginPage,
+  RegisterPage,
+  ProfilePage,
+  ContributorApplyPage,
+  AdminApprovalPage,
+  AdminApplicationDetailPage,
+  TermsOfUsePage,
+  PrivacyStatementPage,
+} from './module_a/pages';
 import { ResourceSubmissionPage, DraftBoxPage } from './module_b/pages';
 import ReviewerDashboardPage from './module_c/pages/ReviewerDashboardPage';
 import ResourceReviewPage from './module_c/pages/ResourceReviewPage';
@@ -26,6 +35,8 @@ function App() {
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/terms-of-use" element={<TermsOfUsePage />} />
+        <Route path="/privacy-statement" element={<PrivacyStatementPage />} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/apply-contributor" element={<ProtectedRoute><ContributorApplyPage /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminApprovalPage /></ProtectedRoute>} />
